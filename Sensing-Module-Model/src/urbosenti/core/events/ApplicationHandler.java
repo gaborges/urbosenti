@@ -4,6 +4,8 @@
  */
 package urbosenti.core.events;
 
+import urbosenti.core.device.DeviceManager;
+
 /**
  *
  * @author Guilherme
@@ -13,6 +15,13 @@ public abstract class ApplicationHandler {
      *
      * @param This method receives a event from the Event Manager to process the event applying changes directly in the component.
      */
-    public abstract void newEvent(Event event);
+    private DeviceManager deviceManager;
     
+    
+    public ApplicationHandler(DeviceManager deviceManager){
+        this.deviceManager = deviceManager;
+    }
+
+    public abstract void newEvent(Event event);
+        
 }

@@ -18,25 +18,33 @@ import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import urbosenti.core.device.Agent;
 import urbosenti.core.device.ComponentManager;
+import urbosenti.core.device.DeviceManager;
 import urbosenti.core.events.Action;
 import urbosenti.core.events.ApplicationEvent;
+import urbosenti.core.events.AsynchronouslyManageableComponent;
 import urbosenti.core.events.Event;
-import urbosenti.core.events.EventManager;
 import urbosenti.core.events.SystemEvent;
 
 /**
  *
  * @author Guilherme
  */
-public class CommunicationManager extends ComponentManager {
+public class CommunicationManager extends ComponentManager implements AsynchronouslyManageableComponent {
 
-    public CommunicationManager(EventManager eventManager) {
-        super(eventManager);
+    // interfaces[]
+        // tecnology
+    
+    
+    public CommunicationManager(DeviceManager deviceManager) {
+        super(deviceManager);
     }
 
     @Override
-    protected void onCreate() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    public void onCreate() {
+        // Carregar dados e configurações que serão utilizados para execução em memória
+        // Preparar configurações inicias para execução
+        // Para tanto utilizar o DataManager para acesso aos dados.
+        System.out.println("Activating: " + getClass());
     }
 
     @Override
@@ -44,12 +52,20 @@ public class CommunicationManager extends ComponentManager {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
-    public void startPushReceiverService() {
-        // Create a Service to receive Push Messages in text format
+    public void sendMessage(Message message) {
+        // fazer a mensagem para envio via HTTP
+        //gerar mensagem em XML
+        // modelar métodos de conexão e comunicação
     }
 
-    public void stopPushReceiverService() {
-        // stop the service
+    public String sendMessageWithResponse(Message message) {
+        // fazer a mensagem para envio via HTTP
+        return null;
+    }
+
+    public String sendMessageWithResponse(Message message, int timeout) {
+        // fazer a mensagem para envio via HTTP
+        return null;
     }
 
     protected void newPushMessage(String bruteMessage) {
@@ -60,36 +76,56 @@ public class CommunicationManager extends ComponentManager {
             // Criar o documento e com verte a String em DOC
             Document doc = builder.parse(new InputSource(new StringReader(bruteMessage)));
 
-            MessageHeader msgHeader = new MessageHeader();
+//            MessageHeader msgHeader = new MessageHeader();
             Message msg = new Message();
+            msg.setSender(new Agent());
+            msg.setTarget(new Agent());
             Element response = doc.getDocumentElement();
             Element header = (Element) response.getElementsByTagName("header").item(0);
-            msgHeader.setSenderUid(((Element) header.getElementsByTagName("origin").item(0)).getElementsByTagName("uid").item(0).getTextContent());
-            msgHeader.setSenderName(((Element) header.getElementsByTagName("origin").item(0)).getElementsByTagName("name").item(0).getTextContent());
-            msgHeader.setSenderAddress(((Element) header.getElementsByTagName("origin").item(0)).getElementsByTagName("address").item(0).getTextContent());
-            msgHeader.setSenderLayer(((Element) header.getElementsByTagName("origin").item(0)).getElementsByTagName("layer").item(0).getTextContent());
-            msgHeader.setSenderName(((Element) header.getElementsByTagName("target").item(0)).getElementsByTagName("uid").item(0).getTextContent());
-            msgHeader.setSenderAddress(((Element) header.getElementsByTagName("target").item(0)).getElementsByTagName("address").item(0).getTextContent());
-            msgHeader.setSenderLayer(((Element) header.getElementsByTagName("target").item(0)).getElementsByTagName("layer").item(0).getTextContent());
-            msgHeader.setContentType( header.getElementsByTagName("contentType").item(0).getTextContent());
-            msgHeader.setSubject(header.getElementsByTagName("subject").item(0).getTextContent());
+//            msgHeader.setSenderUid(((Element) header.getElementsByTagName("origin").item(0)).getElementsByTagName("uid").item(0).getTextContent());
+//            msgHeader.setSenderName(((Element) header.getElementsByTagName("origin").item(0)).getElementsByTagName("name").item(0).getTextContent());
+//            msgHeader.setSenderAddress(((Element) header.getElementsByTagName("origin").item(0)).getElementsByTagName("address").item(0).getTextContent());
+//            msgHeader.setSenderLayer(((Element) header.getElementsByTagName("origin").item(0)).getElementsByTagName("layer").item(0).getTextContent());
+//            msgHeader.setTargetUid(((Element) header.getElementsByTagName("target").item(0)).getElementsByTagName("uid").item(0).getTextContent());
+//            msgHeader.setTargetAddress(((Element) header.getElementsByTagName("target").item(0)).getElementsByTagName("address").item(0).getTextContent());
+//            msgHeader.setTargetLayer(((Element) header.getElementsByTagName("target").item(0)).getElementsByTagName("layer").item(0).getTextContent());
+//            msgHeader.setContentType( header.getElementsByTagName("contentType").item(0).getTextContent());
+//            msgHeader.setSubject(header.getElementsByTagName("subject").item(0).getTextContent());
 
-            msg.setContent(response.getElementsByTagName("conteudo").item(0).getTextContent());
-            msg.setHeader(msgHeader);
-
-            Agent origin = new Agent();
-            origin.setAddress(msgHeader.getSenderAddress());
-            origin.setDescription(msgHeader.getSenderName());
-            origin.setLayer(msgHeader.getSenderLayer());
-            origin.setUid(msgHeader.getSenderUid());
+            msg.getSender().setUid(((Element) header.getElementsByTagName("origin").item(0)).getElementsByTagName("uid").item(0).getTextContent());
+            msg.getSender().setDescription(((Element) header.getElementsByTagName("origin").item(0)).getElementsByTagName("name").item(0).getTextContent());
+            msg.getSender().setAddress(((Element) header.getElementsByTagName("origin").item(0)).getElementsByTagName("address").item(0).getTextContent());
+            msg.getSender().setLayer(((Element) header.getElementsByTagName("origin").item(0)).getElementsByTagName("layer").item(0).getTextContent());
+            msg.getTarget().setUid(((Element) header.getElementsByTagName("target").item(0)).getElementsByTagName("uid").item(0).getTextContent());
+            msg.getTarget().setAddress(((Element) header.getElementsByTagName("target").item(0)).getElementsByTagName("address").item(0).getTextContent());
+            msg.getTarget().setLayer(((Element) header.getElementsByTagName("target").item(0)).getElementsByTagName("layer").item(0).getTextContent());
+            msg.setContentType(header.getElementsByTagName("contentType").item(0).getTextContent());
+            msg.setSubject(header.getElementsByTagName("subject").item(0).getTextContent());
             
-            Event event = null;
-            if(msg.getHeader().getTargetLayer().equals("system")){ // if the target is the system
-                event = new SystemEvent(origin);
-            } else if (msg.getHeader().getTargetLayer().equals("application")){ // if the target is the application
-                event = new ApplicationEvent(origin);
+            if (header.getElementsByTagName("priority").getLength() > 0) {
+                if(header.getElementsByTagName("priority").item(0).getTextContent().equals("preferential"))
+                    msg.setPreferentialPriority();
+                else 
+                    msg.setNormalPriority();
             }
-            if(event != null){ // Event: new Message
+
+            msg.setContent(response.getElementsByTagName("content").item(0).getTextContent());
+//            msg.setHeader(msgHeader);
+//
+//            Agent origin = new Agent();
+//            origin.setAddress(msgHeader.getSenderAddress());
+//            origin.setDescription(msgHeader.getSenderName());
+//            origin.setLayer(msgHeader.getSenderLayer());
+//            origin.setUid(msgHeader.getSenderUid());
+
+            System.out.println("Layer: " + msg.getHeader().getTargetLayer());
+            Event event = null;
+            if (msg.getHeader().getTargetLayer().equals("system")) { // if the target is the system
+                event = new SystemEvent(msg.getSender());
+            } else if (msg.getHeader().getTargetLayer().equals("application")) { // if the target is the application
+                event = new ApplicationEvent(msg.getSender());
+            }
+            if (event != null) { // Event: new Message
                 event.setId(1);
                 event.setName("new message");
                 event.setTime(new Date());

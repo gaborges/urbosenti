@@ -11,7 +11,7 @@ import urbosenti.adaptation.AdaptationManager;
  *
  * @author Guilherme
  */
-public class EventManager {
+public class EventManager implements AsynchronouslyManageableComponent {
 
     private boolean enableSystemHandler;
     private AdaptationManager systemHandler;
@@ -67,5 +67,10 @@ public class EventManager {
 
     public void unsubscribe(ApplicationHandler applicationHandler) {
         applicationHandlers.remove(applicationHandler);
+    }
+
+    @Override
+    public void applyAction(Action action) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 }

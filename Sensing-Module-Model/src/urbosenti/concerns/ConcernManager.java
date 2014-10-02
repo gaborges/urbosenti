@@ -2,8 +2,9 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package urbosenti.user;
+package urbosenti.concerns;
 
+import urbosenti.core.data.*;
 import urbosenti.core.device.ComponentManager;
 import urbosenti.core.device.DeviceManager;
 import urbosenti.core.events.Action;
@@ -14,9 +15,9 @@ import urbosenti.core.events.EventManager;
  *
  * @author Guilherme
  */
-public class UserManager extends ComponentManager implements AsynchronouslyManageableComponent{
+public class ConcernManager extends ComponentManager implements AsynchronouslyManageableComponent{
 
-    public UserManager(DeviceManager deviceManager) {
+    public ConcernManager(DeviceManager deviceManager) {
         super(deviceManager);
     }
     

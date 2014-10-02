@@ -174,4 +174,9 @@ public abstract class Event {
         return originType;
     }
 
+    @Override
+    public String toString() {
+        return "Event{" + "id=" + id + ", name=" + name + ", synchronous=" + synchronous + ", eventType=" + eventType + ", originType=" + originType + ", origin=" + origin + ", value=" + value + ", hasTimeout=" + hasTimeout + ", timeout=" + timeout + ", time=" + time + '}';
+    }
+    
 }

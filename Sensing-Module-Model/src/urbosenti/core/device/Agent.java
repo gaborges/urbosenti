@@ -46,4 +46,9 @@ public class Agent {
         this.description = description;
     }
 
+    @Override
+    public String toString() {
+        return "Agent{" + "uid=" + uid + ", address=" + address + ", layer=" + layer + ", description=" + description + '}';
+    }
+
 }

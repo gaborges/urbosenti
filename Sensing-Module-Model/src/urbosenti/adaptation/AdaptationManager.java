@@ -11,15 +11,20 @@ import java.util.Queue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import urbosenti.context.ContextManager;
+import urbosenti.core.communication.Message;
+import urbosenti.core.device.ComponentManager;
 import urbosenti.core.device.DeviceManager;
+import urbosenti.core.events.Action;
+import urbosenti.core.events.AsynchronouslyManageableComponent;
 import urbosenti.core.events.Event;
+import urbosenti.core.events.EventManager;
 import urbosenti.user.UserManager;
 
 /**
  *
  * @author Guilherme
  */
-public class AdaptationManager implements Runnable {
+public class AdaptationManager extends ComponentManager implements Runnable, AsynchronouslyManageableComponent {
 
     /**
      *
@@ -33,22 +38,72 @@ public class AdaptationManager implements Runnable {
     private UserManager userManager;
     private boolean running;
     private Boolean flag;
+    private Boolean monitor;
 
     public AdaptationManager(DeviceManager deviceManager) {
-        this.deviceManager = deviceManager;
+        super(deviceManager);
+        this.deviceManager = null;
         this.contextManager = null;
         this.userManager = null;
         this.running = true;
         this.availableEvents = new LinkedList<Event>();
+        this.flag = true;
+        this.monitor = true;
     }
-
-    public AdaptationManager(DeviceManager deviceManager, ContextManager contextManager, UserManager userManager) {
-        this(deviceManager);
+    
+    public boolean discovery(DeviceManager deviceManager) {
+        if(running) return false;
+        this.deviceManager = deviceManager;
+        
+        // descobre o modelo
+        
+        return true;
+    }
+    
+    public boolean discovery(DeviceManager deviceManager, ContextManager contextManager, UserManager userManager) {
+        if(running) return false;
+        this.deviceManager = deviceManager;
         this.contextManager = contextManager;
         this.userManager = userManager;
+        
+        // descobre o modelo
+        // Device
+            // Componentes em funcionamento
+            // sensores e possíveis atuadores de cada componentes
+            // Políticas e estratédias (funcionalidades/comportamentos), define restrições
+        // User
+            // Preferências do usuário, para privacidade, etc... -- Podem ser alterados on the fly
+            // Restrições do usuário
+        // Context
+            // Descoberta de funções de contexto
+                // Predição de contextos
+                // Gerar conhecimento
+                // Modelos de aprendizagem
+                // Inferência
+            // Apoio a descoberta e identificação de novos recursos
+            // Possibilita gatinhos de eventos dinâmicos, como tempo etc...
+        
+        return true;
     }
-
-    protected void discovery(DeviceManager d, ContextManager c, UserManager u) {
+    
+    public  boolean discovery(DeviceManager deviceManager, UserManager userManager) {
+        if(running) return false;
+        this.deviceManager = deviceManager;
+        this.userManager = userManager;
+        
+        // descobre o modelo
+        
+        return true;
+    }
+    
+    public  boolean discovery(DeviceManager deviceManager, ContextManager contextManager) {
+        if(running) return false;
+        this.deviceManager = deviceManager;
+        this.contextManager = contextManager;
+        
+        // descobre o modelo
+        
+        return true;
     }
 
     public synchronized void newEvent(Event event) {
@@ -62,11 +117,13 @@ public class AdaptationManager implements Runnable {
 
     public synchronized boolean start() {
         this.running = true;
+        notifyAll();
         return true;
     }
 
     public synchronized boolean stop() {
         this.running = false;
+        notifyAll();
         return true;
     }
 
@@ -85,17 +142,19 @@ public class AdaptationManager implements Runnable {
     private void monitoring() throws InterruptedException {
         while (running) {
             /* Monitoring */
-            Event event;
+            Event event;     
             synchronized (flag) {
                 event = availableEvents.poll();
                 if (event == null) {
+                    System.out.println("Esperando;;;");
                     wait();
                 }
-            }
+           }
 
             if (event != null) {
                 switch (event.getOriginType()) {
                     case Event.INTERATION_EVENT:
+                        
                         //InteractionEvent;
                         /* Analysis -- Diagnosis */
                         /* Planning -- Plan */
@@ -107,7 +166,22 @@ public class AdaptationManager implements Runnable {
                         break;
                 }
                 /* Execute */
+                System.out.println("Event: "+event.toString());
+                System.out.println("Message: "+ event.getValue().toString() );
             }
         }
+    }
+
+    @Override
+    public void onCreate() {
+        // Carregar dados e configurações que serão utilizados para execução em memória
+        // Preparar configurações inicias para execução
+        // Para tanto utilizar o DataManager para acesso aos dados.
+        System.out.println("Activating: " + getClass());
+    }
+
+    @Override
+    public void applyAction(Action action) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 }
