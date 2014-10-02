@@ -4,10 +4,13 @@
  */
 package urbosenti.core.communication;
 
+import urbosenti.core.device.Agent;
+
 /**
  *
  * @author Guilherme
  */
+@Deprecated
 public class MessageHeader {
      private String senderUid;
      private String senderName;
@@ -16,6 +19,9 @@ public class MessageHeader {
      private String targetUid;
      private String targetAddress;
      private String targetLayer;
+     
+     private Agent sender;
+     private Agent target;
      
      private String subject;
      private String contentType;

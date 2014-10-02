@@ -16,7 +16,7 @@ public class PushServiceReceiver {
         this.communicationManager = communicationManager;
     }
         
-    public void run(){ // Only a representative method
+    private void run(){ // Only a representative method - If i don't make a mistake, this method will be private ou protected
     
         // When have a new message
         String message = "<message>\n" +
@@ -29,15 +29,25 @@ public class PushServiceReceiver {
 "               </origin>\n" +
 "               <target>\n" +
 "			<uid>22XYZ</uid>\n" +
-"                       <addess>192.168.0.2</addess>\n" +
+"                       <address>192.168.0.2</address>\n" +
 " 			<layer>system</layer>\n" +
 "               </target>\n" +
-"               <subject>social interaction<subject>\n" +
+"               <subject>social interaction</subject>\n" +
 "               <contentType>text/xml</contentType>\n" +
 "	</header>\n" +
 "	<content>" +
 "		… message according the subject" +
-"       </content>";
+"       </content>" +
+"     </message>";
         this.communicationManager.newPushMessage(message);
+    }
+    
+    public void startPushReceiverService() {
+        // Create a Service to receive Push Messages in text format
+        run();
+    }
+
+    public void stopPushReceiverService() {
+        // stop the service
     }
 }

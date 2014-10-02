@@ -5,10 +5,7 @@
 package urbosenti.core.device;
 
 import java.util.Date;
-import java.util.List;
-import urbosenti.core.events.Action;
 import urbosenti.core.events.Event;
-import urbosenti.core.events.EventDetector;
 import urbosenti.core.events.EventManager;
 
 /**
@@ -20,14 +17,24 @@ public abstract class ComponentManager {
      *
      */
     private EventManager eventManager;
-    
+    private DeviceManager deviceManager;
+
+    protected ComponentManager() {
+    }
+        
+    // Method used by the DeviceManager
     public ComponentManager(EventManager eventManager){
         this.eventManager = eventManager;
     }
      
-    protected abstract void onCreate();
+    // Method used by other Components
+    public ComponentManager(DeviceManager deviceManager){
+        this.deviceManager = deviceManager;
+        this.eventManager = this.deviceManager.getEventManager();
+    }
+    
+    public abstract void onCreate();
 
-    public abstract void applyAction(Action action);
     public boolean isEventExpired(Event event){
         if (event.isHasTimeout()){
             if((new Date().getTime() - event.getTime().getTime()) > event.getTimeout()) return true;
@@ -38,5 +45,9 @@ public abstract class ComponentManager {
     public EventManager getEventManager() {
         return eventManager;
     }
-   
+    
+    public DeviceManager getDeviceManager() {
+        return deviceManager;
+    }
+    
 }
