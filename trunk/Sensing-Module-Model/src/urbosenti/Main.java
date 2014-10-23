@@ -8,10 +8,12 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import urbosenti.adaptation.AdaptationManager;
 import urbosenti.core.communication.CommunicationManager;
+import urbosenti.core.communication.DeliveryMessagingService;
 import urbosenti.core.communication.PushServiceReceiver;
 import urbosenti.core.data.DataManager;
 import urbosenti.core.device.DeviceManager;
 import urbosenti.core.events.EventManager;
+import urbosenti.test.TestCommunication;
 
 /**
  *
@@ -34,6 +36,7 @@ public class Main {
         deviceManager.onCreate();
         // Execução - inicia todos os serviços e threads em background
         PushServiceReceiver teste = new PushServiceReceiver(deviceManager.getCommunicationManager());
+        //DeliveryMessagingService delivaryService = new DeliveryMessagingService(deviceManager.getCommunicationManager());
         
         // Cria as threads para 1 - comunicação (pushs), e 2  para do mecanismo de adaptação
         
@@ -50,11 +53,17 @@ public class Main {
         for (int i = 0; i < 1000000; i++) {
             
         }
-           
+        
+        // Testes
+        TestCommunication tc = new TestCommunication(deviceManager);
+        tc.test1();
+                           
         deviceManager.getAdaptationManager().stop();
         
               
         // Daqui para baixo seria coisas da aplicação
         // Aplicação de sensoriamento blablabla
     }
+      
+    
 }

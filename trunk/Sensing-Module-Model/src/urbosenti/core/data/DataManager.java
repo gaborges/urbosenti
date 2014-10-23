@@ -16,16 +16,26 @@ import urbosenti.core.events.EventManager;
  */
 public class DataManager extends ComponentManager implements AsynchronouslyManageableComponent{
 
+    
+    CommunicationDAO communicationDAO;
+    
     public DataManager(DeviceManager deviceManager) {
         super(deviceManager);
     }
     
     @Override
     public void onCreate() {
+        communicationDAO = new CommunicationDAO();
         // Carregar dados e configurações que serão utilizados para execução em memória
         // Preparar configurações inicias para execução
         // Para tanto utilizar o DataManager para acesso aos dados.
         System.out.println("Activating: " + getClass());
+        // Descobrir todo o conhecimento e criar o banco
+    }
+    
+    public CommunicationDAO getCommunicationDAO(){
+        
+        return communicationDAO;
     }
 
     @Override
