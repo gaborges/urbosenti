@@ -15,8 +15,6 @@ public class Message {
     public static final int NORMAL_PRIORITY = 0;
     public static final int PREFERENTIAL_PRIORITY = 1;
     
-    private MessageHeader header;
-    
     private Agent sender;
     private Agent target;
 
@@ -26,25 +24,11 @@ public class Message {
     private int priority;
     
     private String content;
-
-    // Critérios utilizados para avaliação ao enviar a mensagem
-    private double size;
-    private double responseTime;
-    
-    private CommunicationInterface usedCommunicationInterface;
-    
+   
     public Message() {
         this.priority = Message.NORMAL_PRIORITY;
     }   
     
-    public MessageHeader getHeader() {
-        return header;
-    }
-
-    public void setHeader(MessageHeader header) {
-        this.header = header;
-    }
-
     public String getContent() {
         return content;
     }
@@ -96,34 +80,10 @@ public class Message {
     public void setPreferentialPriority() {
         this.priority = Message.PREFERENTIAL_PRIORITY;
     }
-
-    public double getSize() {
-        return size;
-    }
-
-    public void setSize(double size) {
-        this.size = size;
-    }
-
-    public double getResponseTime() {
-        return responseTime;
-    }
-
-    public void setResponseTime(double responseTime) {
-        this.responseTime = responseTime;
-    }
-
-    public CommunicationInterface getUsedCommunicationInterface() {
-        return usedCommunicationInterface;
-    }
-
-    public void setUsedCommunicationInterface(CommunicationInterface usedCommunicationInterface) {
-        this.usedCommunicationInterface = usedCommunicationInterface;
-    }
-        
+       
     @Override
     public String toString() {
-        return "Message{" + "header=" + header + ", sender=" + sender.toString() + ", target=" + target.toString() + ", subject=" + subject + ", contentType=" + contentType + ", content=" + content + '}';
+        return "Message{" +", sender=" + sender.toString() + ", target=" + target.toString() + ", subject=" + subject + ", contentType=" + contentType + ", content=" + content + '}';
     }
 
     

@@ -9,6 +9,10 @@ package urbosenti.core.communication;
  * @author Guilherme
  */
 public class CommunicationInterface {
+    
+    public final static int STATUS_DISCONNECTED = 0;
+    public final static int STATUS_CONNECTED = 1;
+    public final static int STATUS_DISABLED = 2;
     // Suported Tecnologies
     // current tecnology
     private int id;
@@ -17,8 +21,18 @@ public class CommunicationInterface {
     private double averageLatency;
     private double averageThroughput;
     private int status; // connected, disconected, disabled (not able to use)
+    private int score;
     private int timeout; // ms
+    private boolean usesMobileData;
 
+    public boolean isUsesMobileData() {
+        return usesMobileData;
+    }
+
+    public void setUsesMobileData(boolean usesMobileData) {
+        this.usesMobileData = usesMobileData;
+    }
+    
     public int getId() {
         return id;
     }
@@ -73,6 +87,14 @@ public class CommunicationInterface {
 
     public void setTimeout(int timeout) {
         this.timeout = timeout;
+    }
+
+    public int getScore() {
+        return score;
+    }
+
+    public void setScore(int score) {
+        this.score = score;
     }
         
 }

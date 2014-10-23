@@ -138,18 +138,35 @@ public class AdaptationManager extends ComponentManager implements Runnable, Asy
             Logger.getLogger(AdaptationManager.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
-
-    private void monitoring() throws InterruptedException {
-        while (running) {
-            /* Monitoring */
-            Event event;     
-            synchronized (flag) {
-                event = availableEvents.poll();
+    
+    /*
+     * Event was created because the java runtime dont identified teh synchronizes block
+     */
+    private synchronized Event getEvent() throws InterruptedException{
+        Event event = availableEvents.poll();
+            
                 if (event == null) {
                     System.out.println("Esperando;;;");
                     wait();
                 }
-           }
+        return event;
+    }
+
+    private synchronized void monitoring() throws InterruptedException {
+        Event event; 
+        while (running) {
+            
+            /* Monitoring */
+            event = getEvent();     
+            
+            //synchronized (flag) {
+//                event = availableEvents.poll();
+//            
+//                if (event == null) {
+//                    System.out.println("Esperando;;;");
+//                    wait();
+//                }
+           //}
 
             if (event != null) {
                 switch (event.getOriginType()) {

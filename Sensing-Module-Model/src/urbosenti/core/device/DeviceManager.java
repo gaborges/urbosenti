@@ -41,9 +41,19 @@ public class DeviceManager extends ComponentManager implements AsynchronouslyMan
     private LocalizationManager localizationManager = null;
     private ResourceManager resourceManager = null;
     private ConcernManager concernManager = null;
+    private String UID;
+
     /**
      *
      */
+    public String getUID() {
+        return UID;
+    }
+
+    public void setUID(String UID) {
+        this.UID = UID;
+    }
+   
     public DeviceManager() {
         super(new EventManager());
         this.eventManager = super.getEventManager();
