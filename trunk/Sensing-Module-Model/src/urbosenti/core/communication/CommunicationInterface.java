@@ -12,7 +12,8 @@ public class CommunicationInterface {
     
     public final static int STATUS_DISCONNECTED = 0;
     public final static int STATUS_CONNECTED = 1;
-    public final static int STATUS_DISABLED = 2;
+    public final static int STATUS_UNAVAILABLE = 2;
+    public final static int STATUS_AVAILABLE = 3;
     // Suported Tecnologies
     // current tecnology
     private int id;
@@ -20,7 +21,7 @@ public class CommunicationInterface {
     private double mobileDataUse; // only for Mobile data Interface
     private double averageLatency;
     private double averageThroughput;
-    private int status; // connected, disconected, disabled (not able to use)
+    private int status; // connected, disconected, disabled (not able to use)  able (able to use, but not tested)
     private int score;
     private int timeout; // ms
     private boolean usesMobileData;

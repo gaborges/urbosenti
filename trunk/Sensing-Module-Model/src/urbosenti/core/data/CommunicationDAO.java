@@ -93,17 +93,27 @@ public class CommunicationDAO {
     public List<CommunicationInterface> getAvailableInterfaces(){
         List<CommunicationInterface> list = new ArrayList<CommunicationInterface>();
         CommunicationInterface ci = new CommunicationInterface();
-        ci.setId(1);
-        ci.setName("Mobile Data Interface");
-        ci.setUsesMobileData(true);
-        ci.setStatus(CommunicationInterface.STATUS_CONNECTED);
-        list.add(ci);
+//        ci.setId(1);
+//        ci.setName("Wired Interface");
+//        ci.setUsesMobileData(false);
+//        ci.setStatus(CommunicationInterface.STATUS_UNAVAILABLE);
+//        list.add(ci);
         ci = new CommunicationInterface();
         ci.setId(2);
-        ci.setName("Wi-Fi Interface");
+        ci.setName("Wireless Interface");
         ci.setUsesMobileData(false);
-        ci.setStatus(CommunicationInterface.STATUS_DISCONNECTED);
+        ci.setStatus(CommunicationInterface.STATUS_AVAILABLE);
         list.add(ci);
+//        ci = new CommunicationInterface(); // Mais tarde
+//        ci.setId(3);
+//        ci.setName("Delay Tolerant Network (DTN) Interface");
+//        ci.setUsesMobileData(false);
+//        ci.setStatus(CommunicationInterface.STATUS_AVAILABLE);
+//        ci = new CommunicationInterface(); // Mais tarde
+//        ci.setId(4);
+//        ci.setName("Wireless Interface Mobile Data Enabled");
+//        ci.setUsesMobileData(true);
+//        ci.setStatus(CommunicationInterface.STATUS_UNAVAILABLE);
         return list;
     }   
     
