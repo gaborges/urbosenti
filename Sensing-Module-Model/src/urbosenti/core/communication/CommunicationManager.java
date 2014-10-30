@@ -9,6 +9,7 @@ import java.io.StringReader;
 import java.io.StringWriter;
 import java.net.MalformedURLException;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
@@ -45,35 +46,45 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
 
     private Queue<MessageWrapper> normalMessageQueue;
     private Queue<MessageWrapper> priorityMessageQueue;
-    
     private double mobileDataQuota; // em bytes
     private double usedMobileData; // em bytes
     private double mobileDataPriorityQuota; // em bytes
-    
     private int mobileDataPolicy;  // Política de uso de dados móveis
     private int messagingPolicy;   // Política de envio de mensagem
     private int messageStoragePolicy; // Política de armazenamento de mensagem
     private int reconnectionPolicy; // Política de reconexão
     private int uploadMessagingPolicy; // política de Upload periódico de Mensagens
-    
     private CommunicationInterface currentCommunicationInterface;
-    
     private List<CommunicationInterface> communicationInterfaces;
     // interfaces[]
     // tecnology
+    private ReconnectionService reconnectionService;
+    private DeliveryMessagingService deliveryService;
+
     public CommunicationManager(DeviceManager deviceManager) {
         super(deviceManager);
         this.normalMessageQueue = new LinkedList<MessageWrapper>();
         this.priorityMessageQueue = new LinkedList<MessageWrapper>();
     }
-    
-    public boolean verifyConnectStatus(){
+
+    // if do not setted then when the method onCreate was activated it creates automatically
+    public void setReconectionService(ReconnectionService reconnectionService) {
+        this.reconnectionService = reconnectionService;
+    }
+
+    // if do not setted then when the method onCreate was activated it creates automatically
+    public void setDelivaryService(DeliveryMessagingService deliveryService) {
+        this.deliveryService = deliveryService;
+    }
+
+    public boolean verifyConnectStatus() {
         // Verifica se a principal está conectada
-        if(currentCommunicationInterface.getStatus() == CommunicationInterface.STATUS_CONNECTED) return true;
-        else{
+        if (currentCommunicationInterface.getStatus() == CommunicationInterface.STATUS_CONNECTED) {
+            return true;
+        } else {
             // gera o evento de desconexão da interface atual
-            for(CommunicationInterface ci :communicationInterfaces){
-                if(ci.getStatus() == CommunicationInterface.STATUS_CONNECTED){
+            for (CommunicationInterface ci : communicationInterfaces) {
+                if (ci.getStatus() == CommunicationInterface.STATUS_CONNECTED) {
                     currentCommunicationInterface = ci;
                     return true;
                 }
@@ -90,7 +101,7 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
         // Para tanto utilizar o DataManager para acesso aos dados.
         System.out.println("Activating: " + getClass());
         this.communicationInterfaces = super.getDeviceManager().getDataManager().getCommunicationDAO().getAvailableInterfaces();
-        
+        this.currentCommunicationInterface = this.communicationInterfaces.get(0);
 //        
 //        this.mobileDataPolicy = 1; // sem mobilidade - Default
 //        this.messagingPolicy = 1;  // Se não der certo avisa a origem da mensagem
@@ -103,13 +114,16 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
         this.messageStoragePolicy = super.getDeviceManager().getDataManager().getCommunicationDAO().getCurrentPreferentialPolicy(CommunicationDAO.MESSAGE_STORAGE_POLICY); // Política de armazenamento de mensagem - Padrão: Apagar todas que foram enviadas com sucesso e armazenar as que não foram enviadas. 
         this.reconnectionPolicy = super.getDeviceManager().getDataManager().getCommunicationDAO().getCurrentPreferentialPolicy(CommunicationDAO.RECONNECTION_POLICY);   // Política de reconexão: Padrão - Tentativa em intervalos fixos. Pode ser definido pela aplicação. O padrão é uma nova tentativa a cada 60 segundos
         this.uploadMessagingPolicy = super.getDeviceManager().getDataManager().getCommunicationDAO().getCurrentPreferentialPolicy(CommunicationDAO.UPLOAD_MESSAGING_POLICY); //  política de Upload periódico de Mensagens: Sempre que há um relato novo tenta fazer o upload, caso exista conexão, senão espera reconexão. Padrão.
-        
+
         // Setar dinamica a política de mobile data police aqui.
         // se há politica deve ser setado através das configurações:
         this.mobileDataQuota = 1000;
         this.usedMobileData = 0;
         this.mobileDataPriorityQuota = 2000;
         // Setar dinamicamente a politica de mensagens   
+
+        // testar se não foi setado os serviços de entraga e reconexão senão criar e iniciar
+        // Testar se os serviços foram iniciados e caso não
     }
 
     @Override
@@ -117,8 +131,31 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
+    /**
+     * @param message has the message to send. This message can be sent to
+     * everyone that can understand the message.
+     *
+     * The process associated with this method is:
+     * <ul>
+     * <li>Recebe a mensagem - Gets the message</li>
+     * <li>Cria o envelope XML da UrboSenti correspondente da mensagem</li>
+     * <li>Verifica o primeiro método de envio</li>
+     * <li>Tenta enviar</li>
+     * <li>[Sucesso] Evento Mensagem entregue, após política de
+     * armazenamento</li>
+     * <li>[Insucesso detectado pelo tiemout] Ecento de Desconexão. Tenta enviar
+     * com outro método disponível</li>
+     * <li>[Se nenhuma interface disponível] Evento de mensagem não entregue.
+     * Política de armazenamento e adicionar na fila de upload. Também. Ativação
+     * da política de reconexão.</li>
+     * </ul>
+     *
+     */
     public void sendMessage(Message message) {
-
+        // Recebe a mensagem - Gets the message
+        /*
+         * Se quem está enviando não foi explicitado, então, por padrão, são preenxidos os dados do envio da aplicação.
+         */
         if (message.getSender() == null) {
             message.setSender(new Agent());
             message.getSender().setLayer("application");
@@ -127,7 +164,7 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
         }
         MessageWrapper messageWrapper = new MessageWrapper(message);
         try {
-            // gerar mensagem em XML
+            // Cria o envelope XML da UrboSenti correspondente da mensagem
             messageWrapper.build();
         } catch (ParserConfigurationException ex) {
             Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
@@ -136,173 +173,216 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
         } catch (TransformerException ex) {
             Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
         }
-        // verifica se alguma conexão estão conectada
-        if(verifyConnectStatus()){
-            
-            // Política de dados móveis, se a interface usa dados móveis
-            if(this.currentCommunicationInterface.isUsesMobileData()){
-                switch(mobileDataPolicy){
-                    case 1: // Sem mobilidade. Configuração default. Nenhuma ação.
-                        break;
-                    case 2: // Fazer o uso sempre que possível. Nenhuma ação adicional.
-                        break;
-                    case 3: // Somente fazer uso com mensagens de alta prioridade.
-                         if(message.getPriority() != Message.PREFERENTIAL_PRIORITY){ // se não for prioritária
-                             // politica de armazenamento
-                             // adiciona na fila para upload
-                             // gera o evento para a aplicação e a adaptação
-                             return;
-                         }                        
-                        break;
-                    case 4: // Utiliza cota por ciclo de uso: Até X todos os tipos de mensagens, após até Y somente de alta prioridade.
-                        if(message.getPriority() == Message.PREFERENTIAL_PRIORITY){
-                            if((messageWrapper.getEnvelopedMessage().length() * Character.SIZE) + usedMobileData >= mobileDataPriorityQuota){
-                                // politica de armazenamento
-                                // fila para upload se salvo
-                                // gera o evento (aplicação e sistema)
-                                return;
-                            }
-                        }else{
-                            if((messageWrapper.getEnvelopedMessage().length() * Character.SIZE) + usedMobileData >= mobileDataQuota){
-                                // politica de armazenamento
-                                // fila para upload se salvo
-                                // gera o evento (aplicação e sistema)
-                                return;
-                            }
-                        }
-                        break;
-                    case 5: // Utiliza cota por ciclo de uso: Até X todos os tipos de mensagens para mensagens de alta prioridade o uso é liberado.
-                        if((messageWrapper.getEnvelopedMessage().length() * Character.SIZE) + usedMobileData >= mobileDataQuota){
-                                // politica de armazenamento
-                                // fila para upload se salvo
-                                // gera o evento (aplicação e sistema)
-                                return;
-                        }
-                        break;
-                    case 6: // Não utilizar dados móveis.
-                        // politica de armazenamento
-                        // fila para upload se salvo
-                        // gera o evento (aplicação e sistema)
-                        return;
-                }
-            }
-            
+        // Verifica o primeiro método de envio
+//        if(this.currentCommunicationInterface == null){
+//            boolean verifyConnectStatus = this.verifyConnectStatus();
+//            currentCommunicationInterface = this.communicationInterfaces.get(0);
+//        }
 
-            // fazer a mensagem para envio via HTTP
-            try {
-                // Enviar a mensagem
-                DeliveryMessagingService service = new DeliveryMessagingService(this);
-                boolean res = service.sendHttpMessage(
-                        message.getTarget().getAddress(),
-                        message.getContentType(),
-                        messageWrapper.getEnvelopedMessage());
-
-                if(res){
-                    // evento mensagem entregue
-                    // Politica de armazenamento de mensagens
-                } else {
-                    // evento mensagem não entregue. Motivo? 
-                    // Politica de armazenamento de mensagens
-                    // adicionar na fila de envio
-                }
-
-
-            } catch (MalformedURLException ex) {
-                Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
-            } catch (IOException ex) {
-                Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
-            } catch (RuntimeException ex) {
-            }
-        } else {
-            // storage policy
-            // add to the list
-        }
-    }
-
-    public String sendMessageWithResponse(Message message) {
+        // Tenta enviar
+        // fazer a mensagem para envio via HTTP
         try {
-            if (message.getSender() == null) {
-                message.setSender(new Agent());
-                message.getSender().setLayer("application");
-                message.getSender().setUid(getDeviceManager().getUID());
-                message.getSender().setDescription("Sensing Module");
-            }
-            // fazer a mensagem para envio via HTTP
-
-
-            // gerar mensagem em XML
-            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-            DocumentBuilder builder = factory.newDocumentBuilder();
-            // Criar o documento e com verte a String em DOC
-            Document doc = builder.newDocument();
-            Element root = doc.createElement("message"),
-                    content = doc.createElement("conteudo"),
-                    header = doc.createElement("header"),
-                    origin = doc.createElement("origin"),
-                    target = doc.createElement("target"),
-                    layer = doc.createElement("layer"),
-                    uid = doc.createElement("uid"),
-                    address = doc.createElement("address"),
-                    name = doc.createElement("name");
-
-            // origin
-            uid.setTextContent(message.getSender().getUid());
-            name.setTextContent(message.getSender().getDescription());
-            layer.setTextContent(message.getSender().getLayer());
-            origin.appendChild(uid);
-            origin.appendChild(name);
-            origin.appendChild(layer);
-
-            // target
-            layer = doc.createElement("layer");
-            uid = doc.createElement("uid");
-            name = doc.createElement("name");
-            uid.setTextContent(message.getTarget().getUid());
-            name.setTextContent(message.getTarget().getDescription());
-            layer.setTextContent(message.getTarget().getLayer());
-            address.setTextContent(message.getTarget().getAddress());
-            target.appendChild(uid);
-            target.appendChild(name);
-            target.appendChild(layer);
-            target.appendChild(address);
-
-            // header
-            Element subject = doc.createElement("subject"),
-                    contentType = doc.createElement("contentType");
-            contentType.setTextContent(message.getContentType());
-            subject.setTextContent(message.getSubject());
-            header.appendChild(subject);
-            header.appendChild(contentType);
-            header.appendChild(origin);
-            header.appendChild(target);
-
-            // content
-            content.setTextContent(message.getContent());
-
-            root.appendChild(header);
-            root.appendChild(content);
-            doc.appendChild(root);
-
-            // Converter Documento para STRING
-            StringWriter stw = new StringWriter();
-            Transformer serializer = TransformerFactory.newInstance().newTransformer();
-            serializer.transform(new DOMSource(doc), new StreamResult(stw));
-
             // Enviar a mensagem
             DeliveryMessagingService service = new DeliveryMessagingService(this);
-            return service.sendHttpMessageReturn(message.getTarget().getAddress(), message.getContentType(), stw.getBuffer().toString());
 
-            // modelar métodos de conexão e comunicação
+            // [Insucesso detectado pelo tiemout] Evento de Desconexão. Tenta enviar com outro método disponível
+            boolean res = service.sendHttpMessage(
+                    this,
+                    messageWrapper,
+                    currentCommunicationInterface);
+
+            // [Sucesso] Evento Mensagem entregue, após política de armazenamento
+            if (res) {
+                // evento mensagem entregue com a interface X
+                this.newInternalEvent(2, messageWrapper, message.getTarget(), currentCommunicationInterface);
+                this.currentCommunicationInterface.setStatus(CommunicationInterface.STATUS_CONNECTED);
+                // Politica de armazenamento de mensagens
+                this.storagePolice(messageWrapper);
+            } else { // [Método não conectado] 
+                currentCommunicationInterface.setStatus(CommunicationInterface.STATUS_DISCONNECTED);
+                // Evento de desconexão da interface X. +++ fazer
+                this.newInternalEvent(1, currentCommunicationInterface, message.getTarget());
+                // [Loop]Tenta próxima interface disponível, se houver passa a ser a atual
+                Iterator<CommunicationInterface> iterator = communicationInterfaces.iterator();
+                while (iterator.hasNext()) {
+                    CommunicationInterface next = iterator.next();
+                    res = service.sendHttpMessage(this, messageWrapper, next);
+                    // [Sucesso] Evento Mensagem entregue, após política de armazenamento
+                    if (res) {
+                        // evento mensagem entregue com a interface
+                        this.newInternalEvent(2, messageWrapper, message.getTarget(), next);
+                        // Passar a interface para atual e conectada
+                        this.currentCommunicationInterface = next;
+                        this.currentCommunicationInterface.setStatus(CommunicationInterface.STATUS_CONNECTED);
+                        // Politica de armazenamento de mensagens
+                        this.storagePolice(messageWrapper);
+                        return;
+                    } else { // [Interface indisponível]
+                        next.setStatus(CommunicationInterface.STATUS_DISCONNECTED);
+                        // Evento de desconexão da interface X. +++ fazer
+                        this.newInternalEvent(1, next, message.getTarget());
+                    }
+                }
+
+                // [Nenhuma interface disponível] Evento de mensagem não entregue. 
+
+                // Ativação da política de reconexão.
+                this.notifyReconectionService();
+                // evento mensagem não entregue. Motivo?
+                this.newInternalEvent(3, messageWrapper, message.getTarget());
+                // Politica de armazenamento de mensagens
+                this.storagePolice(messageWrapper);
+                // Adicionar na fila de envio
+                this.addMessage(messageWrapper);
+            }
+
+        } catch (RuntimeException ex) {
+            System.out.println("Error: " + ex);
+        }
+    }
+// -- Old    
+//    public void sendMessage(Message message) {
+//
+//        if (message.getSender() == null) {
+//            message.setSender(new Agent());
+//            message.getSender().setLayer("application");
+//            message.getSender().setUid(getDeviceManager().getUID());
+//            message.getSender().setDescription("Sensing Module");
+//        }
+//        MessageWrapper messageWrapper = new MessageWrapper(message);
+//        try {
+//            // gerar mensagem em XML
+//            messageWrapper.build();
+//        } catch (ParserConfigurationException ex) {
+//            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+//        } catch (TransformerConfigurationException ex) {
+//            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+//        } catch (TransformerException ex) {
+//            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+//        }
+//        // verifica se alguma conexão estão conectada
+//        if(verifyConnectStatus()){
+//            
+//            // Política de dados móveis, se a interface usa dados móveis
+//            if(this.currentCommunicationInterface.isUsesMobileData()){
+//                switch(mobileDataPolicy){
+//                    case 1: // Sem mobilidade. Configuração default. Nenhuma ação.
+//                        break;
+//                    case 2: // Fazer o uso sempre que possível. Nenhuma ação adicional.
+//                        break;
+//                    case 3: // Somente fazer uso com mensagens de alta prioridade.
+//                         if(message.getPriority() != Message.PREFERENTIAL_PRIORITY){ // se não for prioritária
+//                             // politica de armazenamento
+//                             // adiciona na fila para upload
+//                             // gera o evento para a aplicação e a adaptação
+//                             return;
+//                         }                        
+//                        break;
+//                    case 4: // Utiliza cota por ciclo de uso: Até X todos os tipos de mensagens, após até Y somente de alta prioridade.
+//                        if(message.getPriority() == Message.PREFERENTIAL_PRIORITY){
+//                            if((messageWrapper.getEnvelopedMessage().length() * Character.SIZE) + usedMobileData >= mobileDataPriorityQuota){
+//                                // politica de armazenamento
+//                                // fila para upload se salvo
+//                                // gera o evento (aplicação e sistema)
+//                                return;
+//                            }
+//                        }else{
+//                            if((messageWrapper.getEnvelopedMessage().length() * Character.SIZE) + usedMobileData >= mobileDataQuota){
+//                                // politica de armazenamento
+//                                // fila para upload se salvo
+//                                // gera o evento (aplicação e sistema)
+//                                return;
+//                            }
+//                        }
+//                        break;
+//                    case 5: // Utiliza cota por ciclo de uso: Até X todos os tipos de mensagens para mensagens de alta prioridade o uso é liberado.
+//                        if((messageWrapper.getEnvelopedMessage().length() * Character.SIZE) + usedMobileData >= mobileDataQuota){
+//                                // politica de armazenamento
+//                                // fila para upload se salvo
+//                                // gera o evento (aplicação e sistema)
+//                                return;
+//                        }
+//                        break;
+//                    case 6: // Não utilizar dados móveis.
+//                        // politica de armazenamento
+//                        // fila para upload se salvo
+//                        // gera o evento (aplicação e sistema)
+//                        return;
+//                }
+//            }
+//            
+//
+//            // fazer a mensagem para envio via HTTP
+//            try {
+//                // Enviar a mensagem
+//                DeliveryMessagingService service = new DeliveryMessagingService(this);
+//                boolean res = service.sendHttpMessage(
+//                        message.getTarget().getAddress(),
+//                        message.getContentType(),
+//                        messageWrapper.getEnvelopedMessage());
+//
+//                if(res){
+//                    // evento mensagem entregue
+//                    // Politica de armazenamento de mensagens
+//                } else {
+//                    // evento mensagem não entregue. Motivo? 
+//                    // Politica de armazenamento de mensagens
+//                    // adicionar na fila de envio
+//                }
+//
+//
+//            } catch (MalformedURLException ex) {
+//                Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+//            } catch (IOException ex) {
+//                Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+//            } catch (RuntimeException ex) {
+//            }
+//        } else {
+//            // storage policy
+//            // add to the list
+//        }
+//    }
+
+    public String sendMessageWithResponse(Message message) {
+
+        // Recebe a mensagem - Gets the message
+            /*
+         * Se quem está enviando não foi explicitado, então, por padrão, são preenxidos os dados do envio da aplicação.
+         */
+        if (message.getSender() == null) {
+            message.setSender(new Agent());
+            message.getSender().setLayer("application");
+            message.getSender().setUid(getDeviceManager().getUID());
+            message.getSender().setDescription("Sensing Module");
+        }
+        MessageWrapper messageWrapper = new MessageWrapper(message);
+        try {
+            // Cria o envelope XML da UrboSenti correspondente da mensagem
+            messageWrapper.build();
         } catch (ParserConfigurationException ex) {
             Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
         } catch (TransformerConfigurationException ex) {
             Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
         } catch (TransformerException ex) {
             Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (MalformedURLException ex) {
-            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+        try {
+            // Enviar a mensagem
+            DeliveryMessagingService service = new DeliveryMessagingService(this);
+
+            String response = service.sendHttpMessageReturn(this, messageWrapper, currentCommunicationInterface);
+            // se não conseguir tenta por outro
+            // evento de mensagem entregue
+            this.newInternalEvent(2, messageWrapper, message.getTarget(), currentCommunicationInterface);
+            // retorna resultado
+            return response;
         } catch (IOException ex) {
             Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            this.newInternalEvent(3, messageWrapper, message.getTarget(), currentCommunicationInterface);
+        } catch (RuntimeException ex) {
+            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            this.newInternalEvent(3, messageWrapper, message.getTarget(), currentCommunicationInterface);
         }
         return null;
     }
@@ -391,70 +471,122 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
         }
 
     }
-    
-    protected void storagePolice(MessageWrapper messageWrapper){
-    
+
+    /**
+     * @param messageWrapper contém a mensagem e mais informações que podem ser
+     * enviadas
+     *
+     * Políticas: <\br>
+     * 1) Não armazenar nenhuma. <\br>
+     * 2) Apagar todas que foram enviadas com sucesso e armazenar as que não
+     * foram enviadas. Opção padrão. <\br>
+     * 3) Armazenar todas e deixar a aplicação decidir quais apagar. <\br>
+     * 4) Dinâmico (Exige componente de adaptação). Dá poder ao mecanismo
+     * decidir quando apagar uma mensagem armazenada. O usuário pode especificar
+     * uma quantidade ou um tempo.
+     */
+    protected void storagePolice(MessageWrapper messageWrapper) {
+        switch (messageStoragePolicy) {
+            case 1: // Não armazenar nenhuma
+                break;
+            case 2: // Apagar todas que foram enviadas com sucesso e armazenar as que não foram enviadas. Opção padrão.
+                if(messageWrapper.isSent()){ // Não foi enviada. Armazenar
+                
+                } else { // senão foi enviada. Armazenar
+                
+                }
+                break;
+            case 3: // Armazenar todas e deixar a aplicação decidir quais apagar.
+                break;
+            case 4: // Dinâmico (Exige componente de adaptação). Dá poder ao mecanismo decidir quando apagar uma mensagem armazenada. O usuário pode especificar uma quantidade ou um tempo.
+                // Gerar evento -- Mensagem armazenada.
+                break;
+        }
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
-    
-    private synchronized void addMessage(MessageWrapper messageWrapper){
-        if(messageWrapper.getMessage().getPriority() == Message.PREFERENTIAL_PRIORITY){
+
+    private synchronized void addMessage(MessageWrapper messageWrapper) {
+        if (messageWrapper.getMessage().getPriority() == Message.PREFERENTIAL_PRIORITY) {
             this.priorityMessageQueue.add(messageWrapper);
         } else {
             this.normalMessageQueue.add(messageWrapper);
         }
         notifyAll();
     }
-    
-    public synchronized MessageWrapper getNormalMessage() throws InterruptedException{
+
+    public synchronized MessageWrapper getNormalMessage() throws InterruptedException {
         MessageWrapper mw;
-        while(true){
+        while (true) {
             mw = this.normalMessageQueue.peek();
-            if(mw == null) wait();
-            else break;
+            if (mw == null) {
+                wait();
+            } else {
+                break;
+            }
         }
-        return  mw;
+        return mw;
     }
-    
-    public synchronized MessageWrapper getPriorityMessage() throws InterruptedException{
+
+    public synchronized MessageWrapper getPriorityMessage() throws InterruptedException {
         MessageWrapper mw;
-        while(true){
+        while (true) {
             mw = this.priorityMessageQueue.peek();
-            if(mw == null) wait();
-            else break;
+            if (mw == null) {
+                wait();
+            } else {
+                break;
+            }
         }
-        return  mw;
+        return mw;
     }
-    
-    public synchronized MessageWrapper pollNormalMessage() throws InterruptedException{
+
+    public synchronized MessageWrapper pollNormalMessage() throws InterruptedException {
         MessageWrapper mw;
-        while(true){
+        while (true) {
             mw = this.normalMessageQueue.poll();
-            if(mw == null) wait();
-            else break;
+            if (mw == null) {
+                wait();
+            } else {
+                break;
+            }
         }
-        return  mw;
+        return mw;
     }
-    
-    public synchronized MessageWrapper pollPriorityMessage() throws InterruptedException{
+
+    public synchronized MessageWrapper pollPriorityMessage() throws InterruptedException {
         MessageWrapper mw;
-        while(true){
+        while (true) {
             mw = this.priorityMessageQueue.poll();
-            if(mw == null) wait();
-            else break;
+            if (mw == null) {
+                wait();
+            } else {
+                break;
+            }
         }
-        return  mw;
+        return mw;
     }
-    
-    
-    public synchronized MessageWrapper pollMessage() throws InterruptedException{
+
+    public synchronized MessageWrapper pollMessage() throws InterruptedException {
         MessageWrapper mw;
-        while(true){
+        while (true) {
             mw = this.priorityMessageQueue.poll();
-            if(mw == null) wait();
-            else break;
+            if (mw == null) {
+                wait();
+            } else {
+                break;
+            }
         }
-        return  mw;
+        return mw;
     }
-    
-    
+
+    private void newInternalEvent(int eventId, Object... parameters) {
+        // criar os eventos
+        // inserir métricas e medidas no evento
+        // criar constantes para inserir os eventos
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    private void notifyReconectionService() {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
 }

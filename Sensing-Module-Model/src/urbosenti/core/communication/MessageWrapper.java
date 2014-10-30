@@ -30,6 +30,7 @@ public class MessageWrapper {
     private Date createdTime;
     private Date sentTime;
     private boolean checked; // Se foi checada pela aplicação
+    private boolean sent;
     
     // Critérios utilizados para avaliação ao enviar a mensagem
     private int size; // number of characters
@@ -188,5 +189,13 @@ public class MessageWrapper {
         MessageWrapper messageWrapper = new MessageWrapper(m);
         messageWrapper.build();
         return messageWrapper;
+    }
+
+    public boolean isSent() {
+        return sent;
+    }
+
+    public void setSent(boolean sent) {
+        this.sent = sent;
     }
 }
