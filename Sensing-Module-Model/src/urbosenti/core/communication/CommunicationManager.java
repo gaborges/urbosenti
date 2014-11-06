@@ -8,7 +8,9 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.net.MalformedURLException;
+import java.net.SocketTimeoutException;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -44,6 +46,53 @@ import urbosenti.core.events.SystemEvent;
  */
 public class CommunicationManager extends ComponentManager implements AsynchronouslyManageableComponent {
 
+    /**
+     * int EVENT_DISCONNECTION = 1; </ br>
+     *
+     * <ul><li>id: 1</li>
+     * <li>evento: desconexão</li>
+     * <li>parâmetros: Interface desconectada; Destinatário.</li></ul>
+     *
+     */
+    private static final int EVENT_DISCONNECTION = 1;
+    /**
+     * int EVENT_MESSAGE_DELIVERED = 2;
+     *
+     * <ul><li>id: 2</li>
+     * <li>evento: Mensagem Entregue</li>
+     * <li>parâmetros: Mensagem; Destinatário; Interface;</li></ul>
+     *
+     */
+    private static final int EVENT_MESSAGE_DELIVERED = 2;
+    /**
+     * int EVENT_MESSAGE_NOT_DELIVERED = 3;
+     *
+     * <ul><li>id: 3</li>
+     * <li>evento: Mensagem não entregue</li>
+     * <li>parâmetros: Mensagem; Destinatário;</li></ul>
+     *
+     */
+    private static final int EVENT_MESSAGE_NOT_DELIVERED = 3;
+    /**
+     * int EVENT_MESSAGE_RECEIVED = 4;
+     *
+     * <ul><li>id: 4</li>
+     * <li>evento: Mensagem recebida</li>
+     * <li>parâmetros: Origem; Mensagem</li></ul>
+     *
+     */
+    private static final int EVENT_MESSAGE_RECEIVED = 4;
+    /**
+     * int EVENT_MESSAGE_RECEIVED_INVALID_FORMAT = 5;
+     *
+     * <ul><li>id: 5</li>
+     * <li>evento: Mensagem recebida em formato inválido</li>
+     * <li>parâmetros: Origem; Mensagem</li></ul>
+     *
+     */
+    private static final int EVENT_MESSAGE_RECEIVED_INVALID_FORMAT = 5;
+    
+    private List<MessageWrapper> messagesNotChecked;
     private Queue<MessageWrapper> normalMessageQueue;
     private Queue<MessageWrapper> priorityMessageQueue;
     private double mobileDataQuota; // em bytes
@@ -100,7 +149,11 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
         // Preparar configurações inicias para execução
         // Para tanto utilizar o DataManager para acesso aos dados.
         System.out.println("Activating: " + getClass());
-        this.communicationInterfaces = super.getDeviceManager().getDataManager().getCommunicationDAO().getAvailableInterfaces();
+        try {
+            this.communicationInterfaces = super.getDeviceManager().getDataManager().getCommunicationDAO().getAvailableInterfaces();
+        } catch (IOException ex) {
+            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+        }
         this.currentCommunicationInterface = this.communicationInterfaces.get(0);
 //        
 //        this.mobileDataPolicy = 1; // sem mobilidade - Default
@@ -123,7 +176,7 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
         // Setar dinamicamente a politica de mensagens   
 
         // testar se não foi setado os serviços de entraga e reconexão senão criar e iniciar
-        // Testar se os serviços foram iniciados e caso não
+        // Testar se os serviços foram iniciados e caso não, iniciá-los
     }
 
     @Override
@@ -194,42 +247,48 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
             // [Sucesso] Evento Mensagem entregue, após política de armazenamento
             if (res) {
                 // evento mensagem entregue com a interface X
-                this.newInternalEvent(2, messageWrapper, message.getTarget(), currentCommunicationInterface);
+                this.newInternalEvent(EVENT_MESSAGE_DELIVERED, messageWrapper, message.getTarget(), currentCommunicationInterface);
                 this.currentCommunicationInterface.setStatus(CommunicationInterface.STATUS_CONNECTED);
                 // Politica de armazenamento de mensagens
                 this.storagePolice(messageWrapper);
             } else { // [Método não conectado] 
                 currentCommunicationInterface.setStatus(CommunicationInterface.STATUS_DISCONNECTED);
                 // Evento de desconexão da interface X. +++ fazer
-                this.newInternalEvent(1, currentCommunicationInterface, message.getTarget());
+                this.newInternalEvent(EVENT_DISCONNECTION, currentCommunicationInterface, message.getTarget());
                 // [Loop]Tenta próxima interface disponível, se houver passa a ser a atual
                 Iterator<CommunicationInterface> iterator = communicationInterfaces.iterator();
                 while (iterator.hasNext()) {
                     CommunicationInterface next = iterator.next();
-                    res = service.sendHttpMessage(this, messageWrapper, next);
-                    // [Sucesso] Evento Mensagem entregue, após política de armazenamento
-                    if (res) {
-                        // evento mensagem entregue com a interface
-                        this.newInternalEvent(2, messageWrapper, message.getTarget(), next);
-                        // Passar a interface para atual e conectada
-                        this.currentCommunicationInterface = next;
-                        this.currentCommunicationInterface.setStatus(CommunicationInterface.STATUS_CONNECTED);
-                        // Politica de armazenamento de mensagens
-                        this.storagePolice(messageWrapper);
-                        return;
+                    if (next.connect()){
+                        res = service.sendHttpMessage(this, messageWrapper, next);
+                        // [Sucesso] Evento Mensagem entregue, após política de armazenamento
+                        if (res) {
+                            // evento mensagem entregue com a interface
+                            this.newInternalEvent(EVENT_MESSAGE_DELIVERED, messageWrapper, message.getTarget(), next);
+                            // Passar a interface para atual e conectada
+                            this.currentCommunicationInterface = next;
+                            this.currentCommunicationInterface.setStatus(CommunicationInterface.STATUS_CONNECTED);
+                            // Politica de armazenamento de mensagens
+                            this.storagePolice(messageWrapper);
+                            return;
+                        } else { // [Interface indisponível]
+                            next.setStatus(CommunicationInterface.STATUS_DISCONNECTED);
+                            // Evento de desconexão da interface X. +++ fazer
+                            this.newInternalEvent(EVENT_DISCONNECTION, next, message.getTarget());
+                        }
                     } else { // [Interface indisponível]
                         next.setStatus(CommunicationInterface.STATUS_DISCONNECTED);
                         // Evento de desconexão da interface X. +++ fazer
-                        this.newInternalEvent(1, next, message.getTarget());
+                        this.newInternalEvent(EVENT_DISCONNECTION, next, message.getTarget());
                     }
                 }
 
                 // [Nenhuma interface disponível] Evento de mensagem não entregue. 
 
                 // Ativação da política de reconexão.
-                this.notifyReconectionService();
+                //this.notifyReconectionService();
                 // evento mensagem não entregue. Motivo?
-                this.newInternalEvent(3, messageWrapper, message.getTarget());
+                this.newInternalEvent(EVENT_MESSAGE_NOT_DELIVERED, messageWrapper, message.getTarget());
                 // Politica de armazenamento de mensagens
                 this.storagePolice(messageWrapper);
                 // Adicionar na fila de envio
@@ -238,6 +297,8 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
 
         } catch (RuntimeException ex) {
             System.out.println("Error: " + ex);
+        } catch (IOException ex) {
+            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 // -- Old    
@@ -374,27 +435,149 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
             String response = service.sendHttpMessageReturn(this, messageWrapper, currentCommunicationInterface);
             // se não conseguir tenta por outro
             // evento de mensagem entregue
-            this.newInternalEvent(2, messageWrapper, message.getTarget(), currentCommunicationInterface);
+            this.newInternalEvent(EVENT_MESSAGE_DELIVERED, messageWrapper, message.getTarget(), currentCommunicationInterface);
             // retorna resultado
             return response;
+        } catch (SocketTimeoutException ex){
+            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            this.newInternalEvent(EVENT_MESSAGE_NOT_DELIVERED, messageWrapper, message.getTarget(), currentCommunicationInterface);
         } catch (IOException ex) {
             Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
-            this.newInternalEvent(3, messageWrapper, message.getTarget(), currentCommunicationInterface);
+            this.newInternalEvent(EVENT_MESSAGE_NOT_DELIVERED, messageWrapper, message.getTarget(), currentCommunicationInterface);
         } catch (RuntimeException ex) {
             Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
-            this.newInternalEvent(3, messageWrapper, message.getTarget(), currentCommunicationInterface);
-        }
+            this.newInternalEvent(EVENT_MESSAGE_NOT_DELIVERED, messageWrapper, message.getTarget(), currentCommunicationInterface);
+        } 
         return null;
     }
 
     public String sendMessageWithResponse(Message message, int timeout) {
-        // fazer a mensagem para envio via HTTP
+        // Recebe a mensagem - Gets the message
+            /*
+         * Se quem está enviando não foi explicitado, então, por padrão, são preenxidos os dados do envio da aplicação.
+         */
+        if (message.getSender() == null) {
+            message.setSender(new Agent());
+            message.getSender().setLayer("application");
+            message.getSender().setUid(getDeviceManager().getUID());
+            message.getSender().setDescription("Sensing Module");
+        }
+        MessageWrapper messageWrapper = new MessageWrapper(message);
+        messageWrapper.setTimeout(timeout);
+        try {
+            // Cria o envelope XML da UrboSenti correspondente da mensagem
+            messageWrapper.build();
+        } catch (ParserConfigurationException ex) {
+            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (TransformerConfigurationException ex) {
+            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (TransformerException ex) {
+            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+        try {
+            // Enviar a mensagem
+            DeliveryMessagingService service = new DeliveryMessagingService(this);
+
+            String response = service.sendHttpMessageReturn(this, messageWrapper, currentCommunicationInterface);
+            // se não conseguir tenta por outro
+            // evento de mensagem entregue
+            this.newInternalEvent(EVENT_MESSAGE_DELIVERED, messageWrapper, message.getTarget(), currentCommunicationInterface);
+            // retorna resultado
+            return response;
+        } catch (SocketTimeoutException ex){
+            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            this.newInternalEvent(EVENT_MESSAGE_NOT_DELIVERED, messageWrapper, message.getTarget(), currentCommunicationInterface);
+        } catch (IOException ex) {
+            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            this.newInternalEvent(EVENT_MESSAGE_NOT_DELIVERED, messageWrapper, message.getTarget(), currentCommunicationInterface);
+        } catch (RuntimeException ex) {
+            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            this.newInternalEvent(EVENT_MESSAGE_NOT_DELIVERED, messageWrapper, message.getTarget(), currentCommunicationInterface);
+        } 
         return null;
     }
 
     public void sendReport(Message message) {
     }
 
+    protected void newPushMessage(Agent origin, String bruteMessage) {
+        try {
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+
+            // Criar o documento e com verte a String em DOC
+            Document doc = builder.parse(new InputSource(new StringReader(bruteMessage)));
+
+//            MessageHeader msgHeader = new MessageHeader();
+            Message msg = new Message();
+            msg.setSender(new Agent());
+            msg.setTarget(new Agent());
+            Element response = doc.getDocumentElement();
+            Element header = (Element) response.getElementsByTagName("header").item(0);
+//            msgHeader.setSenderUid(((Element) header.getElementsByTagName("origin").item(0)).getElementsByTagName("uid").item(0).getTextContent());
+//            msgHeader.setSenderName(((Element) header.getElementsByTagName("origin").item(0)).getElementsByTagName("name").item(0).getTextContent());
+//            msgHeader.setSenderAddress(((Element) header.getElementsByTagName("origin").item(0)).getElementsByTagName("address").item(0).getTextContent());
+//            msgHeader.setSenderLayer(((Element) header.getElementsByTagName("origin").item(0)).getElementsByTagName("layer").item(0).getTextContent());
+//            msgHeader.setTargetUid(((Element) header.getElementsByTagName("target").item(0)).getElementsByTagName("uid").item(0).getTextContent());
+//            msgHeader.setTargetAddress(((Element) header.getElementsByTagName("target").item(0)).getElementsByTagName("address").item(0).getTextContent());
+//            msgHeader.setTargetLayer(((Element) header.getElementsByTagName("target").item(0)).getElementsByTagName("layer").item(0).getTextContent());
+//            msgHeader.setContentType( header.getElementsByTagName("contentType").item(0).getTextContent());
+//            msgHeader.setSubject(header.getElementsByTagName("subject").item(0).getTextContent());
+
+            msg.getSender().setUid(((Element) header.getElementsByTagName("origin").item(0)).getElementsByTagName("uid").item(0).getTextContent());
+            if (((Element) header.getElementsByTagName("origin").item(0)).getElementsByTagName("name").getLength() > 0) {
+                msg.getSender().setDescription(((Element) header.getElementsByTagName("origin").item(0)).getElementsByTagName("name").item(0).getTextContent());
+            }
+            if (((Element) header.getElementsByTagName("origin").item(0)).getElementsByTagName("address").getLength() > 0) {
+                msg.getSender().setAddress(((Element) header.getElementsByTagName("origin").item(0)).getElementsByTagName("address").item(0).getTextContent());
+            }
+            msg.getSender().setLayer(((Element) header.getElementsByTagName("origin").item(0)).getElementsByTagName("layer").item(0).getTextContent());
+            msg.getTarget().setUid(((Element) header.getElementsByTagName("target").item(0)).getElementsByTagName("uid").item(0).getTextContent());
+            msg.getTarget().setAddress(((Element) header.getElementsByTagName("target").item(0)).getElementsByTagName("address").item(0).getTextContent());
+            msg.getTarget().setLayer(((Element) header.getElementsByTagName("target").item(0)).getElementsByTagName("layer").item(0).getTextContent());
+            msg.setContentType(header.getElementsByTagName("contentType").item(0).getTextContent());
+            msg.setSubject(header.getElementsByTagName("subject").item(0).getTextContent());
+
+            if (header.getElementsByTagName("priority").getLength() > 0) {
+                if (header.getElementsByTagName("priority").item(0).getTextContent().equals("preferential")) {
+                    msg.setPreferentialPriority();
+                } else {
+                    msg.setNormalPriority();
+                }
+            }
+
+            msg.setContent(response.getElementsByTagName("content").item(0).getTextContent());
+//            msg.setHeader(msgHeader);
+//
+//            Agent origin = new Agent();
+//            origin.setAddress(msgHeader.getSenderAddress());
+//            origin.setDescription(msgHeader.getSenderName());
+//            origin.setLayer(msgHeader.getSenderLayer());
+//            origin.setUid(msgHeader.getSenderUid());
+
+            if (origin != null && msg.getSender().getAddress().isEmpty()) {
+                msg.getSender().setAddress(origin.getAddress());
+            }
+
+            System.out.println("Layer: " + msg.getTarget().getLayer());
+
+            this.newInternalEvent(EVENT_MESSAGE_RECEIVED, msg.getSender(), msg);
+
+        } catch (ParserConfigurationException ex) {
+            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            this.newInternalEvent(EVENT_MESSAGE_RECEIVED_INVALID_FORMAT, origin, bruteMessage);
+        } catch (SAXException ex) {
+            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            this.newInternalEvent(EVENT_MESSAGE_RECEIVED_INVALID_FORMAT, origin, bruteMessage);
+        } catch (IOException ex) {
+            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            this.newInternalEvent(EVENT_MESSAGE_RECEIVED_INVALID_FORMAT, origin, bruteMessage);
+        }
+
+    }
+    
+    @Deprecated
     protected void newPushMessage(String bruteMessage) {
         try {
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
@@ -458,16 +641,21 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
                 event.setName("new message");
                 event.setTime(new Date());
                 event.setValue(msg);
-                getEventManager().newEvent(event);
+                //getEventManager().newEvent(event);
+                this.newInternalEvent(EVENT_MESSAGE_RECEIVED, event);
             } else {
+                this.newInternalEvent(EVENT_MESSAGE_RECEIVED_INVALID_FORMAT, bruteMessage);
                 // do one error message -- create it!
             }
         } catch (ParserConfigurationException ex) {
             Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            this.newInternalEvent(EVENT_MESSAGE_RECEIVED_INVALID_FORMAT, bruteMessage);
         } catch (SAXException ex) {
             Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            this.newInternalEvent(EVENT_MESSAGE_RECEIVED_INVALID_FORMAT, bruteMessage);
         } catch (IOException ex) {
             Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            this.newInternalEvent(EVENT_MESSAGE_RECEIVED_INVALID_FORMAT, bruteMessage);
         }
 
     }
@@ -490,10 +678,8 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
             case 1: // Não armazenar nenhuma
                 break;
             case 2: // Apagar todas que foram enviadas com sucesso e armazenar as que não foram enviadas. Opção padrão.
-                if(messageWrapper.isSent()){ // Não foi enviada. Armazenar
-                
+                if (messageWrapper.isSent()) { // Não foi enviada. Armazenar
                 } else { // senão foi enviada. Armazenar
-                
                 }
                 break;
             case 3: // Armazenar todas e deixar a aplicação decidir quais apagar.
@@ -579,14 +765,144 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
         return mw;
     }
 
-    private void newInternalEvent(int eventId, Object... parameters) {
-        // criar os eventos
+    private synchronized void newInternalEvent(int eventId, Object... parameters) {
+        Agent agent;
+        CommunicationInterface ci;
+        MessageWrapper mw;
+        Event event = null;
+        Message msg;
+        HashMap<String, Object> values;
+        String bruteMessage;
+        switch (eventId) {
+            case EVENT_DISCONNECTION: // 1 - Desconexão - parâmetros: Interface desconectada; Destinatário.
+                ci = (CommunicationInterface) parameters[0];
+                agent = (Agent) parameters[1];
+                
+                // Adiciona os valores que serão passados para serem tratados
+                values = new HashMap<String, Object>();
+                values.put("interface", ci);
+                values.put("targuet", agent);                
+                
+                // cria o evento
+                event = new SystemEvent(this);// Event: new Message
+                event.setId(1);
+                event.setName("Desconexão");
+                event.setTime(new Date());                               
+                event.setValue(values);
+                
+                // envia o evento
+                getEventManager().newEvent(event);
+               
+                break;
+            case EVENT_MESSAGE_DELIVERED: // 2 - Mensagem Entregue - parâmetros: Mensagem; Destinatário; Interface;
+                mw = (MessageWrapper) parameters[0];
+                agent = (Agent) parameters[1];
+                ci = (CommunicationInterface) parameters[2];
+                
+                // Adiciona os valores que serão passados para serem tratados
+                values = new HashMap<String, Object>();
+                values.put("messageWrapper", mw);
+                values.put("targuet", agent);                
+                values.put("interface", ci);
+                
+                // cria o evento
+                event = new SystemEvent(this);// Event: new Message
+                event.setId(2);
+                event.setName("Mensagem entregue");
+                event.setTime(new Date());                               
+                event.setValue(values);
+                
+                // envia o evento
+                getEventManager().newEvent(event);
+                
+                break;
+            case EVENT_MESSAGE_NOT_DELIVERED: // 3 - Mensagem Não Entregue - parâmetros: Mensagem; Destinatário;
+                mw = (MessageWrapper) parameters[0];
+                agent = (Agent) parameters[1];
+                
+                // Adiciona os valores que serão passados para serem tratados
+                values = new HashMap<String, Object>();
+                values.put("messageWrapper", mw);
+                values.put("targuet", agent);
+                
+                // cria o evento
+                event = new SystemEvent(this);// Event: new Message
+                event.setId(3);
+                event.setName("Mensagem não entregue");
+                event.setTime(new Date());                               
+                event.setValue(values);
+                
+                // envia o evento
+                getEventManager().newEvent(event);
+                break;
+
+            case EVENT_MESSAGE_RECEIVED: // 4 - Mensagem Recebida - parâmetros: Origem; Mensagem
+                agent = (Agent) parameters[0];
+                msg = (Message) parameters[1];
+                
+                if (msg != null) {
+                    if (msg.getTarget().getLayer().equals("system")) { // if the target is the system
+                        event = new SystemEvent(msg.getSender());
+                    } else if (msg.getTarget().getLayer().equals("application")) { // if the target is the application
+                        event = new ApplicationEvent(msg.getSender());
+                    }
+                    
+                    // Adiciona os valores que serão passados para serem tratados
+                    values = new HashMap<String, Object>();
+                    values.put("message", msg);
+                    values.put("sender", agent);
+                    
+                    // Event: new Message
+                    if (event != null) { 
+                        event.setId(4);
+                        event.setName("new message");
+                        event.setTime(new Date());
+                        event.setValue(values);
+                        
+                         // envia o evento
+                        getEventManager().newEvent(event);
+                    }
+                }
+                break;
+
+            case EVENT_MESSAGE_RECEIVED_INVALID_FORMAT: // 5 - Mensagem Recebida em Formato Inválido - parâmetros: Origem; Mensagem
+                agent = (Agent) parameters[0];
+                bruteMessage = (String) parameters[1];
+       
+                // Adiciona os valores que serão passados para serem tratados
+                values = new HashMap<String, Object>();
+                values.put("message", bruteMessage);
+                values.put("sender", agent);
+                    
+                // Event: new Message
+                event = new SystemEvent(agent);
+
+                event.setId(5);
+                event.setName("Message received with invalid format");
+                event.setTime(new Date());
+                event.setValue(values);
+
+                // envia o evento
+                getEventManager().newEvent(event);
+                break;
+        }
         // inserir métricas e medidas no evento
-        // criar constantes para inserir os eventos
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
     private void notifyReconectionService() {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
+
+    public CommunicationInterface getCurrentCommunicationInterface() {
+        return currentCommunicationInterface;
+    }
+
+    void notifyReconnection(CommunicationInterface current) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    void notifyReconnectionNotSucceed(CommunicationInterface current) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+    
 }

@@ -4,11 +4,16 @@
  */
 package urbosenti.core.data;
 
+import java.io.IOException;
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.List;
 import urbosenti.core.communication.CommunicationInterface;
 import urbosenti.core.communication.MessageWrapper;
+import urbosenti.core.communication.interfaces.DTNCommunicationInterface;
+import urbosenti.core.communication.interfaces.MobileDataCommunicationInterface;
+import urbosenti.core.communication.interfaces.WiredCommunicationInterface;
+import urbosenti.core.communication.interfaces.WirelessCommunicationInterface;
 
 /**
  *
@@ -90,20 +95,17 @@ public class CommunicationDAO {
         }
     }
     
-    public List<CommunicationInterface> getAvailableInterfaces(){
+    public List<CommunicationInterface> getAvailableInterfaces() throws IOException{
         List<CommunicationInterface> list = new ArrayList<CommunicationInterface>();
-        CommunicationInterface ci = new CommunicationInterface();
-//        ci.setId(1);
-//        ci.setName("Wired Interface");
-//        ci.setUsesMobileData(false);
-//        ci.setStatus(CommunicationInterface.STATUS_UNAVAILABLE);
-//        list.add(ci);
-        ci = new CommunicationInterface();
-        ci.setId(2);
-        ci.setName("Wireless Interface");
-        ci.setUsesMobileData(false);
-        ci.setStatus(CommunicationInterface.STATUS_AVAILABLE);
-        list.add(ci);
+        // Poderia fazer uma busca no banco        
+        CommunicationInterface ci = new WiredCommunicationInterface(); // this is available
+        if(ci.isAvailable()) list.add(ci);
+        ci = new MobileDataCommunicationInterface(); // testar mais tarde
+        if(ci.isAvailable()) list.add(ci); 
+        ci = new DTNCommunicationInterface();
+        if(ci.isAvailable()) list.add(ci); 
+        ci = new WirelessCommunicationInterface();
+        if(ci.isAvailable()) list.add(ci); 
 //        ci = new CommunicationInterface(); // Mais tarde
 //        ci.setId(3);
 //        ci.setName("Delay Tolerant Network (DTN) Interface");

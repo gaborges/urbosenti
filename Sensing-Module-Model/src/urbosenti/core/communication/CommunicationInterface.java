@@ -4,11 +4,13 @@
  */
 package urbosenti.core.communication;
 
+import java.io.IOException;
+
 /**
  *
  * @author Guilherme
  */
-public class CommunicationInterface {
+public abstract class CommunicationInterface {
     
     public final static int STATUS_DISCONNECTED = 0;
     public final static int STATUS_CONNECTED = 1;
@@ -26,6 +28,15 @@ public class CommunicationInterface {
     private int timeout; // ms
     private boolean usesMobileData;
 
+    public CommunicationInterface() {
+        averageLatency = 0;
+        averageThroughput = 0;
+        mobileDataUse = 0;
+        score = 0;
+        timeout = 0;
+        usesMobileData = false;
+    }
+    
     public boolean isUsesMobileData() {
         return usesMobileData;
     }
@@ -97,5 +108,14 @@ public class CommunicationInterface {
     public void setScore(int score) {
         this.score = score;
     }
-        
+    /**
+     * 
+     * @return retorna true se foi suportada pelo sistema senão retorna false; OBS.: o Desenvolvedor deve definir é é possível ou não utilizá-la por implementação
+     * @throws IOException
+     * @throws UnsupportedOperationException 
+     */    
+    public abstract boolean isAvailable() throws IOException;
+    public abstract boolean testConnection() throws IOException, UnsupportedOperationException;
+    public abstract boolean connect() throws IOException, UnsupportedOperationException;
+    public abstract boolean disconnect() throws IOException, UnsupportedOperationException;
 }

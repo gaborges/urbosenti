@@ -34,7 +34,7 @@ public class MessageWrapper {
     
     // Critérios utilizados para avaliação ao enviar a mensagem
     private int size; // number of characters
-    private int responseTime; // milliseconds
+    private long responseTime; // milliseconds
         
     private CommunicationInterface usedCommunicationInterface;
     
@@ -65,7 +65,7 @@ public class MessageWrapper {
         return responseTime;
     }
 
-    public void setResponseTime(int responseTime) {
+    public void setResponseTime(long responseTime) {
         this.responseTime = responseTime;
     }
 
@@ -181,7 +181,7 @@ public class MessageWrapper {
             serializer.transform(new DOMSource(doc), new StreamResult(stw));
             
             this.envelopedMessage =  stw.getBuffer().toString();
-            this.size = this.envelopedMessage.length();
+            this.size = (this.envelopedMessage.length());
             this.createdTime = new Date();
     }
     
