@@ -4,6 +4,12 @@
  */
 package urbosenti.core.data;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import urbosenti.core.communication.CommunicationInterface;
 import urbosenti.core.device.ComponentManager;
 import urbosenti.core.device.DeviceManager;
 import urbosenti.core.events.Action;
@@ -16,16 +22,29 @@ import urbosenti.core.events.EventManager;
  */
 public class DataManager extends ComponentManager implements AsynchronouslyManageableComponent{
 
-    
+    private List<CommunicationInterface> supportedCommunicationInterfaces;
     CommunicationDAO communicationDAO;
     
     public DataManager(DeviceManager deviceManager) {
         super(deviceManager);
+        this.supportedCommunicationInterfaces = new ArrayList<CommunicationInterface>();
     }
     
     @Override
     public void onCreate() {
         communicationDAO = new CommunicationDAO();
+        // Carrega interfaces de comunicação disponíveis (testa disponibilidade antes de executar - lookback)
+        for(CommunicationInterface ci : supportedCommunicationInterfaces){
+            try {
+                if(ci.isAvailable()){
+                    this.communicationDAO.addAvailableCommunicationInterface(ci);
+                }
+            } catch (UnsupportedOperationException ex){
+                Logger.getLogger(DataManager.class.getName()).log(Level.SEVERE, "Not implemented yet.", ex);
+            } catch (IOException ex) {
+                Logger.getLogger(DataManager.class.getName()).log(Level.SEVERE, null, ex);
+            } 
+        }
         // Carregar dados e configurações que serão utilizados para execução em memória
         // Preparar configurações inicias para execução
         // Para tanto utilizar o DataManager para acesso aos dados.
@@ -43,4 +62,7 @@ public class DataManager extends ComponentManager implements AsynchronouslyManag
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
     
+    public void addSupportedCommunicationInterface(CommunicationInterface ci){
+        supportedCommunicationInterfaces.add(ci);
+    }
 }

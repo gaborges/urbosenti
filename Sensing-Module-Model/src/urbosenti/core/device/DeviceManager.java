@@ -7,6 +7,7 @@ package urbosenti.core.device;
 import urbosenti.adaptation.AdaptationManager;
 import urbosenti.concerns.ConcernManager;
 import urbosenti.context.ContextManager;
+import urbosenti.core.communication.CommunicationInterface;
 import urbosenti.core.communication.CommunicationManager;
 import urbosenti.core.data.DataManager;
 import urbosenti.core.events.Action;
@@ -186,6 +187,10 @@ public class DeviceManager extends ComponentManager implements AsynchronouslyMan
     @Override
     public void applyAction(Action action) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    public void addSupportedCommunicationInterface(CommunicationInterface communicationInterface) {
+        dataManager.addSupportedCommunicationInterface(communicationInterface);
     }
 
 }

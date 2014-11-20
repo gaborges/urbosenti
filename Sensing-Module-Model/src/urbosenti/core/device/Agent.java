@@ -9,6 +9,10 @@ package urbosenti.core.device;
  * @author Guilherme
  */
 public class Agent {
+    
+    public static final String LAYER_SYSTEM = "system";
+    public static final String LAYER_APPLICATION = "application";
+    
     private String uid;
     private String address;
     private String layer;
@@ -30,10 +34,22 @@ public class Agent {
         this.address = address;
     }
 
+    /**
+     * 
+     * @return Retorna a camada do agente:
+     *  Agent.LAYER_SYSTEM = "system";
+     *  Agent.LAYER_APPLICATION = "application";
+     */
     public String getLayer() {
         return layer;
     }
 
+    /**
+     * 
+     * @param layer pode conter os valores:
+     *  Agent.LAYER_SYSTEM = "system";
+     *  Agent.LAYER_APPLICATION = "application";
+     */
     public void setLayer(String layer) {
         this.layer = layer;
     }
