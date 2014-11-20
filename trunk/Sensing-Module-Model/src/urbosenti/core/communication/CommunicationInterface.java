@@ -5,12 +5,13 @@
 package urbosenti.core.communication;
 
 import java.io.IOException;
+import java.util.Date;
 
 /**
  *
  * @author Guilherme
  */
-public abstract class CommunicationInterface {
+public abstract class CommunicationInterface<Object> {
     
     public final static int STATUS_DISCONNECTED = 0;
     public final static int STATUS_CONNECTED = 1;
@@ -84,6 +85,63 @@ public abstract class CommunicationInterface {
     public void setAverageThroughput(double averageThroughput) {
         this.averageThroughput = averageThroughput;
     }
+    
+    public void updateEvaluationMetrics(MessageWrapper messageWrapper, Date initialTime, Date finalTime){
+        messageWrapper.setSentTime(new Date());
+        messageWrapper.setResponseTime(finalTime.getTime() - initialTime.getTime());
+        messageWrapper.setSent(true);
+        messageWrapper.setUsedCommunicationInterface(this);
+        // Adiciona a latência média se naõ for a primeira vez
+        if(this.getAverageLatency() > 0){
+            this.setAverageLatency((this.getAverageLatency() + messageWrapper.getResponseTime())/2);
+        }else{
+            this.setAverageLatency(messageWrapper.getResponseTime());
+        }  
+        // Adiciona a troughput médio se não for a primeira vez
+        if(this.getAverageThroughput()> 0){
+            this.setAverageThroughput((this.getAverageThroughput() + messageWrapper.getSize())/2);
+        }else{
+            this.setAverageThroughput(messageWrapper.getSize());
+        }  
+    }
+    
+    public void updateEvaluationMetrics(MessageWrapper messageWrapper, long responseTime){
+        messageWrapper.setSentTime(new Date());
+        messageWrapper.setResponseTime(responseTime);
+        messageWrapper.setSent(true);
+        messageWrapper.setUsedCommunicationInterface(this);
+        // Adiciona a latência média se naõ for a primeira vez
+        if(this.getAverageLatency() > 0){
+            this.setAverageLatency((this.getAverageLatency() + messageWrapper.getResponseTime())/2);
+        }else{
+            this.setAverageLatency(messageWrapper.getResponseTime());
+        }  
+        // Adiciona a troughput médio se não for a primeira vez
+        if(this.getAverageThroughput()> 0){
+            this.setAverageThroughput((this.getAverageThroughput() + messageWrapper.getSize())/2);
+        }else{
+            this.setAverageThroughput(messageWrapper.getSize());
+        }  
+    }
+    
+     public void updateEvaluationMetrics(MessageWrapper messageWrapper, Date initialTime){
+        messageWrapper.setSentTime(new Date());
+        messageWrapper.setResponseTime((new Date()).getTime() - initialTime.getTime());
+        messageWrapper.setSent(true);
+        messageWrapper.setUsedCommunicationInterface(this);
+        // Adiciona a latência média se naõ for a primeira vez
+        if(this.getAverageLatency() > 0){
+            this.setAverageLatency((this.getAverageLatency() + messageWrapper.getResponseTime())/2);
+        }else{
+            this.setAverageLatency(messageWrapper.getResponseTime());
+        }  
+        // Adiciona a troughput médio se não for a primeira vez
+        if(this.getAverageThroughput()> 0){
+            this.setAverageThroughput((this.getAverageThroughput() + messageWrapper.getSize())/2);
+        }else{
+            this.setAverageThroughput(messageWrapper.getSize());
+        }  
+    }
 
     public int getStatus() {
         return status;
@@ -116,6 +174,9 @@ public abstract class CommunicationInterface {
      */    
     public abstract boolean isAvailable() throws IOException;
     public abstract boolean testConnection() throws IOException, UnsupportedOperationException;
-    public abstract boolean connect() throws IOException, UnsupportedOperationException;
+    public abstract boolean connect() throws IOException, UnsupportedOperationException; // remover
     public abstract boolean disconnect() throws IOException, UnsupportedOperationException;
+    public abstract boolean sendMessage(CommunicationManager communicationManager, MessageWrapper messageWrapper) throws java.net.SocketTimeoutException,IOException;
+    public abstract Object sendMessageWithResponse(CommunicationManager communicationManager, MessageWrapper messageWrapper) throws java.net.SocketTimeoutException,IOException;
+    public abstract Object receiveMessage() throws java.net.SocketTimeoutException,IOException;
 }

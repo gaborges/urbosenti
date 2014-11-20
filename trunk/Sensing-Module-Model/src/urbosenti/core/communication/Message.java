@@ -4,6 +4,7 @@
  */
 package urbosenti.core.communication;
 
+import java.util.Date;
 import urbosenti.core.device.Agent;
 
 /**
@@ -13,7 +14,7 @@ import urbosenti.core.device.Agent;
 public class Message {
     
     public static final int NORMAL_PRIORITY = 0;
-    public static final int PREFERENTIAL_PRIORITY = 1;
+    public static final int PREFERENTIAL_PRIORITY = 1;  
     
     private Agent sender;
     private Agent target;
@@ -23,12 +24,21 @@ public class Message {
     
     private int priority;
     
+    private Boolean anonymousUpload;
+    
     private String content;
+    
+    private Date createdTime;
+    
+    private Boolean usesUrboSentiXMLEnvelope;
    
     public Message() {
         this.priority = Message.NORMAL_PRIORITY;
+        this.usesUrboSentiXMLEnvelope = true;
+        this.createdTime = new Date();
+        this.anonymousUpload = false;
     }   
-    
+         
     public String getContent() {
         return content;
     }
@@ -80,11 +90,29 @@ public class Message {
     public void setPreferentialPriority() {
         this.priority = Message.PREFERENTIAL_PRIORITY;
     }
-       
+
+    public boolean isUsesUrboSentiXMLEnvelope() {
+        return usesUrboSentiXMLEnvelope;
+    }
+
+    public void setUsesUrboSentiXMLEnvelope(boolean usesUrboSentiXMLEnvelope) {
+        this.usesUrboSentiXMLEnvelope = usesUrboSentiXMLEnvelope;
+    }        
+    
     @Override
     public String toString() {
         return "Message{" +", sender=" + sender.toString() + ", target=" + target.toString() + ", subject=" + subject + ", contentType=" + contentType + ", content=" + content + '}';
     }
 
-    
+    public Date getCreatedTime() {
+        return createdTime;
+    }
+
+    public Boolean isAnonymousUpload() {
+        return anonymousUpload;
+    }
+
+    public void setAnonymousUpload(Boolean anonymousUpload) {
+        this.anonymousUpload = anonymousUpload;
+    }    
 }

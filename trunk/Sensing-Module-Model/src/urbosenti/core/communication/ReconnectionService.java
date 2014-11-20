@@ -59,25 +59,30 @@ public class ReconnectionService implements Runnable {
             reconectionProcess();
         } catch (InterruptedException ex) {
             Logger.getLogger(ReconnectionService.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (IOException ex) {
-            Logger.getLogger(ReconnectionService.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 
-    public void reconectionProcess() throws InterruptedException, IOException {
+    public void reconectionProcess() throws InterruptedException {
         CommunicationInterface current;
 
         if (this.methodOfReconnection == 1) {
             while (!reconnected) {
                 Iterator<CommunicationInterface> iterator = communicationInterfaces.iterator();
                 while (iterator.hasNext()) {
-                    current = iterator.next();
-                    synchronized (this) {
-                        wait(reconnectionTime);
-                    }
-                    if (current.testConnection()) {
-                        communicationManager.notifyReconnection(current);
-                        reconnected = true;
+                    
+                        current = iterator.next();
+                    try {
+                        synchronized (this) {
+                            wait(reconnectionTime);
+                        }
+                        if (current.testConnection()) {
+                            communicationManager.notifyReconnection(current);
+                            reconnected = true;
+                        }
+                    } catch (IOException ex) {
+                        Logger.getLogger(ReconnectionService.class.getName()).log(Level.SEVERE, null, ex);
+                    } catch (UnsupportedOperationException ex) {
+                        Logger.getLogger(ReconnectionService.class.getName()).log(Level.SEVERE, null, ex);
                     }
                 }
             }
@@ -90,10 +95,16 @@ public class ReconnectionService implements Runnable {
                 Iterator<CommunicationInterface> iterator = communicationInterfaces.iterator();
                 while (iterator.hasNext()) {
                     current = iterator.next();
-                    if (current.testConnection()) {
-                        communicationManager.notifyReconnection(current);
-                        reconnected = true;
-                    } else {
+                    try {
+                        if (current.testConnection()) {
+                            communicationManager.notifyReconnection(current);
+                            reconnected = true;
+                        } else {
+                            communicationManager.notifyReconnectionNotSucceed(current);
+                        }
+                    } catch (IOException ex) {
+                        communicationManager.notifyReconnectionNotSucceed(current);
+                    } catch (UnsupportedOperationException ex) {
                         communicationManager.notifyReconnectionNotSucceed(current);
                     }
                 }

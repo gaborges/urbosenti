@@ -10,6 +10,10 @@ import urbosenti.adaptation.AdaptationManager;
 import urbosenti.core.communication.CommunicationManager;
 import urbosenti.core.communication.DeliveryMessagingService;
 import urbosenti.core.communication.PushServiceReceiver;
+import urbosenti.core.communication.interfaces.DTNCommunicationInterface;
+import urbosenti.core.communication.interfaces.MobileDataCommunicationInterface;
+import urbosenti.core.communication.interfaces.WiredCommunicationInterface;
+import urbosenti.core.communication.interfaces.WirelessCommunicationInterface;
 import urbosenti.core.data.DataManager;
 import urbosenti.core.device.DeviceManager;
 import urbosenti.core.events.EventManager;
@@ -28,9 +32,14 @@ import urbosenti.test.TestCommunication;
 public class Main {
     public static void main(String[] args) {
         // Instanciar componentes -- Device manager e os demais onDemand
-        EventManager e = new EventManager();
         DeviceManager deviceManager = new DeviceManager(); // Objetos Core já estão incanciados internamente
         deviceManager.enableAdaptationComponent(); // Habilita componente de adaptação
+     
+        // Adicionar as interfaces de comunicação suportadas --- Inicialmente manual. Após adicionar um processo automático
+        deviceManager.addSupportedCommunicationInterface(new WiredCommunicationInterface());
+        deviceManager.addSupportedCommunicationInterface(new WirelessCommunicationInterface()); // não implementado
+        deviceManager.addSupportedCommunicationInterface(new MobileDataCommunicationInterface()); // não implementado
+        deviceManager.addSupportedCommunicationInterface(new DTNCommunicationInterface()); // não implementado
         
         // Processo de Descoberta, executa todos os onCreate
         deviceManager.onCreate();

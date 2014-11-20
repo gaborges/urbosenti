@@ -23,6 +23,7 @@ import org.w3c.dom.Element;
  * @author Guilherme
  */
 public class MessageWrapper {
+
     private int id; // id of in te local storage system
     private Message message;
     private int timeout;
@@ -31,14 +32,10 @@ public class MessageWrapper {
     private Date sentTime;
     private boolean checked; // Se foi checada pela aplicação
     private boolean sent;
-    
     // Critérios utilizados para avaliação ao enviar a mensagem
     private int size; // number of characters
     private long responseTime; // milliseconds
-        
     private CommunicationInterface usedCommunicationInterface;
-    
-    
 
     public MessageWrapper(Message message) {
         this.message = message;
@@ -52,11 +49,11 @@ public class MessageWrapper {
     public void setChecked() {
         this.checked = true;
     }
-    
+
     public void setUnChecked() {
         this.checked = false;
     }
-    
+
     public int getSize() {
         return size;
     }
@@ -75,7 +72,7 @@ public class MessageWrapper {
 
     public void setUsedCommunicationInterface(CommunicationInterface usedCommunicationInterface) {
         this.usedCommunicationInterface = usedCommunicationInterface;
-    }    
+    }
 
     public int getId() {
         return id;
@@ -122,12 +119,14 @@ public class MessageWrapper {
     }
 
     void build() throws ParserConfigurationException, TransformerConfigurationException, TransformerException {
-        // gerar mensagem em XML
+        // se a mensagem for usar o envelope.
+        if (message.isUsesUrboSentiXMLEnvelope()) {
+            // gerar mensagem em XML
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             DocumentBuilder builder = factory.newDocumentBuilder();
             // Criar o documento e com verte a String em DOC
             Document doc = builder.newDocument();
-            Element root = doc.createElement("message"), 
+            Element root = doc.createElement("message"),
                     content = doc.createElement("conteudo"),
                     header = doc.createElement("header"),
                     origin = doc.createElement("origin"),
@@ -135,8 +134,9 @@ public class MessageWrapper {
                     layer = doc.createElement("layer"),
                     uid = doc.createElement("uid"),
                     address = doc.createElement("address"),
-                    name = doc.createElement("name");
-            
+                    name = doc.createElement("name"),
+                    anonymousUpload = doc.createElement("anonymousUpload");
+
             // origin
             uid.setTextContent(message.getSender().getUid());
             name.setTextContent(message.getSender().getDescription());
@@ -144,7 +144,7 @@ public class MessageWrapper {
             origin.appendChild(uid);
             origin.appendChild(name);
             origin.appendChild(layer);
-            
+
             // target
             layer = doc.createElement("layer");
             uid = doc.createElement("uid");
@@ -157,35 +157,41 @@ public class MessageWrapper {
             target.appendChild(name);
             target.appendChild(layer);
             target.appendChild(address);
-            
+
             // header
             Element subject = doc.createElement("subject"),
                     contentType = doc.createElement("contentType");
             contentType.setTextContent(message.getContentType());
             subject.setTextContent(message.getSubject());
+            anonymousUpload.setTextContent(message.isAnonymousUpload().toString());
             header.appendChild(subject);
             header.appendChild(contentType);
             header.appendChild(origin);
             header.appendChild(target);
-           
+            header.appendChild(anonymousUpload);
+
             // content
             content.setTextContent(message.getContent());
-            
+
             root.appendChild(header);
             root.appendChild(content);
             doc.appendChild(root);
-            
+
             // Converter Documento para STRING
             StringWriter stw = new StringWriter();
             Transformer serializer = TransformerFactory.newInstance().newTransformer();
             serializer.transform(new DOMSource(doc), new StreamResult(stw));
-            
-            this.envelopedMessage =  stw.getBuffer().toString();
-            this.size = (this.envelopedMessage.length());
-            this.createdTime = new Date();
+
+            this.envelopedMessage = stw.getBuffer().toString();
+        } else {
+            this.envelopedMessage = message.getContent();
+        }
+
+        this.size = (this.envelopedMessage.length());
+        this.createdTime = new Date();
     }
-    
-    public static MessageWrapper createAndBuild(Message m) throws ParserConfigurationException, TransformerConfigurationException, TransformerException{
+
+    public static MessageWrapper createAndBuild(Message m) throws ParserConfigurationException, TransformerConfigurationException, TransformerException {
         MessageWrapper messageWrapper = new MessageWrapper(m);
         messageWrapper.build();
         return messageWrapper;
