@@ -38,9 +38,11 @@ public class DataManager extends ComponentManager implements AsynchronouslyManag
             try {
                 if(ci.isAvailable()){
                     this.communicationDAO.addAvailableCommunicationInterface(ci);
+                     System.out.println("Interface successfully added: "+ci.getName());
                 }
             } catch (UnsupportedOperationException ex){
-                Logger.getLogger(DataManager.class.getName()).log(Level.SEVERE, "Not implemented yet.", ex);
+                System.out.println("Not implemented yet: "+ci.getName());
+                //Logger.getLogger(DataManager.class.getName()).log(Level.SEVERE, "Not implemented yet.", ex);
             } catch (IOException ex) {
                 Logger.getLogger(DataManager.class.getName()).log(Level.SEVERE, null, ex);
             } 

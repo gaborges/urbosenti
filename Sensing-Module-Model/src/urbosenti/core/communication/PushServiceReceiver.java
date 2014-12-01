@@ -4,6 +4,8 @@
  */
 package urbosenti.core.communication;
 
+import urbosenti.core.device.Agent;
+
 /**
  *
  * @author Guilherme
@@ -39,7 +41,9 @@ public class PushServiceReceiver {
 "		… message according the subject" +
 "       </content>" +
 "     </message>";
-        this.communicationManager.newPushMessage(message);
+        Agent origin = new Agent();
+        origin.setAddress("http://exemplo:8084/TestServer/webresources/test/return");
+        this.communicationManager.newPushMessage(origin,message);
     }
     
     public void startPushReceiverService() {

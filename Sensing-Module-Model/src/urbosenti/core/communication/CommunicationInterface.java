@@ -172,7 +172,7 @@ public abstract class CommunicationInterface<Object> {
      * @throws IOException
      * @throws UnsupportedOperationException 
      */    
-    public abstract boolean isAvailable() throws IOException;
+    public abstract boolean isAvailable() throws UnsupportedOperationException,IOException;
     public abstract boolean testConnection() throws IOException, UnsupportedOperationException;
     public abstract boolean connect() throws IOException, UnsupportedOperationException; // remover
     public abstract boolean disconnect() throws IOException, UnsupportedOperationException;

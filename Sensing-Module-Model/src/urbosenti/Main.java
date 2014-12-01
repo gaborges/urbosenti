@@ -6,17 +6,13 @@ package urbosenti;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import urbosenti.adaptation.AdaptationManager;
-import urbosenti.core.communication.CommunicationManager;
-import urbosenti.core.communication.DeliveryMessagingService;
 import urbosenti.core.communication.PushServiceReceiver;
 import urbosenti.core.communication.interfaces.DTNCommunicationInterface;
 import urbosenti.core.communication.interfaces.MobileDataCommunicationInterface;
 import urbosenti.core.communication.interfaces.WiredCommunicationInterface;
 import urbosenti.core.communication.interfaces.WirelessCommunicationInterface;
-import urbosenti.core.data.DataManager;
 import urbosenti.core.device.DeviceManager;
-import urbosenti.core.events.EventManager;
+import urbosenti.test.ConcreteApplicationHandler;
 import urbosenti.test.TestCommunication;
 
 /**
@@ -43,6 +39,10 @@ public class Main {
         
         // Processo de Descoberta, executa todos os onCreate
         deviceManager.onCreate();
+        deviceManager.setUID("uid:123456789asdf");
+        // Adiciona o AplicationHandler da aplicação
+        ConcreteApplicationHandler handler = new ConcreteApplicationHandler(deviceManager);
+        deviceManager.getEventManager().subscribe(handler);
         // Execução - inicia todos os serviços e threads em background
         PushServiceReceiver teste = new PushServiceReceiver(deviceManager.getCommunicationManager());
         //DeliveryMessagingService delivaryService = new DeliveryMessagingService(deviceManager.getCommunicationManager());
@@ -58,15 +58,15 @@ public class Main {
         
         Thread t = new Thread(deviceManager.getAdaptationManager());
         t.start();
-        
-        for (int i = 0; i < 1000000; i++) {
-            
-        }
-        
+                      
         // Testes
         TestCommunication tc = new TestCommunication(deviceManager);
         tc.test1();
-                           
+        try {
+            Thread.sleep(120000);
+        } catch (InterruptedException ex) {
+            Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+        }
         deviceManager.getAdaptationManager().stop();
         
               

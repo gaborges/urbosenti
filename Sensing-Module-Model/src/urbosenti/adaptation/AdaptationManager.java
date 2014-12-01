@@ -126,6 +126,10 @@ public class AdaptationManager extends ComponentManager implements Runnable, Asy
         notifyAll();
         return true;
     }
+    
+    private synchronized  boolean isRunning(){
+        return this.running;
+    }
 
     @Override
     public void run() {
@@ -139,34 +143,19 @@ public class AdaptationManager extends ComponentManager implements Runnable, Asy
         }
     }
     
-    /*
-     * Event was created because the java runtime dont identified teh synchronizes block
-     */
-    private synchronized Event getEvent() throws InterruptedException{
-        Event event = availableEvents.poll();
+    private void monitoring() throws InterruptedException {
+        Event event; 
+       
+        while (isRunning()) {
             
+            /* Monitoring */
+            synchronized (this) {
+               event = availableEvents.poll();            
                 if (event == null) {
                     System.out.println("Esperando;;;");
                     wait();
-                }
-        return event;
-    }
-
-    private synchronized void monitoring() throws InterruptedException {
-        Event event; 
-        while (running) {
-            
-            /* Monitoring */
-            event = getEvent();     
-            
-            //synchronized (flag) {
-//                event = availableEvents.poll();
-//            
-//                if (event == null) {
-//                    System.out.println("Esperando;;;");
-//                    wait();
-//                }
-           //}
+               }
+           }
 
             if (event != null) {
                 switch (event.getOriginType()) {
