@@ -4,6 +4,10 @@
  */
 package urbosenti.test;
 
+import java.io.IOException;
+import java.net.SocketTimeoutException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import urbosenti.core.communication.Message;
 import urbosenti.core.device.Agent;
 import urbosenti.core.device.DeviceManager;
@@ -28,10 +32,12 @@ public class TestCommunication {
         // Envio prioritário de mensagem sem retorno
         
         // Envio normal de mensagem com retorno
-        testaEnvioMensagemNormalComRetorno();
+        //testaEnvioMensagemNormalComRetorno();
         
         
-        
+        testaUploadServer();
+        //testaEnvioMensagemNormalSemRetorno();
+        //testaEnvioMensagemNormalSemRetorno();
         // Envio prioritário de mensagem com retorno
         
         // Teste de desconexão
@@ -61,8 +67,15 @@ public class TestCommunication {
         m.setSubject("Textando");
         m.setContentType("text/plain");
         m.setContent("oiiiiii");
-        
-        deviceManager.getCommunicationManager().sendMessage(m);
+        try {
+            deviceManager.getCommunicationManager().sendMessage(m);
+        } catch (java.net.ConnectException ex){
+            System.out.println("Host não acessível!");
+        }catch (SocketTimeoutException ex) {
+            Logger.getLogger(TestCommunication.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (IOException ex) {
+            Logger.getLogger(TestCommunication.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
     
     public void testaEnvioMensagemPrioritariaSemRetorno(){
@@ -85,8 +98,14 @@ public class TestCommunication {
         m.setContentType("text/plain");
         m.setContent("oiiiiii");
         m.setPreferentialPriority(); // Prioridade Preferêncial
+        try {        
+            deviceManager.getCommunicationManager().sendMessage(m);
+        } catch (java.net.SocketTimeoutException ex) {
+            Logger.getLogger(TestCommunication.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (IOException ex) {
+            Logger.getLogger(TestCommunication.class.getName()).log(Level.SEVERE, null, ex);
+        }
         
-        deviceManager.getCommunicationManager().sendMessage(m);
     }
     
     public void testaEnvioMensagemNormalComRetorno(){
@@ -108,8 +127,14 @@ public class TestCommunication {
         m.setContentType("text/plain");
         m.setContent("oi22222");
         
-        String result = deviceManager.getCommunicationManager().sendMessageWithResponse(m);
-        
+        String result ="";
+        try {
+            result = deviceManager.getCommunicationManager().sendMessageWithResponse(m);
+        } catch (java.net.SocketTimeoutException ex) {
+            Logger.getLogger(TestCommunication.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (IOException ex) {
+            Logger.getLogger(TestCommunication.class.getName()).log(Level.SEVERE, null, ex);
+        }        
         System.out.println("Result: " + result);
     }
     
@@ -134,6 +159,32 @@ public class TestCommunication {
         m.setPreferentialPriority(); // Prioridade Preferêncial
         
         
+    }
+    
+    public void testaUploadServer(){
+        Agent target = new Agent();
+        target.setAddress("http://143.54.12.47:8084/TestServer/webresources/test/");
+        target.setUid("666");
+        target.setLayer("application");
+        target.setDescription("Backend Module");
+        
+        Agent origin = new Agent();
+        origin.setUid("1232456789");
+        origin.setLayer("application");
+        origin.setDescription("Sensing Module");
+        
+        Message m = new Message();
+        m.setTarget(target);
+        m.setSender(origin);
+        m.setSubject("Textando");
+        m.setContentType("text/plain");
+        m.setContent("oiiiiii");
+
+        deviceManager.getCommunicationManager().sendReport(m);
+        deviceManager.getCommunicationManager().addUploadServer(target);
+        Thread t = new Thread(deviceManager.getCommunicationManager());
+        t.start();
+      
     }
 
 }

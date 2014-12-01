@@ -5,15 +5,10 @@
 package urbosenti.core.data;
 
 import java.io.IOException;
-import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.List;
 import urbosenti.core.communication.CommunicationInterface;
 import urbosenti.core.communication.MessageWrapper;
-import urbosenti.core.communication.interfaces.DTNCommunicationInterface;
-import urbosenti.core.communication.interfaces.MobileDataCommunicationInterface;
-import urbosenti.core.communication.interfaces.WiredCommunicationInterface;
-import urbosenti.core.communication.interfaces.WirelessCommunicationInterface;
 
 /**
  *
@@ -37,23 +32,50 @@ public class CommunicationDAO {
         this.messageStoragePolicy = 2; // Política de armazenamento de mensagem - Padrão: Apagar todas que foram enviadas com sucesso e armazenar as que não foram enviadas. 
         this.reconnectionPolicy = 1;   // Política de reconexão: Padrão - Tentativa em intervalos fixos. Pode ser definido pela aplicação. O padrão é uma nova tentativa a cada 60 segundos
         this.uploadMessagingPolicy = 2; //  política de Upload periódico de Mensagens: Sempre que há um relato novo tenta fazer o upload, caso exista conexão, senão espera reconexão. Padrão.
+        this.availableCommunicationInterfaces = new ArrayList<CommunicationInterface>();
+        countIdMessages = 0;
+        storrageMessages = new ArrayList<MessageWrapper>();
     }
     
-    List<CommunicationInterface> availableCommunicationInterfaces = new ArrayList<CommunicationInterface>();
+    private final List<CommunicationInterface> availableCommunicationInterfaces;
+    
+    // gambiarras sem banco
+    private int countIdMessages;
+    private final List<MessageWrapper> storrageMessages;
     
     public void insertMessage(MessageWrapper mw){
-    
+        this.countIdMessages++;
+        mw.setId(countIdMessages);
+        storrageMessages.add(mw);
     }
     
     public void removeMessage(MessageWrapper mw){
-    
+        int i = 0;
+        for(;i<storrageMessages.size();i++){
+            if(storrageMessages.get(i).getId() == mw.getId()){
+                storrageMessages.remove(i);
+                break;
+            }
+        }
     }
     
     public void updateMessage(MessageWrapper mw){
-    
+        int i = 0;
+        for(;i<storrageMessages.size();i++){
+            if(storrageMessages.get(i).getId() ==  mw.getId()){
+                storrageMessages.set(i, mw);
+                break;
+            }
+        }
     }
     
     public MessageWrapper getMessageWrapper(int id){
+        int i = 0;
+        for(;i<storrageMessages.size();i++){
+            if(storrageMessages.get(i).getId() == id){
+                return storrageMessages.get(i);
+            }
+        }
         return null;
     }
     
@@ -120,6 +142,7 @@ public class CommunicationDAO {
     /**
      *  adiciona uma nova interface de comunicação. Se ela existe ela é setada como suportada, se não existe ela é adicionada.
      *  No caso em questão todas já existem. Adicionar a nova possíbilidade em futuras implementações.;
+     * @param ci
      */
     protected void addAvailableCommunicationInterface(CommunicationInterface ci) {
         ci.setStatus(CommunicationInterface.STATUS_AVAILABLE);

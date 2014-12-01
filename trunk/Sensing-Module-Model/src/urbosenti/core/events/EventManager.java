@@ -4,6 +4,8 @@
  */
 package urbosenti.core.events;
 
+import java.util.AbstractList;
+import java.util.ArrayList;
 import java.util.List;
 import urbosenti.adaptation.AdaptationManager;
 
@@ -24,8 +26,9 @@ public class EventManager implements AsynchronouslyManageableComponent {
     }
 
     public EventManager() {
-        systemHandler = null;
-        enableSystemHandler = false;
+        this.systemHandler = null;
+        this.enableSystemHandler = false;
+        this.applicationHandlers = new ArrayList<ApplicationHandler>();
     }
 
     public void newEvent(Event event) {
