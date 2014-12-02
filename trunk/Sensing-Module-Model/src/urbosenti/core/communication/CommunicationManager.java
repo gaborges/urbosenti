@@ -9,7 +9,6 @@ import java.io.StringReader;
 import java.net.SocketTimeoutException;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -131,14 +130,14 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
      *
      */
     private static final int EVENT_MESSAGE_STORED = 10;
-    
+
     private int countPriorityMessage;
     private int countNormalMessage;
     private int limitPriorityMessage;
     private int limitNormalMessage;
     private List<MessageWrapper> messagesNotChecked;
-    private Queue<MessageWrapper> normalMessageQueue;
-    private Queue<MessageWrapper> priorityMessageQueue;
+    private final Queue<MessageWrapper> normalMessageQueue;
+    private final Queue<MessageWrapper> priorityMessageQueue;
     private double mobileDataQuota; // em bytes
     private double usedMobileData; // em bytes
     private double mobileDataPriorityQuota; // em bytes
@@ -194,10 +193,7 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
     private Integer reconnectionAttemptInterval;
     private CommunicationInterface currentCommunicationInterface;
     private List<CommunicationInterface> communicationInterfaces;
-    // interfaces[]
-    // tecnology
     private ReconnectionService reconnectionService;
-    private DeliveryMessagingService deliveryService;
     private Agent uploadServer;
     private boolean running; // indica se o servidor está rodando ou não
 
@@ -210,28 +206,6 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
     // if do not setted then when the method onCreate was activated it creates automatically
     public void setReconectionService(ReconnectionService reconnectionService) {
         this.reconnectionService = reconnectionService;
-    }
-
-    // if do not setted then when the method onCreate was activated it creates automatically
-    public void setDelivaryService(DeliveryMessagingService deliveryService) {
-        this.deliveryService = deliveryService;
-    }
-
-    public boolean verifyConnectStatus() {
-        // Verifica se a principal está conectada
-        if (currentCommunicationInterface.getStatus() == CommunicationInterface.STATUS_CONNECTED) {
-            return true;
-        } else {
-            // gera o evento de desconexão da interface atual
-            for (CommunicationInterface ci : communicationInterfaces) {
-                if (ci.getStatus() == CommunicationInterface.STATUS_CONNECTED) {
-                    currentCommunicationInterface = ci;
-                    return true;
-                }
-            }
-            // gera o evento que nenhuma interface está disponível
-        }
-        return false;
     }
 
     @Override
@@ -267,7 +241,6 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
 
         // testar se não foi setado os serviços de entraga e reconexão senão criar e iniciar
         // Testar se os serviços foram iniciados e caso não, iniciá-los
-
         //Contadores do escalonador da fila de reports
         limitNormalMessage = 1;
         limitPriorityMessage = 4;
@@ -276,7 +249,7 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
         this.uploadInterval = 15000;
         // Intervalo para reconexão em 60 segundos
         this.reconnectionAttemptInterval = 60000;
-        if(reconnectionService == null){
+        if (reconnectionService == null) {
             this.reconnectionService = new ReconnectionService(this, communicationInterfaces);
             this.reconnectionService.setReconnectionTime(reconnectionAttemptInterval);
             this.reconnectionService.setReconnectionMethodOneAtTime();
@@ -348,7 +321,7 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
             this.newInternalEvent(EVENT_ADDRESS_NOT_REACHABLE, messageWrapper, message.getTarget(), ci);
             Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
             throw ex;
-        } catch (java.net.ConnectException ex){
+        } catch (java.net.ConnectException ex) {
             // Evento: Timeout
             // thows Timeout exception   
             this.newInternalEvent(EVENT_ADDRESS_NOT_REACHABLE, messageWrapper, message.getTarget(), ci);
@@ -414,7 +387,7 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
             this.newInternalEvent(EVENT_ADDRESS_NOT_REACHABLE, messageWrapper, message.getTarget(), ci);
             Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
             throw ex;
-        } catch (java.net.ConnectException ex){
+        } catch (java.net.ConnectException ex) {
             // Evento: Timeout
             // thows Timeout exception   
             this.newInternalEvent(EVENT_ADDRESS_NOT_REACHABLE, messageWrapper, message.getTarget(), ci);
@@ -429,7 +402,7 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
             throw ex;
         }
     }
-    
+
     public String sendMessageWithResponse(Message message, int timeout) throws SocketTimeoutException, java.net.ConnectException, IOException {
 
         // 1 - Recebe a mensagem - Gets the message
@@ -481,7 +454,7 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
             this.newInternalEvent(EVENT_ADDRESS_NOT_REACHABLE, messageWrapper, message.getTarget(), ci);
             Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
             throw ex;
-        } catch (java.net.ConnectException ex){
+        } catch (java.net.ConnectException ex) {
             // Evento: Timeout
             // thows Timeout exception   
             this.newInternalEvent(EVENT_ADDRESS_NOT_REACHABLE, messageWrapper, message.getTarget(), ci);
@@ -496,301 +469,10 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
             throw ex;
         }
     }
-
-//    public void sendMessage(Message message) {
-//        // Recebe a mensagem - Gets the message
-//        /*
-//         * Se quem está enviando não foi explicitado, então, por padrão, são preenxidos os dados do envio da aplicação.
-//         */
-//        if (message.getSender() == null) {
-//            message.setSender(new Agent());
-//            message.getSender().setLayer("application");
-//            message.getSender().setUid(getDeviceManager().getUID());
-//            message.getSender().setDescription("Sensing Module");
-//        }
-//        MessageWrapper messageWrapper = new MessageWrapper(message);
-//        try {
-//            // Cria o envelope XML da UrboSenti correspondente da mensagem
-//            messageWrapper.build();
-//        } catch (ParserConfigurationException ex) {
-//            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
-//        } catch (TransformerConfigurationException ex) {
-//            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
-//        } catch (TransformerException ex) {
-//            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
-//        }
-//        // Verifica o primeiro método de envio
-////        if(this.currentCommunicationInterface == null){
-////            boolean verifyConnectStatus = this.verifyConnectStatus();
-////            currentCommunicationInterface = this.communicationInterfaces.get(0);
-////        }
-//
-//        // Tenta enviar
-//        // fazer a mensagem para envio via HTTP
-//        try {
-//            // Enviar a mensagem
-//            DeliveryMessagingService service = new DeliveryMessagingService(this);
-//
-//            // [Insucesso detectado pelo tiemout] Evento de Desconexão. Tenta enviar com outro método disponível
-//            boolean res = service.sendHttpMessage(
-//                    this,
-//                    messageWrapper,
-//                    currentCommunicationInterface);
-//
-//            // [Sucesso] Evento Mensagem entregue, após política de armazenamento
-//            if (res) {
-//                // evento mensagem entregue com a interface X
-//                this.newInternalEvent(EVENT_MESSAGE_DELIVERED, messageWrapper, message.getTarget(), currentCommunicationInterface);
-//                this.currentCommunicationInterface.setStatus(CommunicationInterface.STATUS_CONNECTED);
-//                // Politica de armazenamento de mensagens
-//                this.storagePolice(messageWrapper);
-//            } else { // [Método não conectado] 
-//                currentCommunicationInterface.setStatus(CommunicationInterface.STATUS_DISCONNECTED);
-//                // Evento de desconexão da interface X. +++ fazer
-//                this.newInternalEvent(EVENT_INTERFACE_DISCONNECTION, currentCommunicationInterface, message.getTarget());
-//                // [Loop]Tenta próxima interface disponível, se houver passa a ser a atual
-//                Iterator<CommunicationInterface> iterator = communicationInterfaces.iterator();
-//                while (iterator.hasNext()) {
-//                    CommunicationInterface next = iterator.next();
-//                    if (next.connect()) {
-//                        res = service.sendHttpMessage(this, messageWrapper, next);
-//                        // [Sucesso] Evento Mensagem entregue, após política de armazenamento
-//                        if (res) {
-//                            // evento mensagem entregue com a interface
-//                            this.newInternalEvent(EVENT_MESSAGE_DELIVERED, messageWrapper, message.getTarget(), next);
-//                            // Passar a interface para atual e conectada
-//                            this.currentCommunicationInterface = next;
-//                            this.currentCommunicationInterface.setStatus(CommunicationInterface.STATUS_CONNECTED);
-//                            // Politica de armazenamento de mensagens
-//                            this.storagePolice(messageWrapper);
-//                            return;
-//                        } else { // [Interface indisponível]
-//                            next.setStatus(CommunicationInterface.STATUS_DISCONNECTED);
-//                            // Evento de desconexão da interface X. +++ fazer
-//                            this.newInternalEvent(EVENT_INTERFACE_DISCONNECTION, next, message.getTarget());
-//                        }
-//                    } else { // [Interface indisponível]
-//                        next.setStatus(CommunicationInterface.STATUS_DISCONNECTED);
-//                        // Evento de desconexão da interface X. +++ fazer
-//                        this.newInternalEvent(EVENT_INTERFACE_DISCONNECTION, next, message.getTarget());
-//                    }
-//                }
-//
-//                // [Nenhuma interface disponível] Evento de mensagem não entregue. 
-//
-//                // Ativação da política de reconexão.
-//                //this.notifyReconectionService();
-//                // evento mensagem não entregue. Motivo?
-//                this.newInternalEvent(EVENT_MESSAGE_NOT_DELIVERED, messageWrapper, message.getTarget());
-//                // Politica de armazenamento de mensagens
-//                this.storagePolice(messageWrapper);
-//                // Adicionar na fila de envio
-//                this.addMessage(messageWrapper);
-//            }
-//
-//        } catch (RuntimeException ex) {
-//            System.out.println("Error: " + ex);
-//        } catch (IOException ex) {
-//            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
-//        }
-//    }
-// -- Old    
-//    public void sendMessage(Message message) {
-//
-//        if (message.getSender() == null) {
-//            message.setSender(new Agent());
-//            message.getSender().setLayer("application");
-//            message.getSender().setUid(getDeviceManager().getUID());
-//            message.getSender().setDescription("Sensing Module");
-//        }
-//        MessageWrapper messageWrapper = new MessageWrapper(message);
-//        try {
-//            // gerar mensagem em XML
-//            messageWrapper.build();
-//        } catch (ParserConfigurationException ex) {
-//            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
-//        } catch (TransformerConfigurationException ex) {
-//            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
-//        } catch (TransformerException ex) {
-//            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
-//        }
-//        // verifica se alguma conexão estão conectada
-//        if(verifyConnectStatus()){
-//            
-//            // Política de dados móveis, se a interface usa dados móveis
-//            if(this.currentCommunicationInterface.isUsesMobileData()){
-//                switch(mobileDataPolicy){
-//                    case 1: // Sem mobilidade. Configuração default. Nenhuma ação.
-//                        break;
-//                    case 2: // Fazer o uso sempre que possível. Nenhuma ação adicional.
-//                        break;
-//                    case 3: // Somente fazer uso com mensagens de alta prioridade.
-//                         if(message.getPriority() != Message.PREFERENTIAL_PRIORITY){ // se não for prioritária
-//                             // politica de armazenamento
-//                             // adiciona na fila para upload
-//                             // gera o evento para a aplicação e a adaptação
-//                             return;
-//                         }                        
-//                        break;
-//                    case 4: // Utiliza cota por ciclo de uso: Até X todos os tipos de mensagens, após até Y somente de alta prioridade.
-//                        if(message.getPriority() == Message.PREFERENTIAL_PRIORITY){
-//                            if((messageWrapper.getEnvelopedMessage().length() * Character.SIZE) + usedMobileData >= mobileDataPriorityQuota){
-//                                // politica de armazenamento
-//                                // fila para upload se salvo
-//                                // gera o evento (aplicação e sistema)
-//                                return;
-//                            }
-//                        }else{
-//                            if((messageWrapper.getEnvelopedMessage().length() * Character.SIZE) + usedMobileData >= mobileDataQuota){
-//                                // politica de armazenamento
-//                                // fila para upload se salvo
-//                                // gera o evento (aplicação e sistema)
-//                                return;
-//                            }
-//                        }
-//                        break;
-//                    case 5: // Utiliza cota por ciclo de uso: Até X todos os tipos de mensagens para mensagens de alta prioridade o uso é liberado.
-//                        if((messageWrapper.getEnvelopedMessage().length() * Character.SIZE) + usedMobileData >= mobileDataQuota){
-//                                // politica de armazenamento
-//                                // fila para upload se salvo
-//                                // gera o evento (aplicação e sistema)
-//                                return;
-//                        }
-//                        break;
-//                    case 6: // Não utilizar dados móveis.
-//                        // politica de armazenamento
-//                        // fila para upload se salvo
-//                        // gera o evento (aplicação e sistema)
-//                        return;
-//                }
-//            }
-//            
-//
-//            // fazer a mensagem para envio via HTTP
-//            try {
-//                // Enviar a mensagem
-//                DeliveryMessagingService service = new DeliveryMessagingService(this);
-//                boolean res = service.sendHttpMessage(
-//                        message.getTarget().getAddress(),
-//                        message.getContentType(),
-//                        messageWrapper.getEnvelopedMessage());
-//
-//                if(res){
-//                    // evento mensagem entregue
-//                    // Politica de armazenamento de mensagens
-//                } else {
-//                    // evento mensagem não entregue. Motivo? 
-//                    // Politica de armazenamento de mensagens
-//                    // adicionar na fila de envio
-//                }
-//
-//
-//            } catch (MalformedURLException ex) {
-//                Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
-//            } catch (IOException ex) {
-//                Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
-//            } catch (RuntimeException ex) {
-//            }
-//        } else {
-//            // storage policy
-//            // add to the list
-//        }
-//    }
-
-//    public String sendMessageWithResponse(Message message) {
-//
-//        // Recebe a mensagem - Gets the message
-//            /*
-//         * Se quem está enviando não foi explicitado, então, por padrão, são preenxidos os dados do envio da aplicação.
-//         */
-//        if (message.getSender() == null) {
-//            message.setSender(new Agent());
-//            message.getSender().setLayer("application");
-//            message.getSender().setUid(getDeviceManager().getUID());
-//            message.getSender().setDescription("Sensing Module");
-//        }
-//        MessageWrapper messageWrapper = new MessageWrapper(message);
-//        try {
-//            // Cria o envelope XML da UrboSenti correspondente da mensagem
-//            messageWrapper.build();
-//        } catch (ParserConfigurationException ex) {
-//            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
-//        } catch (TransformerConfigurationException ex) {
-//            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
-//        } catch (TransformerException ex) {
-//            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
-//        }
-//
-//        try {
-//            // Enviar a mensagem
-//            DeliveryMessagingService service = new DeliveryMessagingService(this);
-//
-//            String response = service.sendHttpMessageReturn(this, messageWrapper, currentCommunicationInterface);
-//            // se não conseguir tenta por outro
-//            // evento de mensagem entregue
-//            this.newInternalEvent(EVENT_MESSAGE_DELIVERED, messageWrapper, message.getTarget(), currentCommunicationInterface);
-//            // retorna resultado
-//            return response;
-//        } catch (SocketTimeoutException ex) {
-//            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
-//            this.newInternalEvent(EVENT_MESSAGE_NOT_DELIVERED, messageWrapper, message.getTarget(), currentCommunicationInterface);
-//        } catch (IOException ex) {
-//            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
-//            this.newInternalEvent(EVENT_MESSAGE_NOT_DELIVERED, messageWrapper, message.getTarget(), currentCommunicationInterface);
-//        } catch (RuntimeException ex) {
-//            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
-//            this.newInternalEvent(EVENT_MESSAGE_NOT_DELIVERED, messageWrapper, message.getTarget(), currentCommunicationInterface);
-//        }
-//        return null;
-//    }
-
-//    public String sendMessageWithResponse(Message message, int timeout) {
-//        // Recebe a mensagem - Gets the message
-//            /*
-//         * Se quem está enviando não foi explicitado, então, por padrão, são preenxidos os dados do envio da aplicação.
-//         */
-//        if (message.getSender() == null) {
-//            message.setSender(new Agent());
-//            message.getSender().setLayer("application");
-//            message.getSender().setUid(getDeviceManager().getUID());
-//            message.getSender().setDescription("Sensing Module");
-//        }
-//        MessageWrapper messageWrapper = new MessageWrapper(message);
-//        messageWrapper.setTimeout(timeout);
-//        try {
-//            // Cria o envelope XML da UrboSenti correspondente da mensagem
-//            messageWrapper.build();
-//        } catch (ParserConfigurationException ex) {
-//            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
-//        } catch (TransformerConfigurationException ex) {
-//            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
-//        } catch (TransformerException ex) {
-//            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
-//        }
-//
-//        try {
-//            // Enviar a mensagem
-//            DeliveryMessagingService service = new DeliveryMessagingService(this);
-//
-//            String response = service.sendHttpMessageReturn(this, messageWrapper, currentCommunicationInterface);
-//            // se não conseguir tenta por outro
-//            // evento de mensagem entregue
-//            this.newInternalEvent(EVENT_MESSAGE_DELIVERED, messageWrapper, message.getTarget(), currentCommunicationInterface);
-//            // retorna resultado
-//            return response;
-//        } catch (SocketTimeoutException ex) {
-//            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
-//            this.newInternalEvent(EVENT_MESSAGE_NOT_DELIVERED, messageWrapper, message.getTarget(), currentCommunicationInterface);
-//        } catch (IOException ex) {
-//            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
-//            this.newInternalEvent(EVENT_MESSAGE_NOT_DELIVERED, messageWrapper, message.getTarget(), currentCommunicationInterface);
-//        } catch (RuntimeException ex) {
-//            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
-//            this.newInternalEvent(EVENT_MESSAGE_NOT_DELIVERED, messageWrapper, message.getTarget(), currentCommunicationInterface);
-//        }
-//        return null;
-//    }
-
+    /**
+     * 
+     * @param message Adiciona um report para envio ao servidor.
+     */
     public void sendReport(Message message) {
         // recebe o report para envio
         // cria envelope
@@ -812,7 +494,7 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
             Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
         }
         // adiciona na fila de upload
-        this.addMessage(messageWrapper);
+        this.addReport(messageWrapper);
     }
 
     protected void newPushMessage(Agent origin, String bruteMessage) {
@@ -823,21 +505,11 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
             // Criar o documento e com verte a String em DOC
             Document doc = builder.parse(new InputSource(new StringReader(bruteMessage)));
 
-//            MessageHeader msgHeader = new MessageHeader();
             Message msg = new Message();
             msg.setSender(new Agent());
             msg.setTarget(new Agent());
             Element response = doc.getDocumentElement();
             Element header = (Element) response.getElementsByTagName("header").item(0);
-//            msgHeader.setSenderUid(((Element) header.getElementsByTagName("origin").item(0)).getElementsByTagName("uid").item(0).getTextContent());
-//            msgHeader.setSenderName(((Element) header.getElementsByTagName("origin").item(0)).getElementsByTagName("name").item(0).getTextContent());
-//            msgHeader.setSenderAddress(((Element) header.getElementsByTagName("origin").item(0)).getElementsByTagName("address").item(0).getTextContent());
-//            msgHeader.setSenderLayer(((Element) header.getElementsByTagName("origin").item(0)).getElementsByTagName("layer").item(0).getTextContent());
-//            msgHeader.setTargetUid(((Element) header.getElementsByTagName("target").item(0)).getElementsByTagName("uid").item(0).getTextContent());
-//            msgHeader.setTargetAddress(((Element) header.getElementsByTagName("target").item(0)).getElementsByTagName("address").item(0).getTextContent());
-//            msgHeader.setTargetLayer(((Element) header.getElementsByTagName("target").item(0)).getElementsByTagName("layer").item(0).getTextContent());
-//            msgHeader.setContentType( header.getElementsByTagName("contentType").item(0).getTextContent());
-//            msgHeader.setSubject(header.getElementsByTagName("subject").item(0).getTextContent());
 
             msg.getSender().setUid(((Element) header.getElementsByTagName("origin").item(0)).getElementsByTagName("uid").item(0).getTextContent());
             if (((Element) header.getElementsByTagName("origin").item(0)).getElementsByTagName("name").getLength() > 0) {
@@ -858,7 +530,6 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
                 msg.setAnonymousUpload(false);
             }
 
-
             if (header.getElementsByTagName("priority").getLength() > 0) {
                 if (header.getElementsByTagName("priority").item(0).getTextContent().equals("preferential")) {
                     msg.setPreferentialPriority();
@@ -868,13 +539,6 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
             }
 
             msg.setContent(response.getElementsByTagName("content").item(0).getTextContent());
-//            msg.setHeader(msgHeader);
-//
-//            Agent origin = new Agent();
-//            origin.setAddress(msgHeader.getSenderAddress());
-//            origin.setDescription(msgHeader.getSenderName());
-//            origin.setLayer(msgHeader.getSenderLayer());
-//            origin.setUid(msgHeader.getSenderUid());
 
             if (origin != null && msg.getSender().getAddress().isEmpty()) {
                 msg.getSender().setAddress(origin.getAddress());
@@ -893,89 +557,6 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
         } catch (IOException ex) {
             Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
             this.newInternalEvent(EVENT_MESSAGE_RECEIVED_INVALID_FORMAT, origin, bruteMessage);
-        }
-
-    }
-
-    @Deprecated
-    protected void newPushMessage(String bruteMessage) {
-        try {
-            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-            DocumentBuilder builder = factory.newDocumentBuilder();
-
-            // Criar o documento e com verte a String em DOC
-            Document doc = builder.parse(new InputSource(new StringReader(bruteMessage)));
-
-//            MessageHeader msgHeader = new MessageHeader();
-            Message msg = new Message();
-            msg.setSender(new Agent());
-            msg.setTarget(new Agent());
-            Element response = doc.getDocumentElement();
-            Element header = (Element) response.getElementsByTagName("header").item(0);
-//            msgHeader.setSenderUid(((Element) header.getElementsByTagName("origin").item(0)).getElementsByTagName("uid").item(0).getTextContent());
-//            msgHeader.setSenderName(((Element) header.getElementsByTagName("origin").item(0)).getElementsByTagName("name").item(0).getTextContent());
-//            msgHeader.setSenderAddress(((Element) header.getElementsByTagName("origin").item(0)).getElementsByTagName("address").item(0).getTextContent());
-//            msgHeader.setSenderLayer(((Element) header.getElementsByTagName("origin").item(0)).getElementsByTagName("layer").item(0).getTextContent());
-//            msgHeader.setTargetUid(((Element) header.getElementsByTagName("target").item(0)).getElementsByTagName("uid").item(0).getTextContent());
-//            msgHeader.setTargetAddress(((Element) header.getElementsByTagName("target").item(0)).getElementsByTagName("address").item(0).getTextContent());
-//            msgHeader.setTargetLayer(((Element) header.getElementsByTagName("target").item(0)).getElementsByTagName("layer").item(0).getTextContent());
-//            msgHeader.setContentType( header.getElementsByTagName("contentType").item(0).getTextContent());
-//            msgHeader.setSubject(header.getElementsByTagName("subject").item(0).getTextContent());
-
-            msg.getSender().setUid(((Element) header.getElementsByTagName("origin").item(0)).getElementsByTagName("uid").item(0).getTextContent());
-            msg.getSender().setDescription(((Element) header.getElementsByTagName("origin").item(0)).getElementsByTagName("name").item(0).getTextContent());
-            msg.getSender().setAddress(((Element) header.getElementsByTagName("origin").item(0)).getElementsByTagName("address").item(0).getTextContent());
-            msg.getSender().setLayer(((Element) header.getElementsByTagName("origin").item(0)).getElementsByTagName("layer").item(0).getTextContent());
-            msg.getTarget().setUid(((Element) header.getElementsByTagName("target").item(0)).getElementsByTagName("uid").item(0).getTextContent());
-            msg.getTarget().setAddress(((Element) header.getElementsByTagName("target").item(0)).getElementsByTagName("address").item(0).getTextContent());
-            msg.getTarget().setLayer(((Element) header.getElementsByTagName("target").item(0)).getElementsByTagName("layer").item(0).getTextContent());
-            msg.setContentType(header.getElementsByTagName("contentType").item(0).getTextContent());
-            msg.setSubject(header.getElementsByTagName("subject").item(0).getTextContent());
-
-            if (header.getElementsByTagName("priority").getLength() > 0) {
-                if (header.getElementsByTagName("priority").item(0).getTextContent().equals("preferential")) {
-                    msg.setPreferentialPriority();
-                } else {
-                    msg.setNormalPriority();
-                }
-            }
-
-            msg.setContent(response.getElementsByTagName("content").item(0).getTextContent());
-//            msg.setHeader(msgHeader);
-//
-//            Agent origin = new Agent();
-//            origin.setAddress(msgHeader.getSenderAddress());
-//            origin.setDescription(msgHeader.getSenderName());
-//            origin.setLayer(msgHeader.getSenderLayer());
-//            origin.setUid(msgHeader.getSenderUid());
-
-            System.out.println("Layer: " + msg.getTarget().getLayer());
-            Event event = null;
-            if (msg.getTarget().getLayer().equals("system")) { // if the target is the system
-                event = new SystemEvent(msg.getSender());
-            } else if (msg.getTarget().getLayer().equals("application")) { // if the target is the application
-                event = new ApplicationEvent(msg.getSender());
-            }
-            if (event != null) { // Event: new Message
-                event.setId(1);
-                event.setName("new message");
-                event.setTime(new Date());
-                event.setValue(msg);
-                //getEventManager().newEvent(event);
-                this.newInternalEvent(EVENT_MESSAGE_RECEIVED, event);
-            } else {
-                this.newInternalEvent(EVENT_MESSAGE_RECEIVED_INVALID_FORMAT, bruteMessage);
-                // do one error message -- create it!
-            }
-        } catch (ParserConfigurationException ex) {
-            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
-            this.newInternalEvent(EVENT_MESSAGE_RECEIVED_INVALID_FORMAT, bruteMessage);
-        } catch (SAXException ex) {
-            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
-            this.newInternalEvent(EVENT_MESSAGE_RECEIVED_INVALID_FORMAT, bruteMessage);
-        } catch (IOException ex) {
-            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
-            this.newInternalEvent(EVENT_MESSAGE_RECEIVED_INVALID_FORMAT, bruteMessage);
         }
 
     }
@@ -1001,22 +582,24 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
                 if (messageWrapper.isSent()) { // Não foi enviada. Armazenar
                     getDeviceManager().getDataManager().getCommunicationDAO().removeMessage(messageWrapper);
                 } else { // senão foi enviada. Armazenar
-                    if(messageWrapper.getId() > 0)
+                    if (messageWrapper.getId() > 0) {
                         getDeviceManager().getDataManager().getCommunicationDAO().updateMessage(messageWrapper);
-                    else
+                    } else {
                         getDeviceManager().getDataManager().getCommunicationDAO().insertMessage(messageWrapper);
+                    }
                 }
                 break;
             case 3: // Armazenar todas e deixar a aplicação decidir quais apagar.
-                if(messageWrapper.getId() > 0)
+                if (messageWrapper.getId() > 0) {
                     getDeviceManager().getDataManager().getCommunicationDAO().updateMessage(messageWrapper);
-                else
+                } else {
                     getDeviceManager().getDataManager().getCommunicationDAO().insertMessage(messageWrapper);
+                }
                 break;
             case 4: // Dinâmico (Exige componente de adaptação). Dá poder ao mecanismo decidir quando apagar uma mensagem armazenada. O usuário pode especificar uma quantidade ou um tempo.
-                if(messageWrapper.getId() > 0)
+                if (messageWrapper.getId() > 0) {
                     getDeviceManager().getDataManager().getCommunicationDAO().updateMessage(messageWrapper);
-                else{
+                } else {
                     getDeviceManager().getDataManager().getCommunicationDAO().insertMessage(messageWrapper);
                     // Gerar evento -- Mensagem armazenada.
                     this.newInternalEvent(EVENT_MESSAGE_STORED, messageWrapper);
@@ -1025,10 +608,16 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
         }
     }
 
-    private synchronized void addMessage(MessageWrapper messageWrapper) {
+    /**
+     * @param messageWrapper Adiciona um novo relato para ser feito o upload. Se
+     * política 3 e o relato não foi aprovado ainda ele é adicionado na fila de
+     * espera e um evento avisando a aplicação que o relato está esperando sua
+     * aprovação.
+     */
+    private synchronized void addReport(MessageWrapper messageWrapper) {
         // Verifica política de upload de relatos
         // se 3 gera adiciona na fila para aprovação da aplicação e utiliza política de armazenamento
-        if (this.uploadMessagingPolicy == 3 && messageWrapper.isChecked()) {
+        if (this.uploadMessagingPolicy == 3 && !messageWrapper.isChecked()) {
             this.messagesNotChecked.add(messageWrapper);
             this.storagePolice(messageWrapper); // depois vejo se uso ou não
             this.newInternalEvent(EVENT_REPORT_AWAITING_APPROVAL, messageWrapper.getMessage());
@@ -1042,7 +631,14 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
         notifyAll();
     }
 
-    public synchronized MessageWrapper getNormalMessage() throws InterruptedException {
+    /**
+     * @return retorna a primeira MessageWrapper da fila <b>normal</b> contendo
+     * um relato com prioridade <b>normal</b>. Esse relato continua da fila.
+     * OBS.: SOmente utilizado pelo método de upload dinâmico, pois tem um loop
+     * infinito dentro.
+     * @throws InterruptedException
+     */
+    protected synchronized MessageWrapper getNormalReport() throws InterruptedException {
         MessageWrapper mw;
         while (true) {
             mw = this.normalMessageQueue.peek();
@@ -1055,7 +651,14 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
         return mw;
     }
 
-    public synchronized MessageWrapper getPriorityMessage() throws InterruptedException {
+    /**
+     * @return retorna a primeira MessageWrapper da fila <b>prioritária</b>
+     * contendo um relato com prioridade <b>prioritária</b>. Esse relato
+     * continua da fila. OBS.: SOmente utilizado pelo método de upload dinâmico,
+     * pois tem um loop infinito dentro.
+     * @throws InterruptedException
+     */
+    protected synchronized MessageWrapper getPriorityMessage() throws InterruptedException {
         MessageWrapper mw;
         while (true) {
             mw = this.priorityMessageQueue.peek();
@@ -1068,7 +671,14 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
         return mw;
     }
 
-    public synchronized MessageWrapper pollNormalMessage() throws InterruptedException {
+    /**
+     * @return retorna e remove a primeira MessageWrapper da fila <b>normal</b>
+     * contendo um relato com prioridade <b>normal</b>. Esse relato é removido
+     * da fila. OBS.: SOmente utilizado pelo método de upload dinâmico, pois tem
+     * um loop infinito dentro.
+     * @throws InterruptedException
+     */
+    protected synchronized MessageWrapper pollNormalMessage() throws InterruptedException {
         MessageWrapper mw;
         while (true) {
             mw = this.normalMessageQueue.poll();
@@ -1081,7 +691,14 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
         return mw;
     }
 
-    public synchronized MessageWrapper pollPriorityMessage() throws InterruptedException {
+    /**
+     * @return retorna e remove a primeira MessageWrapper da fila
+     * <b>prioritária</b> contendo um relato com prioridade <b>prioritária</b>.
+     * Esse relato é removido da fila. OBS.: SOmente utilizado pelo método de
+     * upload dinâmico, pois tem um loop infinito dentro.
+     * @throws InterruptedException
+     */
+    protected synchronized MessageWrapper pollPriorityMessage() throws InterruptedException {
         MessageWrapper mw;
         while (true) {
             mw = this.priorityMessageQueue.poll();
@@ -1094,7 +711,15 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
         return mw;
     }
 
-    public synchronized MessageWrapper pollMessage() throws InterruptedException {
+    /**
+     * @return retorna e remove a primeira MessageWrapper de uma das duas filas
+     * <b>prioritária</b> ou <b>normal</b> conforme o escalonamento dinâmico
+     * pré-configurado no método OnCreate. Esse relato escolhido é removido da
+     * fila. OBS.: SOmente utilizado pelo método de upload dinâmico, pois tem um
+     * loop infinito dentro.
+     * @throws InterruptedException
+     */
+    protected synchronized MessageWrapper pollMessage() throws InterruptedException {
         MessageWrapper mwp, mwn;
         while (true) {
             /*
@@ -1130,7 +755,15 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
         }
     }
 
-    public synchronized MessageWrapper getMessage() throws InterruptedException {
+    /**
+     * @return retorna a primeira MessageWrapper de uma das duas filas
+     * <b>prioritária</b> ou <b>normal</b> conforme o escalonamento dinâmico
+     * pré-configurado no método OnCreate. Esse relato escolhido não é remvido
+     * da fila. OBS.: SOmente utilizado pelo método de upload dinâmico, pois tem
+     * um loop infinito dentro.
+     * @throws InterruptedException
+     */
+    protected synchronized MessageWrapper getMessage() throws InterruptedException {
         MessageWrapper mwp, mwn;
         while (true) {
             /*
@@ -1161,8 +794,12 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
             return mwn;
         }
     }
-
-    public synchronized boolean removeMessage(MessageWrapper mw) {
+    /**
+     * 
+     * @param mw
+     * @return remove o report da fila e retorna true se teve sucesso.
+     */
+    protected synchronized boolean removeMessage(MessageWrapper mw) {
         try {
             this.priorityMessageQueue.remove(mw);
             return true;
@@ -1188,13 +825,20 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
             if (message.getCreatedTime().getTime() == temp.getMessage().getCreatedTime().getTime()) {
                 temp.setChecked();
                 messagesNotChecked.remove(temp);
-                addMessage(temp);
+                addReport(temp);
                 return true;
             }
         }
         return false;
     }
 
+    /**
+     * Função que gera os eventos. Cada evento possui um descritor que define os
+     * parâmetros necessários
+     *
+     * @param eventId
+     * @param parameters
+     */
     private synchronized void newInternalEvent(int eventId, Object... parameters) {
         Agent agent;
         CommunicationInterface ci;
@@ -1421,20 +1065,34 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
         return currentCommunicationInterface;
     }
 
+    /**
+     * ReconectionService informa que interface conseguiu reconectar-se com sucesso.
+     * @param current 
+     */
     void notifyReconnection(CommunicationInterface current) {
-        this.newInternalEvent(EVENT_RESTORED_CONNECTION,  current);
+        this.newInternalEvent(EVENT_RESTORED_CONNECTION, current);
         this.currentCommunicationInterface = current;
     }
-
+    /**
+     * ReconectionService informa que interface não conseguiu reconectar-se com sucesso.
+     * @param current 
+     */
     void notifyReconnectionNotSucceed(CommunicationInterface current) {
-        this.newInternalEvent(EVENT_INTERFACE_DISCONNECTION,  current);
+        this.newInternalEvent(EVENT_INTERFACE_DISCONNECTION, current);
     }
-    
-    public synchronized boolean isUploadServerRunning(){
+
+    /**
+     *
+     * @return retorna se o serviço de upload automático está em funcionamento 
+     */
+    public synchronized boolean isUploadServerRunning() {
         return running;
     }
-    
-    public synchronized void setUploadServerRunningStatus(boolean status){
+
+    /**
+     * @param status , seta o status que o serviço de upload de arquivos deve estar.
+     */
+    public synchronized void setUploadServerRunningStatus(boolean status) {
         this.running = status;
     }
 
@@ -1476,9 +1134,6 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
         return null;
     }
 
-//    public void setUploadServer(Agent server){
-//        this.uploadServer = server;
-//    }
     /**
      * Método utilizado para upload de relatos para um único servidor. Depois
      * fazer um para uploads múltiplos adicionando 2 métodos.
@@ -1487,7 +1142,7 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
      * <li>public synchronized addUploadService(UploadService up);</li>
      * <li> public boolean startUploadService(UploadService up);</li>
      * <li> UploadService up = createUploadService(Agent Server);</li>
-     * <li> up.addMessage();</li></ul>
+     * <li> up.addReport();</li></ul>
      *
      */
     @Override
@@ -1498,36 +1153,29 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
             Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
-
-    public void addUploadServer(Agent server){
+/**
+ * 
+ * @param server Adiciona o servidor que a função de upload dinâmico vai reportar.
+ */
+    public void addUploadServer(Agent server) {
         this.uploadServer = server;
     }
-    
+
     /**
+     * Este método é responsável por executar o processo de upload automático de
+     * relatos. Idealmente, no futuro, poderia ser colocado em uma classe
+     * separada que faça esse papel , o que permitiria fazer upload para
+     * multiplos servidores, onde o run dessa classe inicia os servidores.
      *
-     * @param server
+     * @param server contém o agente que será usado de servidor.
      *
-     * <ul><li>[Início Loop]</li>
-     * <li>Aguarda condição da política de upload ser atendida</li>
-     * <li>Aguarda condições de dados móveis [Implementar outra hora] - Serviço
-     * compartilhado entre os servers </li>
-     * <li>Busca uma mensagem da fila para a upload</li>
-     * <li>Executa função SendMessage </li>
-     * <li> [sucesso] </li>
-     * <li>Remove a mensagem da fila</li>
-     * <li>Política de Armazenamento </li>
-     * <li>[Sem sucesso] [IO Exception] [Timeout] </li>
-     * <li>Política de Armazenamento </li>
-     * <li>Aguarda Política de Reconexão</li>
-     * <li>[Fim Loop]</li></ul>
      */
-    
     private void uploadService(Agent server) throws InterruptedException {
-        this.running = true ;
+        this.running = true;
         final Integer waitUpload = 0;
         boolean sent;
         while (isUploadServerRunning()) {
-         // [Início Loop]
+            // [Início Loop]
             // Aguarda condição da política de upload ser atendida
             switch (this.uploadMessagingPolicy) {
                 case 1: // Sempre que há um relato novo tenta fazer o upload, caso exista conexão, senão espera reconexão. Padrão.
@@ -1557,17 +1205,17 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
                 try {
                     // Executa função SendMessage
                     ci.sendMessage(this, mw);
-                     // Remove a mensagem da fila
+                    // Remove a mensagem da fila
                     this.removeMessage(mw);
                     // Evento: Mensagem Entregue
-                     this.newInternalEvent(EVENT_MESSAGE_DELIVERED, mw, mw.getMessage().getTarget(), currentCommunicationInterface);
+                    this.newInternalEvent(EVENT_MESSAGE_DELIVERED, mw, mw.getMessage().getTarget(), currentCommunicationInterface);
                     // Política de Armazenamento
                     this.storagePolice(mw);
                     sent = true;
-                } catch (java.net.ConnectException ex){
+                } catch (java.net.ConnectException ex) {
                     // Evento: Timeout
                     // thows Timeout exception   
-                    this.newInternalEvent(EVENT_ADDRESS_NOT_REACHABLE,  mw, mw.getMessage().getTarget(), currentCommunicationInterface);
+                    this.newInternalEvent(EVENT_ADDRESS_NOT_REACHABLE, mw, mw.getMessage().getTarget(), currentCommunicationInterface);
                     Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
                     sent = false;
                 } catch (SocketTimeoutException ex) {
@@ -1587,23 +1235,25 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
                 // Evento desconexão
                 this.newInternalEvent(EVENT_DISCONNECTION);
                 sent = false;
-            }    
-             
+            }
+
             // [Sem sucesso] [IO Exception] [Timeout]
             // Política de Armazenamento
             // [Aguarda Política de Reconexão]        
-            if(!sent){
+            if (!sent) {
                 System.out.println("Starting Reconection Service");
                 this.reconnectionService.reconectionProcess();
             }
-        }    
+        }
         // [Fim Loop]
     }
 
     /**
-     * Falta implementar, somente 1 e 2 funcionam
+     * Função referente a política de dados móveis. Somente estratégias 1 e 2
+     * funcionam, as demais necessitam de implementação
+     *
      * @return
-     * @throws InterruptedException 
+     * @throws InterruptedException
      */
     private MessageWrapper mobileDataPolicy() throws InterruptedException {
         // Política de dados móveis, se a interface usa dados móveis
