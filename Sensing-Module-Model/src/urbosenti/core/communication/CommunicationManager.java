@@ -130,7 +130,6 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
      *
      */
     private static final int EVENT_MESSAGE_STORED = 10;
-
     private int countPriorityMessage;
     private int countNormalMessage;
     private int limitPriorityMessage;
@@ -258,7 +257,43 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
 
     @Override
     public synchronized void applyAction(Action action) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        switch (action.getId()) {
+            case 1: // Desabilitar uma interface
+
+                break;
+            case 2: // Definir interface de comunicação como para uso atual
+                for (CommunicationInterface ci : this.communicationInterfaces) {
+                    if (ci.getId() == (Integer) action.getParameters().get("interface_id")) {
+                        this.currentCommunicationInterface = ci;
+                        break;
+                    }
+                }
+                break;
+            case 3: // Alterar ordem de interfaces
+
+                break;
+            case 4: // Atribuir pontuação a interface
+
+                break;
+            case 5: // Alterar configuração da política
+
+                break;
+            case 6: // Alterar intervalo de reconexão do Serviço de Reconexão
+
+                break;
+            case 7: // Alterar método de reconexão do Serviço de Reconexão
+
+                break;
+            case 8: // Alterar valor de timeout do Serviço de Reconexão
+
+                break;
+            case 9: // Alterar intervalo de upload do serviço de upload
+
+                break;
+            case 10: // Apagar relato
+                
+                break;
+        }
     }
 
     /**
@@ -469,8 +504,9 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
             throw ex;
         }
     }
+
     /**
-     * 
+     *
      * @param message Adiciona um report para envio ao servidor.
      */
     public void sendReport(Message message) {
@@ -794,8 +830,9 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
             return mwn;
         }
     }
+
     /**
-     * 
+     *
      * @param mw
      * @return remove o report da fila e retorna true se teve sucesso.
      */
@@ -1066,16 +1103,21 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
     }
 
     /**
-     * ReconectionService informa que interface conseguiu reconectar-se com sucesso.
-     * @param current 
+     * ReconectionService informa que interface conseguiu reconectar-se com
+     * sucesso.
+     *
+     * @param current
      */
     void notifyReconnection(CommunicationInterface current) {
         this.newInternalEvent(EVENT_RESTORED_CONNECTION, current);
         this.currentCommunicationInterface = current;
     }
+
     /**
-     * ReconectionService informa que interface não conseguiu reconectar-se com sucesso.
-     * @param current 
+     * ReconectionService informa que interface não conseguiu reconectar-se com
+     * sucesso.
+     *
+     * @param current
      */
     void notifyReconnectionNotSucceed(CommunicationInterface current) {
         this.newInternalEvent(EVENT_INTERFACE_DISCONNECTION, current);
@@ -1083,14 +1125,15 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
 
     /**
      *
-     * @return retorna se o serviço de upload automático está em funcionamento 
+     * @return retorna se o serviço de upload automático está em funcionamento
      */
     public synchronized boolean isUploadServerRunning() {
         return running;
     }
 
     /**
-     * @param status , seta o status que o serviço de upload de arquivos deve estar.
+     * @param status , seta o status que o serviço de upload de arquivos deve
+     * estar.
      */
     public synchronized void setUploadServerRunningStatus(boolean status) {
         this.running = status;
@@ -1153,10 +1196,12 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
             Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
-/**
- * 
- * @param server Adiciona o servidor que a função de upload dinâmico vai reportar.
- */
+
+    /**
+     *
+     * @param server Adiciona o servidor que a função de upload dinâmico vai
+     * reportar.
+     */
     public void addUploadServer(Agent server) {
         this.uploadServer = server;
     }
