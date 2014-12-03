@@ -174,9 +174,10 @@ public abstract class CommunicationInterface<Object> {
      */    
     public abstract boolean isAvailable() throws UnsupportedOperationException,IOException;
     public abstract boolean testConnection() throws IOException, UnsupportedOperationException;
-    public abstract boolean connect() throws IOException, UnsupportedOperationException; // remover
+    public abstract boolean connect(String address) throws IOException, UnsupportedOperationException;
     public abstract boolean disconnect() throws IOException, UnsupportedOperationException;
     public abstract boolean sendMessage(CommunicationManager communicationManager, MessageWrapper messageWrapper) throws java.net.SocketTimeoutException,IOException;
     public abstract Object sendMessageWithResponse(CommunicationManager communicationManager, MessageWrapper messageWrapper) throws java.net.SocketTimeoutException,IOException;
     public abstract Object receiveMessage() throws java.net.SocketTimeoutException,IOException;
+    public abstract Object receiveMessage(int timeout) throws java.net.SocketTimeoutException,IOException;
 }

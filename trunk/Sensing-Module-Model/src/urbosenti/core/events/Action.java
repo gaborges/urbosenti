@@ -4,6 +4,8 @@
  */
 package urbosenti.core.events;
 
+import java.util.HashMap;
+
 /**
  *
  * @author Guilherme
@@ -11,6 +13,7 @@ package urbosenti.core.events;
 public class Action {
     private int id;
     private String name;
+    private  HashMap<String, Object>  parameters;
 
     public int getId() {
         return id;
@@ -28,4 +31,12 @@ public class Action {
         this.name = name;
     }
 
+    public HashMap<String, Object> getParameters() {
+        return parameters;
+    }
+
+    public void setParameters(HashMap<String, Object> parameters) {
+        this.parameters = parameters;
+    }
+    
 }

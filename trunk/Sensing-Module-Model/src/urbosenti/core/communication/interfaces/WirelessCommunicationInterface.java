@@ -29,7 +29,7 @@ public class WirelessCommunicationInterface extends CommunicationInterface{
     }
 
     @Override
-    public boolean connect() throws IOException, UnsupportedOperationException {
+    public boolean connect(String address) throws IOException, UnsupportedOperationException {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
@@ -58,5 +58,8 @@ public class WirelessCommunicationInterface extends CommunicationInterface{
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
     
-    
+    @Override
+    public Object receiveMessage(int timeout) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
 }
