@@ -25,33 +25,21 @@ public class TestCommunication {
     }
     
     public void test1(){
-        // Envio normal de mensagem sem retorno
-        // testaEnvioMensagemNormalSemRetorno(); // OK
+        // Envio de mensagem sem retorno
+        // testaEnvioMensagemSemRetorno(); // OK
         
-                
-        // Envio prioritário de mensagem sem retorno
-        
-        // Envio normal de mensagem com retorno
-        //testaEnvioMensagemNormalComRetorno();
-        
-        
-        testaUploadServer();
-        //testaEnvioMensagemNormalSemRetorno();
-        //testaEnvioMensagemNormalSemRetorno();
-        // Envio prioritário de mensagem com retorno
-        
-        // Teste de desconexão
-        
-        // Teste de reconexão
-        
-        // Teste de armazenamento
+        // Envio de mensagem com retorno
+        testaEnvioMensagemComRetorno();
          
+        // Teste do serviço de upload - ok
+        //testaUploadServer();
+                
     }
     
-    public void testaEnvioMensagemNormalSemRetorno(){
+    public void testaEnvioMensagemSemRetorno(){
         // Envio normal de mensagem sem retorno
         Agent target = new Agent();
-        target.setAddress("http://143.54.12.47:8084/TestServer/webresources/test/");
+        target.setAddress("http://localhost:8090/Test2Server/webresources/generic");
         target.setUid("666");
         target.setLayer("application");
         target.setDescription("Backend Module");
@@ -65,7 +53,7 @@ public class TestCommunication {
         m.setTarget(target);
         m.setSender(origin);
         m.setSubject("Textando");
-        m.setContentType("text/plain");
+        m.setContentType("application/xml");
         m.setContent("oiiiiii");
         try {
             deviceManager.getCommunicationManager().sendMessage(m);
@@ -78,39 +66,9 @@ public class TestCommunication {
         }
     }
     
-    public void testaEnvioMensagemPrioritariaSemRetorno(){
-        // Envio normal de mensagem sem retorno
+    public void testaEnvioMensagemComRetorno(){
         Agent target = new Agent();
-        target.setAddress("http://143.54.12.47:8084/TestServer/webresources/test/");
-        target.setUid("666");
-        target.setLayer("application");
-        target.setDescription("Backend Module");
-        
-        Agent origin = new Agent();
-        origin.setUid("1232456789");
-        origin.setLayer("application");
-        origin.setDescription("Sensing Module");
-        
-        Message m = new Message();
-        m.setTarget(target);
-        m.setSender(origin);
-        m.setSubject("Textando");
-        m.setContentType("text/plain");
-        m.setContent("oiiiiii");
-        m.setPreferentialPriority(); // Prioridade Preferêncial
-        try {        
-            deviceManager.getCommunicationManager().sendMessage(m);
-        } catch (java.net.SocketTimeoutException ex) {
-            Logger.getLogger(TestCommunication.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (IOException ex) {
-            Logger.getLogger(TestCommunication.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        
-    }
-    
-    public void testaEnvioMensagemNormalComRetorno(){
-        Agent target = new Agent();
-        target.setAddress("http://143.54.12.47:8084/TestServer/webresources/test/return");
+        target.setAddress("http://localhost:8090/Test2Server/webresources/generic/return");
         target.setUid("666");
         target.setLayer("application");
         target.setDescription("Backend Module");
@@ -124,7 +82,7 @@ public class TestCommunication {
         m.setTarget(target);
         m.setSender(origin);
         m.setSubject("Textando Retorno");
-        m.setContentType("text/plain");
+        m.setContentType("application/xml");
         m.setContent("oi22222");
         
         String result ="";
@@ -138,32 +96,9 @@ public class TestCommunication {
         System.out.println("Result: " + result);
     }
     
-    public void testaEnvioMensagemPrioritariaComRetorno(){
-        Agent target = new Agent();
-        target.setAddress("http://143.54.12.47:8084/TestServer/webresources/test/return");
-        target.setUid("666");
-        target.setLayer("application");
-        target.setDescription("Backend Module");
-        
-        Agent origin = new Agent();
-        origin.setUid("1232456789");
-        origin.setLayer("application");
-        origin.setDescription("Sensing Module");
-        
-        Message m = new Message();
-        m.setTarget(target);
-        m.setSender(origin);
-        m.setSubject("Textando Retorno");
-        m.setContentType("text/plain");
-        m.setContent("oi22222");
-        m.setPreferentialPriority(); // Prioridade Preferêncial
-        
-        
-    }
-    
     public void testaUploadServer(){
         Agent target = new Agent();
-        target.setAddress("http://143.54.12.47:8084/TestServer/webresources/test/");
+        target.setAddress("http://localhost:8090/Test2Server/webresources/generic");
         target.setUid("666");
         target.setLayer("application");
         target.setDescription("Backend Module");
@@ -177,11 +112,12 @@ public class TestCommunication {
         m.setTarget(target);
         m.setSender(origin);
         m.setSubject("Textando");
-        m.setContentType("text/plain");
+        m.setContentType("application/xml");
         m.setContent("oiiiiii");
 
-        deviceManager.getCommunicationManager().sendReport(m);
+        
         deviceManager.getCommunicationManager().addUploadServer(target);
+        deviceManager.getCommunicationManager().sendReport(m);
         Thread t = new Thread(deviceManager.getCommunicationManager());
         t.start();
       

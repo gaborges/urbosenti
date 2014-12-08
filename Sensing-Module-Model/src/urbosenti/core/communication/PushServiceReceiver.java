@@ -10,48 +10,26 @@ import urbosenti.core.device.Agent;
  *
  * @author Guilherme
  */
-public class PushServiceReceiver {
+public abstract class PushServiceReceiver implements Runnable{
     
-    private CommunicationManager communicationManager;
+    public final CommunicationManager communicationManager;
 
     public PushServiceReceiver(CommunicationManager communicationManager) {
         this.communicationManager = communicationManager;
     }
         
-    private void run(){ // Only a representative method - If i don't make a mistake, this method will be private ou protected
+    @Override
+    public abstract void run();
     
-        // When have a new message
-        String message = "<message>\n" +
-"	<header>\n" +
-"		<origin>\n" +
-"			<uid>11XYZ</uid>\n" +
-"			<name>Backend Module</name>\n" +
-"			<address>192.168.0.1</address>\n" +
-"			<layer>system</layer>\n" +
-"               </origin>\n" +
-"               <target>\n" +
-"			<uid>22XYZ</uid>\n" +
-"                       <address>192.168.0.2</address>\n" +
-" 			<layer>system</layer>\n" +
-"               </target>\n" +
-"               <subject>social interaction</subject>\n" +
-"               <contentType>text/xml</contentType>\n" +
-"	</header>\n" +
-"	<content>" +
-"		… message according the subject" +
-"       </content>" +
-"     </message>";
-        Agent origin = new Agent();
-        origin.setAddress("http://exemplo:8084/TestServer/webresources/test/return");
-        this.communicationManager.newPushMessage(origin,message);
-    }
-    
-    public void startPushReceiverService() {
+    public void start() {
         // Create a Service to receive Push Messages in text format
-        run();
+        Thread t = new Thread(this);
+        t.start();
     }
 
-    public void stopPushReceiverService() {
+    public void stop() {
         // stop the service
     }
+    
+    
 }
