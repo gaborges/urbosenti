@@ -11,6 +11,7 @@ import urbosenti.core.communication.interfaces.DTNCommunicationInterface;
 import urbosenti.core.communication.interfaces.MobileDataCommunicationInterface;
 import urbosenti.core.communication.interfaces.WiredCommunicationInterface;
 import urbosenti.core.communication.interfaces.WirelessCommunicationInterface;
+import urbosenti.core.communication.receivers.SocketPushServiceReceiver;
 import urbosenti.core.device.DeviceManager;
 import urbosenti.test.ConcreteApplicationHandler;
 import urbosenti.test.TestCommunication;
@@ -37,14 +38,14 @@ public class Main {
         deviceManager.addSupportedCommunicationInterface(new MobileDataCommunicationInterface()); // não implementado
         deviceManager.addSupportedCommunicationInterface(new DTNCommunicationInterface()); // não implementado
         
-        // Processo de Descoberta, executa todos os onCreate
+        // Processo de Descoberta, executa todos os onCreate's de todos os Componentes habilidatos do módudo de sensoriamento
         deviceManager.onCreate();
         deviceManager.setUID("uid:123456789asdf");
-        // Adiciona o AplicationHandler da aplicação
+        // Adiciona o AplicationHandler da aplicação para tratamento de eventos da aplicação
         ConcreteApplicationHandler handler = new ConcreteApplicationHandler(deviceManager);
         deviceManager.getEventManager().subscribe(handler);
-        // Execução - inicia todos os serviços e threads em background
-        PushServiceReceiver teste = new PushServiceReceiver(deviceManager.getCommunicationManager());
+        // Execução - inicia todos os serviços e threads em background. Intanciar serviço de recebimento de mensagens
+        PushServiceReceiver teste = new SocketPushServiceReceiver(deviceManager.getCommunicationManager());
         //DeliveryMessagingService delivaryService = new DeliveryMessagingService(deviceManager.getCommunicationManager());
         
         // Cria as threads para 1 - comunicação (pushs), e 2  para do mecanismo de adaptação
@@ -54,7 +55,7 @@ public class Main {
         deviceManager.getAdaptationManager().start(); 
         
         // Inicia o serviço de Push, para receber mensagens do servidor. OBS.: Utilizar implementações nativas, com GCM ou o Iphone Push Service
-        teste.startPushReceiverService();
+        teste.start();
         
         Thread t = new Thread(deviceManager.getAdaptationManager());
         t.start();

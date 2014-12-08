@@ -46,6 +46,7 @@ public class DeviceManager extends ComponentManager implements AsynchronouslyMan
 
     /**
      *
+     * @return 
      */
     public String getUID() {
         return UID;

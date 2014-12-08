@@ -14,7 +14,6 @@ import urbosenti.core.device.ComponentManager;
 import urbosenti.core.device.DeviceManager;
 import urbosenti.core.events.Action;
 import urbosenti.core.events.AsynchronouslyManageableComponent;
-import urbosenti.core.events.EventManager;
 
 /**
  *
@@ -22,7 +21,7 @@ import urbosenti.core.events.EventManager;
  */
 public class DataManager extends ComponentManager implements AsynchronouslyManageableComponent{
 
-    private List<CommunicationInterface> supportedCommunicationInterfaces;
+    private final List<CommunicationInterface> supportedCommunicationInterfaces;
     CommunicationDAO communicationDAO;
     
     public DataManager(DeviceManager deviceManager) {

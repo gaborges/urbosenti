@@ -533,7 +533,7 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
         this.addReport(messageWrapper);
     }
 
-    protected void newPushMessage(Agent origin, String bruteMessage) {
+    public void newPushMessage(Agent origin, String bruteMessage) {
         try {
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             DocumentBuilder builder = factory.newDocumentBuilder();
@@ -837,17 +837,20 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
      * @return remove o report da fila e retorna true se teve sucesso.
      */
     protected synchronized boolean removeMessage(MessageWrapper mw) {
-        try {
-            this.priorityMessageQueue.remove(mw);
-            return true;
-        } catch (NoSuchElementException ex) {
+        if(mw.getMessage().getPriority() == Message.PREFERENTIAL_PRIORITY) {
+            try {
+                this.priorityMessageQueue.remove(mw);
+            } catch (NoSuchElementException ex) {
+                return false;
+            }
+        } else {
+            try {
+                this.normalMessageQueue.remove(mw);   
+            } catch (NoSuchElementException ex) {
+                return false;
+            }
         }
-        try {
-            this.normalMessageQueue.remove(mw);
-            return true;
-        } catch (NoSuchElementException ex) {
-        }
-        return false;
+        return true;
     }
 
     /**
