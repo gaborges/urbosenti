@@ -45,11 +45,11 @@ public class ReconnectionService implements Runnable {
         return reconnectionTime;
     }
 
-    public void setReconnectionMethodOneAtTime() {
+    public void setReconnectionMethodOneByTime() {
         this.methodOfReconnection = 1;
     }
 
-    public void setReconnectionMethodAllAtOnce() {
+    public void setReconnectionMethodAllByOnce() {
         this.methodOfReconnection = 2;
     }
 

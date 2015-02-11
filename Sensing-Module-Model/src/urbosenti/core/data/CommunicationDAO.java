@@ -6,6 +6,7 @@ package urbosenti.core.data;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import urbosenti.core.communication.CommunicationInterface;
 import urbosenti.core.communication.MessageWrapper;
@@ -34,49 +35,74 @@ public class CommunicationDAO {
         this.uploadMessagingPolicy = 2; //  política de Upload periódico de Mensagens: Sempre que há um relato novo tenta fazer o upload, caso exista conexão, senão espera reconexão. Padrão.
         this.availableCommunicationInterfaces = new ArrayList<CommunicationInterface>();
         countIdMessages = 0;
-        storrageMessages = new ArrayList<MessageWrapper>();
+        storedMessages = new ArrayList<MessageWrapper>();
     }
     
     private final List<CommunicationInterface> availableCommunicationInterfaces;
     
     // gambiarras sem banco
     private int countIdMessages;
-    private final List<MessageWrapper> storrageMessages;
+    private final List<MessageWrapper> storedMessages;
     
-    public void insertMessage(MessageWrapper mw){
+    public void insertReport(MessageWrapper mw){
         this.countIdMessages++;
         mw.setId(countIdMessages);
-        storrageMessages.add(mw);
+        storedMessages.add(mw);
     }
     
-    public void removeMessage(MessageWrapper mw){
+    public void removeReport(MessageWrapper mw){
         int i = 0;
-        for(;i<storrageMessages.size();i++){
-            if(storrageMessages.get(i).getId() == mw.getId()){
-                storrageMessages.remove(i);
+        for(;i<storedMessages.size();i++){
+            if(storedMessages.get(i).getId() == mw.getId()){
+                storedMessages.remove(i);
                 break;
             }
         }
     }
     
-    public void updateMessage(MessageWrapper mw){
+    public void removeReport(int reportId){
         int i = 0;
-        for(;i<storrageMessages.size();i++){
-            if(storrageMessages.get(i).getId() ==  mw.getId()){
-                storrageMessages.set(i, mw);
+        for(;i<storedMessages.size();i++){
+            if(storedMessages.get(i).getId() == reportId){
+                storedMessages.remove(i);
                 break;
             }
         }
     }
     
-    public MessageWrapper getMessageWrapper(int id){
+    public void updateReport(MessageWrapper mw){
         int i = 0;
-        for(;i<storrageMessages.size();i++){
-            if(storrageMessages.get(i).getId() == id){
-                return storrageMessages.get(i);
+        for(;i<storedMessages.size();i++){
+            if(storedMessages.get(i).getId() ==  mw.getId()){
+                storedMessages.set(i, mw);
+                break;
+            }
+        }
+    }
+    
+    public MessageWrapper getReport(int id){
+        int i = 0;
+        for(;i<storedMessages.size();i++){
+            if(storedMessages.get(i).getId() == id){
+                return storedMessages.get(i);
             }
         }
         return null;
+    }
+    
+    public int reportsStoredCount(){
+        return storedMessages.size();
+    }
+    /**
+     * @param timeToExpire will be used to say from the creation date plus the time to expire is bigger than the current date. 
+     */
+    public void removeAllExpiredReports(Date timeToExpire){
+        int i = 0;
+        for(;i<storedMessages.size();i++){
+            if(((new Date()).getTime() + timeToExpire.getTime()) > storedMessages.get(i).getCreatedTime().getTime()){
+                storedMessages.remove(i);
+            }
+        }
     }
     
     public int getCurrentPreferentialPolicy (int policyId){
