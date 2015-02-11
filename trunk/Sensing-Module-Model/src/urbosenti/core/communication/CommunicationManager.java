@@ -7,8 +7,10 @@ package urbosenti.core.communication;
 import java.io.IOException;
 import java.io.StringReader;
 import java.net.SocketTimeoutException;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -130,6 +132,15 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
      *
      */
     private static final int EVENT_MESSAGE_STORED = 10;
+    /**
+     * int EVENT_MESSAGE_STORED_REMOVED = 11;
+     *
+     * <ul><li>id: 11</li>
+     * <li>evento: Mensagem armazenada foi removida</li>
+     * <li>parâmetros: Mensagem Wrapper</li></ul>
+     *
+     */
+    private static final int EVENT_MESSAGE_STORED_REMOVED = 11;
     private int countPriorityMessage;
     private int countNormalMessage;
     private int limitPriorityMessage;
@@ -189,17 +200,22 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
      */
     private int reconnectionPolicy; // Política de reconexão
     private Integer uploadInterval; // Intervalo de upload
+    private Double uploadRate; // Taxa de upload atribuída dinâmicamente. Inicialmente 1;
+    private int reportsCountSentByUploadInterval; // Contagem de relatos enviados por intervalo, inicial 0
+    private int limitOfReportsSentByUploadInterval; // Limite do envio de relatos por intervalo, padrão 20 (Posso fazer experimentos)
     private Integer reconnectionAttemptInterval;
     private CommunicationInterface currentCommunicationInterface;
     private List<CommunicationInterface> communicationInterfaces;
     private ReconnectionService reconnectionService;
     private Agent uploadServer;
     private boolean running; // indica se o servidor está rodando ou não
+    private List<PushServiceReceiver> pushServiceReveivers;
 
     public CommunicationManager(DeviceManager deviceManager) {
         super(deviceManager);
         this.normalMessageQueue = new LinkedList<MessageWrapper>();
         this.priorityMessageQueue = new LinkedList<MessageWrapper>();
+        this.pushServiceReveivers = new ArrayList<PushServiceReceiver>();
     }
 
     // if do not setted then when the method onCreate was activated it creates automatically
@@ -246,52 +262,206 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
 
         // Intervalo para upload do serviço de upload em 15 segundos
         this.uploadInterval = 15000;
+        this.uploadRate = 1.0;
+        this.reportsCountSentByUploadInterval = 0;
+        this.limitOfReportsSentByUploadInterval = 20;
         // Intervalo para reconexão em 60 segundos
         this.reconnectionAttemptInterval = 60000;
         if (reconnectionService == null) {
             this.reconnectionService = new ReconnectionService(this, communicationInterfaces);
             this.reconnectionService.setReconnectionTime(reconnectionAttemptInterval);
-            this.reconnectionService.setReconnectionMethodOneAtTime();
+            this.reconnectionService.setReconnectionMethodOneByTime();
         }
     }
 
     @Override
     public synchronized void applyAction(Action action) {
+        Integer policy, genericInteger;
+        Double genericDouble;
+        Agent agent;
         switch (action.getId()) {
-            case 1: // Desabilitar uma interface
+            /**
+             * *********** Função de Armazenamento de relatos *****************
+             */
+            case 1: // Remover relato da fila de upload e da base
+                // Parâmetro
+                Integer reportId = (Integer) action.getParameters().get("reportId");
+                // Remover da fila de upload
+                MessageWrapper mw = this.removeMessage(reportId);
+                // Remover do banco de dados
+                super.getDeviceManager().getDataManager().getCommunicationDAO().removeReport(reportId);
+                // Caso o mw esteja vaziu adicionar o reportId nele
+                if (mw == null){
+                    mw = new MessageWrapper(null);
+                    mw.setId(reportId);
+                }
+                // Evento de mensagem removida
+                this.newInternalEvent(EVENT_MESSAGE_STORED_REMOVED, mw);
+                break;
+            case 2: // Alterar limite de relatos armazenados *** tais estados são mantidos no módulo de adaptação, depois implementar
+                    
+                break;
+            case 3: // Alterar tempo limite - Função de Armazenamento de relatos *** tais estados são mantidos no módulo de adaptação
 
                 break;
-            case 2: // Definir interface de comunicação como para uso atual
+            case 4: // Alterar política - Função de Armazenamento de relatos
+                // Parâmetro
+                policy = (Integer) action.getParameters().get("policy");
+                // em um futuro distante um evento de intenção pode ser gerado aqui para intervenção por permisão de acesso
+                // alterar política de armazenamento de relatos
+                this.messageStoragePolicy = policy;
+                break;
+            /**
+             * *********** Função de Reconexão *****************
+             */
+            case 5: // Alterar intervalo de reconexão
+                // Parâmetro
+                genericInteger = (Integer) action.getParameters().get("interval");
+                // verifica se a política é a estática e se a origem não é o sistema, pois nesse caso somente a aplicação e usuários podem alterar.
+                if(reconnectionPolicy == 1 && !action.getOrigin().getLayer().equals(Agent.LAYER_SYSTEM)){
+                    // Atribuir o valor
+                    this.reconnectionService.setReconnectionTime(genericInteger);
+                    this.reconnectionAttemptInterval = genericInteger;
+                }
+                break;
+            case 6: // Alterar método
+                // Parâmetro
+                genericInteger = (Integer) action.getParameters().get("method");
+                agent = (Agent) action.getParameters().get("origin");
+                // verifica se a política é a estática e se a origem não é o sistema, pois nesse caso somente a aplicação e usuários podem alterar.
+                if(reconnectionPolicy == 1 && !action.getOrigin().getLayer().equals(Agent.LAYER_SYSTEM)){
+                    // Verificar o valor
+                    if(genericInteger == 1){
+                        reconnectionService.setReconnectionMethodOneByTime();
+                    }                    
+                    else if (genericInteger == 2){
+                        reconnectionService.setReconnectionMethodAllByOnce();
+                    }
+                }
+                break;
+            case 7: // Alterar política
+                // Parâmetro
+                if(reconnectionPolicy == 1 && !action.getOrigin().getLayer().equals(Agent.LAYER_SYSTEM)){
+                    // atribuir
+                    this.reconnectionPolicy = (Integer) action.getParameters().get("policy");
+                }
+                break;
+           
+            /**
+             * *********** Função de Otimização de Upload de Relatos*****************
+             */
+            case 8: // Alterar política
+                    // Parâmetro
+                policy = (Integer) action.getParameters().get("policy");
+                // em um futuro distante um evento de intenção pode ser gerado aqui para intervenção por permisão de acesso
+                // alterar política de armazenamento de relatos
+                if (policy >= 1 && policy <= 4){
+                    this.messageStoragePolicy = policy;
+                }
+                break;
+            case 9: // Alterar taxa de upload
+                genericDouble = (Double) action.getParameters().get("uploadRate");
+                if(genericDouble <= 1.0 && genericDouble >= 0.0){
+                    this.uploadRate = genericDouble;
+                }
+                break;
+            case 10: // Alterar tempo do intervalo entre ciclos de upload
+                 genericInteger = (Integer) action.getParameters().get("interval");
+                if(genericInteger > 0){
+                    this.reconnectionPolicy = genericInteger;
+                }
+                break;
+            case 11: // Alterar quantidade de relatos enviados simultaneamente por ciclo
+                genericInteger = (Integer) action.getParameters().get("quantity");
+                if(genericInteger > 0){
+                    this.limitOfReportsSentByUploadInterval = genericInteger;
+                }
+                break;
+            /**
+             * *********** Função de Uso de Dados Móveis  *****************
+             */
+            case 12: // Alterar política
+                policy = (Integer) action.getParameters().get("policy");
+                // em um futuro distante um evento de intenção pode ser gerado aqui para intervenção por permisão de acesso
+                this.mobileDataPolicy = policy;
+                break;
+            case 13: // Alterar Limite de Dados Móveis com prioridade normal
+                this.mobileDataQuota = (Double) action.getParameters().get("newLimit");
+                break;
+            case 14: // Alterar Limite de Dados Móveis com prioridade 
+                this.mobileDataPriorityQuota = (Double) action.getParameters().get("newLimit");
+                break;
+            /**
+             * *********** Interface de Comunicação de Saída *****************
+             */
+            case 15: // Desabilitar interface
+                genericInteger = (Integer) action.getParameters().get("interface");
+                for(CommunicationInterface ci : communicationInterfaces){
+                    if(ci.getId()==genericInteger){ 
+                        ci.setStatus(CommunicationInterface.STATUS_UNAVAILABLE);
+                    }
+                }
+                break;
+            case 16: // Habilitar interface
+                genericInteger = (Integer) action.getParameters().get("interface");
+                for(CommunicationInterface ci : communicationInterfaces){
+                    if(ci.getId()==genericInteger){ 
+                        ci.setStatus(CommunicationInterface.STATUS_AVAILABLE);
+                    }
+                }
+                break;
+            case 17: // Definir interface de comunicação como para uso atual
                 for (CommunicationInterface ci : this.communicationInterfaces) {
-                    if (ci.getId() == (Integer) action.getParameters().get("interface_id")) {
+                    if (ci.getId() == (Integer) action.getParameters().get("interface")) {
                         this.currentCommunicationInterface = ci;
                         break;
                     }
                 }
                 break;
-            case 3: // Alterar ordem de interfaces
-
+            case 18: // Alterar ordem da interface
+                genericInteger = (Integer) action.getParameters().get("interface");
+                // Encontra a interface
+                for(int i = 0; i < communicationInterfaces.size();i++){
+                    CommunicationInterface ci;
+                    if(communicationInterfaces.get(i).getId() == genericInteger){
+                        ci = communicationInterfaces.get(i);
+                        communicationInterfaces.remove(i); // Apaga a interface da última posição
+                        communicationInterfaces.add( // Adiciona a interface na possição necessária
+                                (Integer) action.getParameters().get("position"),
+                                ci);
+                        break;
+                    }
+                }
                 break;
-            case 4: // Atribuir pontuação a interface
-
-                break;
-            case 5: // Alterar configuração da política
-
-                break;
-            case 6: // Alterar intervalo de reconexão do Serviço de Reconexão
-
-                break;
-            case 7: // Alterar método de reconexão do Serviço de Reconexão
-
-                break;
-            case 8: // Alterar valor de timeout do Serviço de Reconexão
-
-                break;
-            case 9: // Alterar intervalo de upload do serviço de upload
-
-                break;
-            case 10: // Apagar relato
                 
+            case 19: // Alterar timeout
+                for (CommunicationInterface ci : this.communicationInterfaces) {
+                    if (ci.getId() == (Integer) action.getParameters().get("interface")) {
+                        ci.setTimeout((Integer) action.getParameters().get("timeout"));
+                        break;
+                    }
+                }
+                break;
+            /**
+             * *********** Interface de Comunicação de Entrada *****************
+             */
+            case 20: // Habilitar Interface
+                for(int i = 0; i < pushServiceReveivers.size();i++){
+                    if(pushServiceReveivers.get(i).getId() == (Integer) action.getParameters().get("interface")){
+                        if((Integer) action.getParameters().get("state") == PushServiceReceiver.STATUS_LISTENING){
+                            pushServiceReveivers.get(i).setStatus(PushServiceReceiver.STATUS_LISTENING);
+                        }
+                    }
+                }
+                break;
+            case 21: // Desabilitar Interface
+                for(int i = 0; i < pushServiceReveivers.size();i++){
+                    if(pushServiceReveivers.get(i).getId() == (Integer) action.getParameters().get("interface")){
+                        if((Integer) action.getParameters().get("state") == PushServiceReceiver.STATUS_STOPPED){
+                            pushServiceReveivers.get(i).setStatus(PushServiceReceiver.STATUS_STOPPED);
+                        }
+                    }
+                }
                 break;
         }
     }
@@ -616,27 +786,27 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
                 break;
             case 2: // Apagar todas que foram enviadas com sucesso e armazenar as que não foram enviadas. Opção padrão.
                 if (messageWrapper.isSent()) { // Não foi enviada. Armazenar
-                    getDeviceManager().getDataManager().getCommunicationDAO().removeMessage(messageWrapper);
+                    getDeviceManager().getDataManager().getCommunicationDAO().removeReport(messageWrapper);
                 } else { // senão foi enviada. Armazenar
                     if (messageWrapper.getId() > 0) {
-                        getDeviceManager().getDataManager().getCommunicationDAO().updateMessage(messageWrapper);
+                        getDeviceManager().getDataManager().getCommunicationDAO().updateReport(messageWrapper);
                     } else {
-                        getDeviceManager().getDataManager().getCommunicationDAO().insertMessage(messageWrapper);
+                        getDeviceManager().getDataManager().getCommunicationDAO().insertReport(messageWrapper);
                     }
                 }
                 break;
             case 3: // Armazenar todas e deixar a aplicação decidir quais apagar.
                 if (messageWrapper.getId() > 0) {
-                    getDeviceManager().getDataManager().getCommunicationDAO().updateMessage(messageWrapper);
+                    getDeviceManager().getDataManager().getCommunicationDAO().updateReport(messageWrapper);
                 } else {
-                    getDeviceManager().getDataManager().getCommunicationDAO().insertMessage(messageWrapper);
+                    getDeviceManager().getDataManager().getCommunicationDAO().insertReport(messageWrapper);
                 }
                 break;
             case 4: // Dinâmico (Exige componente de adaptação). Dá poder ao mecanismo decidir quando apagar uma mensagem armazenada. O usuário pode especificar uma quantidade ou um tempo.
                 if (messageWrapper.getId() > 0) {
-                    getDeviceManager().getDataManager().getCommunicationDAO().updateMessage(messageWrapper);
+                    getDeviceManager().getDataManager().getCommunicationDAO().updateReport(messageWrapper);
                 } else {
-                    getDeviceManager().getDataManager().getCommunicationDAO().insertMessage(messageWrapper);
+                    getDeviceManager().getDataManager().getCommunicationDAO().insertReport(messageWrapper);
                     // Gerar evento -- Mensagem armazenada.
                     this.newInternalEvent(EVENT_MESSAGE_STORED, messageWrapper);
                 }
@@ -837,7 +1007,7 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
      * @return remove o report da fila e retorna true se teve sucesso.
      */
     protected synchronized boolean removeMessage(MessageWrapper mw) {
-        if(mw.getMessage().getPriority() == Message.PREFERENTIAL_PRIORITY) {
+        if (mw.getMessage().getPriority() == Message.PREFERENTIAL_PRIORITY) {
             try {
                 this.priorityMessageQueue.remove(mw);
             } catch (NoSuchElementException ex) {
@@ -845,12 +1015,42 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
             }
         } else {
             try {
-                this.normalMessageQueue.remove(mw);   
+                this.normalMessageQueue.remove(mw);
             } catch (NoSuchElementException ex) {
                 return false;
             }
         }
         return true;
+    }
+
+    /**
+     *
+     * @param reportId -- Id do MessageWrapper
+     * @return remove o report da fila produrando o ID e retorna o
+     * MessageWrapper mw se teve sucesso, senão null.
+     */
+    protected synchronized MessageWrapper removeMessage(int reportId) {
+        try {
+            Iterator<MessageWrapper> iterator = this.priorityMessageQueue.iterator();
+            while (iterator.hasNext()) {
+                MessageWrapper mw = iterator.next();
+                if (mw.getId() == reportId) {
+                    this.priorityMessageQueue.remove(mw);
+                    return mw;
+                }
+            }
+            iterator = this.normalMessageQueue.iterator();
+            while (iterator.hasNext()) {
+                MessageWrapper mw = iterator.next();
+                if (mw.getId() == reportId) {
+                    this.normalMessageQueue.remove(mw);
+                    return mw;
+                }
+            }
+        } catch (NoSuchElementException ex) {
+            return null;
+        }
+        return null;
     }
 
     /**
@@ -914,7 +1114,7 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
                 // Adiciona os valores que serão passados para serem tratados
                 values = new HashMap<String, Object>();
                 values.put("messageWrapper", mw);
-                values.put("targuet", agent);
+                values.put("target", agent);
                 values.put("interface", ci);
 
                 // cria o evento
@@ -935,7 +1135,7 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
                 // Adiciona os valores que serão passados para serem tratados
                 values = new HashMap<String, Object>();
                 values.put("messageWrapper", mw);
-                values.put("targuet", agent);
+                values.put("target", agent);
 
                 // cria o evento de Sistema
                 event = new SystemEvent(this);// Event: new Message
@@ -1097,6 +1297,23 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
                 // envia o evento
                 getEventManager().newEvent(event);
                 break;
+            case EVENT_MESSAGE_STORED_REMOVED:
+                mw = (MessageWrapper) parameters[0];
+
+                event = new SystemEvent(this);
+
+                // Adiciona os valores que serão passados para serem tratados
+                values = new HashMap<String, Object>();
+                values.put("messageWrapper", mw);
+
+                event.setId(11);
+                event.setName("Stored message was removed");
+                event.setTime(new Date());
+                event.setValue(values);
+
+                // envia o evento
+                getEventManager().newEvent(event);
+                break;
         }
         // inserir métricas e medidas no evento
     }
@@ -1149,31 +1366,35 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
      *
      * @return CommunicationInterface or null if no one interface is available
      */
-    private CommunicationInterface getCommunicationInterface() {
-        // Se há uma interface atual testa se ela possuí conexão
-        if (currentCommunicationInterface != null) {
-            try {
-                if (currentCommunicationInterface.testConnection()) {
-                    return currentCommunicationInterface;
+    private synchronized CommunicationInterface getCommunicationInterface() {
+            // Se há uma interface atual testa se ela possuí conexão
+        if (currentCommunicationInterface != null ) {
+            if(currentCommunicationInterface.getStatus()!=CommunicationInterface.STATUS_UNAVAILABLE){
+                try {
+                    if (currentCommunicationInterface.testConnection()) {
+                        return currentCommunicationInterface;
+                    }
+                } catch (IOException ex) {
+                    Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+                } catch (UnsupportedOperationException ex) {
+                    Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
                 }
-            } catch (IOException ex) {
-                Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
-            } catch (UnsupportedOperationException ex) {
-                Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
-
+       
         // Testa se outra interface possuí conexão, se sim ela passa a ser a atual e é retornada
         for (CommunicationInterface ci : communicationInterfaces) {
-            try {
-                if (ci.testConnection()) {
-                    currentCommunicationInterface = ci;
-                    return ci;
+            if(currentCommunicationInterface.getStatus()!=CommunicationInterface.STATUS_UNAVAILABLE){
+                try {
+                    if (ci.testConnection()) {
+                        currentCommunicationInterface = ci;
+                        return ci;
+                    }
+                } catch (IOException ex) {
+                    Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+                } catch (UnsupportedOperationException ex) {
+                    Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
                 }
-            } catch (IOException ex) {
-                Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
-            } catch (UnsupportedOperationException ex) {
-                Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
 
@@ -1229,15 +1450,45 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
                 case 1: // Sempre que há um relato novo tenta fazer o upload, caso exista conexão, senão espera reconexão. Padrão.
                     break;
                 case 2: // Em intervalos fixos. Pode ser definido pela aplicação. Intervalo inicial padrão a cada 15 segundos. Se não há conexão as mensagens são armazenadas.
-                    synchronized (waitUpload) {
-                        waitUpload.wait(uploadInterval);
+                    // enquanto a quantidade de relatos por intervalo não for atendida, somente soma, senão zera a contagem e espera o tempo do intervalo
+                    if (this.reportsCountSentByUploadInterval == 0 && reportsCountSentByUploadInterval < this.limitOfReportsSentByUploadInterval) {
+                        this.reportsCountSentByUploadInterval = 0;
+                        synchronized (waitUpload) {
+                            waitUpload.wait(uploadInterval);
+                        }
+                    } else {
+                        this.reportsCountSentByUploadInterval++;
                     }
                     break;
                 case 3: // Está implementada no método ADDMessage. Exige confirmação da aplicação para upload dos relatos. Enquanto não confirmada comportamento na política 1.  
                     break;
                 case 4: // Adaptativo. O componente de adaptação irá atribuir dinamicamente novos intervalos.
-                    synchronized (waitUpload) {
-                        waitUpload.wait(uploadInterval);
+                    // Se a taxa de upload for menor que 1 então verificar se nessse intervalo será necessário fazer o upload
+                    if (this.uploadRate < 1.0 && this.reportsCountSentByUploadInterval == 0) {
+                        while (true) {
+                            if (this.uploadRate <= Math.random()) { // Testa se é necessário fazer o upload, caso não, espera mais um intervalo
+                                synchronized (waitUpload) {
+                                    waitUpload.wait(uploadInterval);
+                                }
+                            } else {
+                                synchronized (waitUpload) {
+                                    waitUpload.wait(uploadInterval);
+                                }
+                                this.reportsCountSentByUploadInterval++;
+                                break;
+                            }
+                        }
+                    } else {
+                        // enquanto a quantidade de relatos por intervalo não for atendida, somente soma, senão zera a contagem e espera o tempo do intervalo
+                        if (this.reportsCountSentByUploadInterval == 0 && reportsCountSentByUploadInterval < this.limitOfReportsSentByUploadInterval) {
+                            this.reportsCountSentByUploadInterval = 0;
+                            synchronized (waitUpload) {
+                                waitUpload.wait(uploadInterval);
+                            }
+                        } else {
+                            // Soma até atingir limite de relatos
+                            this.reportsCountSentByUploadInterval++;
+                        }
                     }
                     break;
             }
@@ -1343,5 +1594,9 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
                 throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
         }
         return mw;
+    }
+
+    public void addPushServiceReceiver(PushServiceReceiver receiver) {
+        this.pushServiceReveivers.add(receiver);
     }
 }

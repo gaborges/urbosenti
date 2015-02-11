@@ -5,6 +5,7 @@
 package urbosenti.core.events;
 
 import java.util.HashMap;
+import urbosenti.core.device.Agent;
 
 /**
  *
@@ -13,6 +14,8 @@ import java.util.HashMap;
 public class Action {
     private int id;
     private String name;
+    private Agent origin;
+    private int targetObjectId;
     private  HashMap<String, Object>  parameters;
 
     public int getId() {
@@ -37,6 +40,22 @@ public class Action {
 
     public void setParameters(HashMap<String, Object> parameters) {
         this.parameters = parameters;
+    }
+
+    public Agent getOrigin() {
+        return origin;
+    }
+
+    public void setOrigin(Agent origin) {
+        this.origin = origin;
+    }
+
+    public int getTargetObjectId() {
+        return targetObjectId;
+    }
+
+    public void setTargetObjectId(int targetObjectId) {
+        this.targetObjectId = targetObjectId;
     }
     
 }
