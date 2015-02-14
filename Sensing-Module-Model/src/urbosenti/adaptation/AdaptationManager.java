@@ -18,13 +18,14 @@ import urbosenti.core.events.Action;
 import urbosenti.core.events.AsynchronouslyManageableComponent;
 import urbosenti.core.events.Event;
 import urbosenti.core.events.EventManager;
+import urbosenti.core.events.SystemHandler;
 import urbosenti.user.UserManager;
 
 /**
  *
  * @author Guilherme
  */
-public class AdaptationManager extends ComponentManager implements Runnable, AsynchronouslyManageableComponent {
+public class AdaptationManager extends ComponentManager implements Runnable, AsynchronouslyManageableComponent, SystemHandler {
 
     /**
      *
@@ -106,6 +107,7 @@ public class AdaptationManager extends ComponentManager implements Runnable, Asy
         return true;
     }
 
+    @Override
     public synchronized void newEvent(Event event) {
         /*
          add to queue
