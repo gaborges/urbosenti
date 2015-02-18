@@ -23,6 +23,7 @@ public class DataManager extends ComponentManager implements AsynchronouslyManag
 
     private final List<CommunicationInterface> supportedCommunicationInterfaces;
     CommunicationDAO communicationDAO;
+    UserDAO userDAO;
     
     public DataManager(DeviceManager deviceManager) {
         super(deviceManager);
@@ -32,6 +33,7 @@ public class DataManager extends ComponentManager implements AsynchronouslyManag
     @Override
     public void onCreate() {
         communicationDAO = new CommunicationDAO();
+        userDAO = new UserDAO();
         // Carrega interfaces de comunicação disponíveis (testa disponibilidade antes de executar - lookback)
         for(CommunicationInterface ci : supportedCommunicationInterfaces){
             try {
@@ -56,6 +58,10 @@ public class DataManager extends ComponentManager implements AsynchronouslyManag
     public CommunicationDAO getCommunicationDAO(){
         
         return communicationDAO;
+    }
+
+    public UserDAO getUserDAO() {
+        return userDAO;
     }
 
     @Override

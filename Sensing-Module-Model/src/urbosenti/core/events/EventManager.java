@@ -10,8 +10,9 @@ import java.util.HashMap;
 import java.util.List;
 import urbosenti.adaptation.AdaptationManager;
 import urbosenti.core.events.timer.EventTimer;
+import urbosenti.core.events.timer.EventTimerFactory;
 import urbosenti.core.events.timer.TriggerRequest;
-import urbosenti.core.events.timer.UrboSentiNativeEventTimer;
+import urbosenti.core.events.timer.UrboSentiEventTimerFactory;
 
 /**
  *
@@ -37,11 +38,14 @@ public class EventManager implements AsynchronouslyManageableComponent {
     private boolean enableSystemHandler;
     private AdaptationManager systemHandler;
     private List<ApplicationHandler> applicationHandlers;
+    // Fábrica responsável por criar os objetos
+    private EventTimerFactory eventTimerFactory;
 
     public EventManager(AdaptationManager systemHandler) {
         this();
         this.systemHandler = systemHandler;
-        enableSystemHandler = true;
+        this.enableSystemHandler = true;
+        this.eventTimerFactory = new UrboSentiEventTimerFactory();
     }
 
     public EventManager() {
@@ -92,8 +96,17 @@ public class EventManager implements AsynchronouslyManageableComponent {
         applicationHandlers.remove(applicationHandler);
     }
 
+    /**
+     * Ações disponibilizadas por esse componente:
+     * <ul>
+     * <li>1 - Adicionar um gatilho temporal de evento</li>
+     * <li>2 - Cancelar gatilho</li>
+     * </ul>
+     * @param action contém objeto ação.
+     * 
+     */
     @Override
-    public void applyAction(Action action) {
+    public synchronized void applyAction(Action action) {
         TriggerRequest tr;
         switch (action.getId()) {
             case 1: // 1 - Adicionar um gatilho de tempo
@@ -110,7 +123,7 @@ public class EventManager implements AsynchronouslyManageableComponent {
                 // Quem Registrou
                 tr.setHandler((Object) action.getParameters().get("handler"));
                 // Criar o worker e adicionar na fila --- Colocar um factory aqui, e adicionar as instâncias pela aplicação
-                EventTimer timerWorker = new UrboSentiNativeEventTimer(tr, this);
+                EventTimer timerWorker = this.eventTimerFactory.getEventTimer(tr, this);
                 this.eventTimerWorkers.add(timerWorker);
                 // Iniciar o contador
                 timerWorker.start();
@@ -143,19 +156,25 @@ public class EventManager implements AsynchronouslyManageableComponent {
     }
     
     /**
-     * @param params Parâmetros oriundo dos objetos do componente <br><br>
      * Nesta função os eventos gerados pelo gatilho de tempo, diferentemente dos
      * demais componentes, são enviados diretamente para quem realizou a
      * requisição do gatilho
+     * <br><br>Eventos possíveis
+     * <ul>
+     * <li>EventManager.EVENT_TIME_TRIGGER_ACHIEVED - Evento agendado</li>
+     * </ul>
+     * @param eventId identificador do evento citado acima
+     * @param params Parâmetros oriundo dos objetos do componente <br><br>
+     * @see #EVENT_TIME_TRIGGER_ACHIEVED
      */
-    public void newInternalEvent(Object... params) {
+    public void newInternalEvent(int eventId, Object... params) {
         TriggerRequest tr;
         HashMap<String, Object> values;
         Event event;
-        switch ((Integer) params[0]) {
-            case EVENT_TIME_TRIGGER_ACHIEVED:
+        switch (eventId) {
+            case EVENT_TIME_TRIGGER_ACHIEVED: // 1 - Evento agendado
 
-                tr = (TriggerRequest) params[1];
+                tr = (TriggerRequest) params[0];
 
                 // Parâmetros do Evento
                 values = new HashMap();
@@ -191,8 +210,12 @@ public class EventManager implements AsynchronouslyManageableComponent {
                 break;
         }
     }
-//   Deselver essa ideia depois  
-//    public void setExternalEventTimer(EventTimer et){
-//    
-//    }
+
+    /**
+     *
+     * @param externalEventTimerFactory contem a Fábrica que foi desenvolvida para o sistema operacional nativo
+     */
+    public void setExternalEventTimer(EventTimerFactory externalEventTimerFactory){
+          this.eventTimerFactory = externalEventTimerFactory;
+    }
 }

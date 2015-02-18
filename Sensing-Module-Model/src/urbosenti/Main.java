@@ -12,6 +12,7 @@ import urbosenti.core.communication.interfaces.MobileDataCommunicationInterface;
 import urbosenti.core.communication.interfaces.WiredCommunicationInterface;
 import urbosenti.core.communication.interfaces.WirelessCommunicationInterface;
 import urbosenti.core.communication.receivers.SocketPushServiceReceiver;
+import urbosenti.core.device.Agent;
 import urbosenti.core.device.DeviceManager;
 import urbosenti.test.ConcreteApplicationHandler;
 import urbosenti.test.TestCommunication;
@@ -28,6 +29,9 @@ import urbosenti.test.TestCommunication;
  */
 public class Main {
     public static void main(String[] args) {
+        
+        /***** Configuração do middleware pelo framework *****/
+        
         // Instanciar componentes -- Device manager e os demais onDemand
         DeviceManager deviceManager = new DeviceManager(); // Objetos Core já estão incanciados internamente
         deviceManager.enableAdaptationComponent(); // Habilita componente de adaptação
@@ -37,9 +41,7 @@ public class Main {
         deviceManager.addSupportedCommunicationInterface(new WirelessCommunicationInterface()); // não implementado
         deviceManager.addSupportedCommunicationInterface(new MobileDataCommunicationInterface()); // não implementado
         deviceManager.addSupportedCommunicationInterface(new DTNCommunicationInterface()); // não implementado
-        
-        // Processo de Descoberta, executa todos os onCreate's de todos os Componentes habilidatos do módudo de sensoriamento
-        deviceManager.onCreate();
+                
         deviceManager.setUID("uid:123456789asdf");
         // Adiciona o AplicationHandler da aplicação para tratamento de eventos da aplicação
         ConcreteApplicationHandler handler = new ConcreteApplicationHandler(deviceManager);
@@ -47,19 +49,44 @@ public class Main {
         // Execução - inicia todos os serviços e threads em background. Intanciar serviço de recebimento de mensagens
         PushServiceReceiver teste = new SocketPushServiceReceiver(deviceManager.getCommunicationManager());
         //DeliveryMessagingService delivaryService = new DeliveryMessagingService(deviceManager.getCommunicationManager());
+             
+        // Atribuir o modelo de conhecimento do dispositivo que será descoberto pelo mecanismo de adaptação --- Falta fazer - Guilherme    
+        // deviceManager.setDeviceKnowledgeRepresentationModel(Object o,String dataType);
+        // deviceManager.validateDeviceKnowledgeRepresentationModel();
+        // deviceManager.setAgentKnowledgeRepresentationModel(Object o,String dataType);
+        // deviceManager.validateAgentKnowledgeRepresentationModel();
         
-        // Cria as threads para 1 - comunicação (pushs), e 2  para do mecanismo de adaptação
+         // Servidor ainda não criado
+        Agent backendServer = new Agent();
+        backendServer.setAddress("http://ubicomp.ufgs.br/UrboSenti/webresources/backend"); // Endereço fictício
+        backendServer.setDescription("Backend Application Service");
+        backendServer.setUid(""); // Colocar um UID no backend e atribuir aqui
         
-        // Indica que o processo de adaptação já passou pelo processo de descoberta. Deve ser executado antes do Create.
-        // OBS.: O adaptation Manager Atual é um agente reativo. Futuramente será proativo
+        // Adicionar o servidor da aplicação como servidor para upload
+        deviceManager.getCommunicationManager().addUploadServer(backendServer);
+        
+        // Timer feito pela aplicação pode ser adicionado usando esse método:
+        // deviceManager.getEventManager().setExternalEventTimer(new AndroidEventTimerFactory("AndroidEventTimer"));
+        
+        /***** Processo de descoberta das configurações adicionadas *****/
+
+        // Processo de Descoberta, executa todos os onCreate's de todos os Componentes habilidatos do módudo de sensoriamento
+        deviceManager.onCreate();
+        
+        /***** Processo de inicialização dos serviços *****/
+        
         deviceManager.getAdaptationManager().start(); 
+               
+        // Inicia o serviço de upload -- Testar em breve
+        //Thread uploader = new Thread(deviceManager.getCommunicationManager());
+        //uploader.start();
         
         // Inicia o serviço de Push, para receber mensagens do servidor. OBS.: Utilizar implementações nativas, com GCM ou o Iphone Push Service
         teste.start();
         
         Thread t = new Thread(deviceManager.getAdaptationManager());
         t.start();
-                      
+                
         // Testes
         TestCommunication tc = new TestCommunication(deviceManager);
         tc.test1();
@@ -70,8 +97,12 @@ public class Main {
         }
         deviceManager.getAdaptationManager().stop();
         
-              
-        // Daqui para baixo seria coisas da aplicação
+        /***** Registro do nó de sensoriamento móvel no servidor de aplicação - falta fazer a função e o servidor *****/
+        
+        // Registrar no Servidor Backend
+        deviceManager.registerSensingModule(backendServer);
+        
+        /***** Inicio das funções e aplicação de sensoriamento *****/
         // Aplicação de sensoriamento blablabla
     }
       
