@@ -274,6 +274,50 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
         }
     }
 
+    /**
+     * Ações disponibilizadas por esse componente por função:
+     * <p><b>Objeto Alvo</b>: Função de Armazenamento de relatos</p>
+     * <ul>
+     * <li>01 - Remover relato da fila de upload e do banco de dados - reportId</li>
+     * <li>02 - Alterar limite de relatos armazenados - limit</li>
+     * <li>03 - Alterar tempo limite - limit</li>
+     * <li>04 - Alterar política - policy - de 1 a 4</li>
+     * </ul>
+     * <p><b>Objeto Alvo</b>: Função de Reconexão</p>
+     * <ul>
+     * <li>05 - Alterar intervalo de reconexão - interval</li>
+     * <li>06 - Alterar método - method - 1 ou 2</li>
+     * <li>07 - Alterar política - policy - 1 ou 2</li>
+     * </ul>
+     * <p><b>Objeto Alvo</b>: Função de Otimização de Upload de Relatos</p>
+     * <ul>
+     * <li>08 - Alterar política - policy - de 1 a 4</li>
+     * <li>09 - Alterar taxa de upload - uploadRate - entre 1.0 e 0.0</li>
+     * <li>10 - Alterar tempo do intervalo entre ciclos de upload - interval</li>
+     * <li>11 - Alterar quantidade de relatos enviados simultaneamente por ciclo - quantity</li>
+     * </ul>
+     * <p><b>Objeto Alvo</b>: Função de Uso de Dados Móveis. OBS.:Não operacional ainda</p>
+     * <ul>
+     * <li>12 - Alterar política - policy - de 1 a 6</li>
+     * <li>13 - Alterar Limite de Dados Móveis com prioridade normal - newLimit</li>
+     * <li>14 - Alterar Limite de Dados Móveis com prioridade  - newLimit</li>
+     * </ul>
+     * <p><b>Objeto Alvo</b>: Interface de Comunicação de Saída</p>
+     * <ul>
+     * <li>15 - Desabilitar interface - interface</li>
+     * <li>16 - Habilitar interface - interface</li>
+     * <li>17 - Definir interface como atual - interface</li>
+     * <li>18 - Alterar ordem da interface - interface e position</li>
+     * <li>19 - Alterar timeout - interface - timeout</li>
+     * </ul>
+     * <p><b>Objeto Alvo</b>: Interface de Comunicação de Entrada</p>
+     * <ul>
+     * <li>20 - Habilitar Interface - interface</li>
+     * <li>21 - Desabilitar Interface - interface</li>
+     * </ul>
+     * @param action contém objeto ação.
+     * 
+     */
     @Override
     public synchronized void applyAction(Action action) {
         Integer policy, genericInteger;
@@ -1075,9 +1119,34 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
     /**
      * Função que gera os eventos. Cada evento possui um descritor que define os
      * parâmetros necessários
-     *
+     * <br><br>Eventos possíveis ordenador pelo ID do evento - descrição do evento
+     * <ul>
+     * <li>CommunicationManager.EVENT_INTERFACE_DISCONNECTION - Interface Desconectada</li>
+     * <li>CommunicationManager.EVENT_MESSAGE_DELIVERED - Mensagem Entregue</li>
+     * <li>CommunicationManager.EVENT_MESSAGE_NOT_DELIVERED - Mensagem não Entregue</li>
+     * <li>CommunicationManager.EVENT_MESSAGE_RECEIVED - Mensagem recebida</li>
+     * <li>CommunicationManager.EVENT_MESSAGE_RECEIVED_INVALID_FORMAT - Mensagem recebida em formato inválido</li>
+     * <li>CommunicationManager.EVENT_ADDRESS_NOT_REACHABLE - Endereço não acessível</li>
+     * <li>CommunicationManager.EVENT_DISCONNECTION - Desconexão geral</li>
+     * <li>CommunicationManager.EVENT_RESTORED_CONNECTION - Conexão reestabelecida</li>
+     * <li>CommunicationManager.EVENT_REPORT_AWAITING_APPROVAL - Relato esperando Aprovação</li>
+     * <li>CommunicationManager.EVENT_MESSAGE_STORED - Mensagem Armazenada</li>
+     * <li>@see #CommunicationManager.EVENT_MESSAGE_STORED_REMOVED - Mensagem Removida</li>
+     * </ul>
+     * 
      * @param eventId
      * @param parameters
+     * @see #EVENT_INTERFACE_DISCONNECTION
+     * @see #EVENT_MESSAGE_DELIVERED
+     * @see #EVENT_MESSAGE_NOT_DELIVERED
+     * @see #EVENT_MESSAGE_RECEIVED
+     * @see #EVENT_MESSAGE_RECEIVED_INVALID_FORMAT
+     * @see #EVENT_ADDRESS_NOT_REACHABLE
+     * @see #EVENT_DISCONNECTION
+     * @see #EVENT_RESTORED_CONNECTION
+     * @see #EVENT_REPORT_AWAITING_APPROVAL
+     * @see #EVENT_MESSAGE_STORED
+     * @see #EVENT_MESSAGE_STORED_REMOVED
      */
     private synchronized void newInternalEvent(int eventId, Object... parameters) {
         Agent agent;

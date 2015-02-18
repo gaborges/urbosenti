@@ -5,7 +5,6 @@
  */
 package urbosenti.core.events.timer;
 
-import java.util.Date;
 import java.util.Objects;
 import urbosenti.core.events.ApplicationHandler;
 import urbosenti.core.events.EventManager;
