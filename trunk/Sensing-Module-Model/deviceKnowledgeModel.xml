@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<UrboSentiDevice xmlns:xs="http://www.w3.org/2001/XMLSchema-instance"
+                 xs:noNamespaceSchemaLocation="deviceKnowledgeModelXSD.xsd">
+    <generalDefinitions version="1.0">
+        <backendService><!-- Talvez remover isso e deixar em código, ao menos pegar os uids dinâmicamente -->
+            <serviceUID>????</serviceUID>
+            <description>UrboSentiGeneralService</description>
+            <address>http://ubicomp.ufgs.br/UrboSenti/webresources/backend</address>
+            <applicationUID>????</applicationUID> <!-- Opcional usado para testes -->
+            <systemAgent model="1" uid="????:1" address="/"></systemAgent>
+        </backendService>
+        <objectTypes>
+            <type id="1" >function</type>
+            <type id="2" >interface</type>
+            <type id="3" >agent</type>
+        </objectTypes>
+        <dataTypes>
+            <type id="1" >byte</type>
+            <type id="2" >short</type>
+            <type id="3" >int</type>
+            <type id="4" >long</type>
+            <type id="5" >float</type>
+            <type id="6" >double</type>
+            <type id="7" >boolean</type>
+            <type id="8" >char</type>
+            <type id="9" >String</type>
+            <type id="8" >Object</type>
+        </dataTypes>
+        <implementationTypes>
+            <type id="1">embedded in code</type>
+            <type id="2">standalone monitor</type>
+        </implementationTypes>
+        <agentCommunicationLanguage id="1" name="FIPA">
+            <communicativeAct id="1">Accept Proposal</communicativeAct>
+            <communicativeAct id="2">Agree</communicativeAct>
+            <communicativeAct id="3">Cancel</communicativeAct>
+            <communicativeAct id="4">Call for Proposal</communicativeAct>
+            <communicativeAct id="5">Confirm</communicativeAct>
+            <communicativeAct id="6">Disconfirm</communicativeAct>
+            <communicativeAct id="7">Failure</communicativeAct>
+            <communicativeAct id="8">Inform</communicativeAct>
+            <communicativeAct id="9">Inform if</communicativeAct>
+            <communicativeAct id="10">Inform ref</communicativeAct>
+            <communicativeAct id="11">Not Underdstood</communicativeAct>
+            <communicativeAct id="12">Propagate</communicativeAct>
+            <communicativeAct id="13">Propose</communicativeAct>
+            <communicativeAct id="14">Proxy</communicativeAct>
+            <communicativeAct id="15">Query if</communicativeAct>
+            <communicativeAct id="16">Query ref</communicativeAct>
+            <communicativeAct id="17">Refuse</communicativeAct>
+            <communicativeAct id="18">Reject Proposal</communicativeAct>
+            <communicativeAct id="19">Request</communicativeAct>
+            <communicativeAct id="20">Request When</communicativeAct>
+            <communicativeAct id="21">Request Whenever</communicativeAct>
+            <communicativeAct id="22">Subscribe</communicativeAct>
+        </agentCommunicationLanguage>
+        <interationType id="1">Primary</interationType>
+        <interationType id="2">Secondary</interationType>
+        <interacionDirection id="1">Input</interacionDirection>
+        <interacionDirection id="2">Output</interacionDirection>
+        <targetOrigin id="1">Application</targetOrigin>
+        <targetOrigin id="2">System</targetOrigin>
+    </generalDefinitions>
+    <components>
+        <component id="1" name="Device" class="urbosenti.core.device.DeviceManager">
+            <object id="1" type="1" description="Registro no Serviço Backend" >
+                <state id="1" userCanChange="false" description="Espaço de Armazenamento (Bytes)">
+                    <content dataType="4" default="0"></content>
+                </state>
+                <state id="2" userCanChange="false" description="Núcleos no CPU (Central Processing Unity)">
+                    <content dataType="3" default="0"></content>
+                </state>
+                <state id="3" userCanChange="false" description="Frequência dos núcleos do CPU">
+                    <content dataType="5" default="0.0"></content>
+                </state>
+                <state id="4" userCanChange="false" description="Modelo do CPU">
+                    <content dataType="9" default="Unknown"></content>
+                </state>
+                <state id="5" userCanChange="false" description="Sistema Operacional Nativo">
+                    <content dataType="9" default="Unknown"></content>
+                </state>
+                <state id="6" userCanChange="false" description="Memória RAM">
+                    <content dataType="4" default="0"></content>
+                </state>
+                <state id="7" userCanChange="false" description="Modelo do dispositivo (Smartphone)">
+                    <content dataType="9" default="Unknown"></content>
+                </state>
+                <state id="8" userCanChange="false" description="Capacidade da Bateria">
+                    <content dataType="5" default="0"></content>
+                </state>
+                <event id="1" synchronous="false" implementation="1" description="Registro efetuado com sucesso">
+                    <!-- events -->
+                    <target mandatory="true">1</target>
+                    <target mandatory="true">2</target>
+                    <parameter id="1" optional="false" dataType="9" label="uid">
+                        <description>UID da Aplicação</description>
+                        <defaultValue>Unknown</defaultValue>
+                    </parameter>
+                    <parameter id="2" optional="false" dataType="4" label="expirationTime">
+                        <description>Tempo para expiração</description>
+                        <defaultValue>0</defaultValue>
+                    </parameter>
+                </event>
+                <event id="2" synchronous="false" implementation="1" description="">
+                    <target mandatory="true">1</target>
+                    <target mandatory="true">2</target>
+                    <parameter id="1" optional="false" dataType="3" label="errorCode">
+                        <description>Código do Erro</description>
+                        <defaultValue>0</defaultValue>
+                    </parameter>
+                    <parameter id="2" optional="false" dataType="9" label="description">
+                        <description>Descrição</description>
+                        <defaultValue>Unknown</defaultValue>
+                    </parameter>
+                </event>
+            </object>
+            <object id="2" type="1" description="Serviços UrboSenti" description="">
+                <event id="3" synchronous="false" implementation="1" >
+                    <target mandatory="true">2</target>
+                </event>
+                <event id="4" synchronous="false" implementation="1" description="">
+                    <target mandatory="true">2</target>
+                </event>
+            </object>
+            <object id="3" type="1" description="Informações Básicas do dispositivo" >
+                <event id="5" synchronous="false" implementation="1" description="Informações do dispositivo coletadas com sucesso">
+                    <target mandatory="true">2</target>
+                    <parameter id="1" optional="false" dataType="" label="" default="">
+                        <defaultValue></defaultValue>
+                        <possibleValues>
+                            <value></value>
+                        </possibleValues>
+                    </parameter>
+                </event>
+                <event id="6" synchronous="false" implementation="1" description="">
+                    <target mandatory="true">2</target>
+                    <parameter id="1" optional="false" dataType="" label="" default="">
+                        <possibleValues>
+                            <value></value>
+                        </possibleValues>
+                    </parameter>
+                </event>
+            </object>
+        </component>
+        <component id="2" name="Device" class="DeviceManager">
+            <object id="1" type="1" description="">
+                <state id="1" userCanChange="false">
+                    <description>lalalla</description>
+                    <content dataType="4" superiorLimit="" inferiorLimit="" default="0" description="">
+                        <possibleValues>
+                            <value default="true"></value>
+                        </possibleValues>
+                    </content>
+                </state>
+                <action></action>
+                <event id="" synchronous="" implementation="" description="">
+                    <parameter id="1" optional="false" dataType="" label="" default="">
+                        <defaultValue></defaultValue>
+                        <possibleValues superiorLimit="" inferiorLimit="">
+                            <value ></value>
+                        </possibleValues>
+                    </parameter>
+                </event>
+                <event id="" synchronous="" implementation="" >
+                    <target mandatory="true">1</target>
+                    <target mandatory="true">2</target>
+                    <parameter id="1" optional="false" dataType="" label="" default="">
+                        <possibleValues>
+                            <value ></value>
+                        </possibleValues>
+                    </parameter>
+                </event>
+            </object>
+        </component>
+    </components>
+    <agentModels>
+        <agent id="1" acl="1">
+            <state></state>
+            <state id="8" userCanChange="false">
+                <description>Capacidade da Bateria</description>
+                <content dataType="5" superiorLimit="" inferiorLimit="" default="">
+                    <possibleValues>
+                        <value default="true"></value>
+                    </possibleValues>
+                </content>
+            </state>
+            <interaction></interaction>
+        </agent>
+    </agentModels>
+</UrboSentiDevice>

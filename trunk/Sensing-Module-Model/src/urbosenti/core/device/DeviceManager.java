@@ -60,6 +60,24 @@ public class DeviceManager extends ComponentManager implements AsynchronouslyMan
      * <li>parâmetros: Nenhum</li></ul>
      */
     public static final int EVENT_DEVICE_SERVICES_STOPPED = 4;
+    /**
+     * int EVENT_DEVICE_INFORMATION_SUCCESSFULLY_COLLECTED = 5;
+     *
+     * <ul><li>id: 5</li>
+     * <li>evento: Informações do dispositivo coletadas com sucesso</li>
+     * <li>parâmetros: Espaço disponível de Armazenamento (B), Núcleos no CPU,
+     * Frequência por núcleos do CPU, Modelo do CPU, S.O. Nativo, Memória RAM
+     * (B), Modelo de dispositivo, Capacidade da Bateria</li></ul>
+     */
+    public static final int EVENT_DEVICE_INFORMATION_SUCCESSFULLY_COLLECTED = 5;
+    /**
+     * int EVENT_DEVICE_ERROR_WHILE_COLLECTING_INFORMATION = 6;
+     *
+     * <ul><li>id: 6</li>
+     * <li>evento: Não foi possível acessar as informações</li>
+     * <li>parâmetros: Código do Erro, Descrição</li></ul>
+     */
+    public static final int EVENT_DEVICE_ERROR_WHILE_COLLECTING_INFORMATION = 6;
     /* Identificadores dos componentes internos */
     public final static int DEVICE_COMPONENT = 1;
     public final static int DATA_COMPONENT = 2;
@@ -257,6 +275,10 @@ public class DeviceManager extends ComponentManager implements AsynchronouslyMan
      * <li>DeviceManager.EVENT_DEVICE_SERVICES_INITIATED - Serviços
      * Iniciados</li>
      * <li>DeviceManager.EVENT_DEVICE_SERVICES_STOPPED - Serviços Parados</li>
+     * <li>DeviceManager.EVENT_DEVICE_INFORMATION_SUCCESSFULLY_COLLECTED -
+     * Informações do dispositivo coletadas com sucesso</li>
+     * <li>DeviceManager.EVENT_DEVICE_ERROR_WHILE_COLLECTING_INFORMATION - Não
+     * foi possível acessar as informações</li>
      * </ul>
      *
      * @param eventId identificador do evento citado acima
@@ -265,6 +287,8 @@ public class DeviceManager extends ComponentManager implements AsynchronouslyMan
      * @see #EVENT_DEVICE_REGISTRATION_UNSUCCESSFUL
      * @see #EVENT_DEVICE_SERVICES_INITIATED
      * @see #EVENT_DEVICE_SERVICES_STOPPED
+     * @see #EVENT_DEVICE_INFORMATION_SUCCESSFULLY_COLLECTED
+     * @see #EVENT_DEVICE_ERROR_WHILE_COLLECTING_INFORMATION
      */
     public void newInternalEvent(int eventId, Object... params) {
         Event event;
@@ -349,6 +373,46 @@ public class DeviceManager extends ComponentManager implements AsynchronouslyMan
                 // envia o evento
                 getEventManager().newEvent(event);
                 break;
+            case EVENT_DEVICE_INFORMATION_SUCCESSFULLY_COLLECTED: // Informações do dispositivo coletadas com sucesso
+                // Parâmetros do evento
+                values = new HashMap();
+                values.put("storage", params[0]);
+                values.put("cores", params[1]);
+                values.put("clock", params[2]);
+                values.put("cpuModel", params[3]);
+                values.put("nativeSO", params[4]);
+                values.put("RAM", params[5]);
+                values.put("deviceModel", params[6]);
+                values.put("battery", params[7]);
+
+                // Cria o evento de sistema
+                event = new SystemEvent(this);
+                event.setId(5);
+                event.setName("Informações do dispositivo coletadas com sucesso");
+                event.setTime(new Date());
+                event.setValue(values);
+
+                // envia o evento
+                getEventManager().newEvent(event);
+
+                break;
+            case EVENT_DEVICE_ERROR_WHILE_COLLECTING_INFORMATION: // Não foi possível acessar as informações
+                // Parâmetros do evento
+                values = new HashMap();
+                values.put("errorCode", params[0]);
+                values.put("description", params[1]);
+
+                // Cria o evento de sistema
+                event = new SystemEvent(this);
+                event.setId(6);
+                event.setName("Não foi possível acessar as informações");
+                event.setTime(new Date());
+                event.setValue(values);
+
+                // envia o evento
+                getEventManager().newEvent(event);
+
+                break;
         }
     }
 
@@ -357,6 +421,11 @@ public class DeviceManager extends ComponentManager implements AsynchronouslyMan
     }
 
     public boolean registerSensingModule(Agent backendServer) {
+        discoverDeviceStates();
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    public boolean discoverDeviceStates() {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
@@ -367,12 +436,12 @@ public class DeviceManager extends ComponentManager implements AsynchronouslyMan
     public void validateAgentKnowledgeRepresentationModel() {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
-    
-    public void setDeviceKnowledgeRepresentationModel(Object o,String dataType){
+
+    public void setDeviceKnowledgeRepresentationModel(Object o, String dataType) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
-    
-    public void setAgentKnowledgeRepresentationModel(Object o,String dataType){
+
+    public void setAgentKnowledgeRepresentationModel(Object o, String dataType) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
