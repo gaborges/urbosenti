@@ -5,25 +5,16 @@
         <agentTypes>
             <type id="1">Backend System Service</type>
         </agentTypes>
-        <serviceType>
+        <serviceTypes>
             <type id="1">Backend Server</type>
-        </serviceType>
-        <service>
-            <!-- Pegar os uids dinâmicamente na descoberta, se não atribuído -->
-            <serviceUID>????</serviceUID> <!-- dinâmicamente na descoberta -->
-            <applicationUID>????</applicationUID> <!-- Idealmente dinâmico -->
-            <agentType>1</agentType>
-            <description>UrboSentiGeneralService</description>
-            <address>http://ubicomp.ufgs.br/UrboSenti/webresources/backend</address>
-            <agent id="1" type="1" address="/"></agent>
-        </service>
+        </serviceTypes>
         <objectTypes>
             <type id="1">function</type>
             <type id="2">interface</type>
             <type id="3">agent</type>
         </objectTypes>
         <dataTypes>
-            <type id="1" initialValue="0" inferiorLimit="0" superiorLimit="1">byte</type>
+            <type id="1" initialValue="0">byte</type>
             <type id="2" initialValue="0">short</type>
             <type id="3" initialValue="0">int</type>
             <type id="4" initialValue="0">long</type>
@@ -38,7 +29,7 @@
             <type id="1">embedded in code</type>
             <type id="2">standalone monitor</type>
         </implementationTypes>
-        <agentCommunicationLanguage id="1" name="FIPA">
+        <agentCommunicationLanguage id="1" description="FIPA">
             <communicativeAct id="1">Accept Proposal</communicativeAct>
             <communicativeAct id="2">Agree</communicativeAct>
             <communicativeAct id="3">Cancel</communicativeAct>
@@ -68,8 +59,17 @@
         <interacionDirection id="2">Output</interacionDirection>
         <targetOrigin id="1">Application</targetOrigin>
         <targetOrigin id="2">System</targetOrigin>
+        <agentAddressType id="1">Local</agentAddressType>
+        <agentAddressType id="2">Remote</agentAddressType>
+        <service description="UrboSentiGeneralService" serviceType="1">
+            <!-- Pegar os uids dinâmicamente na descoberta, se não atribuído -->
+            <serviceUID>????</serviceUID> <!-- dinâmicamente na descoberta -->
+            <applicationUID>????</applicationUID> <!-- Idealmente dinâmico -->
+            <address>http://ubicomp.ufgs.br/UrboSenti/webresources/backend</address>
+            <agent id="1" type="1" address="/" addressType="2"></agent>
+        </service>
     </generalDefinitions>
-    <components>
+    <device description="Device's Internal Representation">
         <component id="1" name="Device" class="urbosenti.core.device.DeviceManager">
             <object id="1" type="1" description="Registro no Serviço Backend" >
                 <!-- states -->
@@ -732,14 +732,10 @@
             <object id="7" type="2" description="Interfaces de Comunicação para entrada" >
                 <!-- instances -->
                 <instances representativeClass="urbosenti.core.communication.PushServiceReceiver">
-                    <instance id="1" description="Socket">
-                        <individualStates>
-                            <state state="1" initialValue="true"></state>
-                        </individualStates>
-                    </instance>
+                    <instance id="1" description="Socket"></instance>
                     <instance id="2" description="GCM">
                         <individualStates>
-                            <state state="1" initialValue="false"></state>
+                            <state id="1" initialValue="false"></state>
                         </individualStates>
                     </instance>
                 </instances>
@@ -804,16 +800,29 @@
         <component id="5" name="Adaptation" class="urbosenti.adaptation.AdaptationManger"></component>
         <component id="6" name="User" class="urbosenti.user.UserManager">
             <object id="1" type="1" description="Gerenciamento do Usuário">
-                <!-- intances - Usuarios estaticos e iniciais podem ser adicionados aqui -->
+                <!-- intances - Usuarios estaticos e iniciais podem ser adicionados aqui, contudo devem ter ids únicos entre todas as instâncias do sistema -->
                 <!-- status -->
                 <state id="1" userCanChange="true" description="Ordem da interface" instanceState="true">
                     <content dataType="3" inferiorLimit="0"></content>
                 </state>
-                <state id="2" userCanChange="true" description="Login do usuário" instanceState="true"></state>
-                <state id="3" userCanChange="true" description="Senha do usuário" instanceState="true"></state>
-                <state id="4" userCanChange="true" description="Aceitar o termo de privacidade?" instanceState="true"></state>
-                <state id="5" userCanChange="true" description="Aceitar o compartilhamento de dados de sistema" instanceState="true"></state>
-                <state id="6" userCanChange="true" description="Optar por upload de dados anônimo" instanceState="true"></state>
+                <state id="2" userCanChange="true" description="Login do usuário" instanceState="true">
+                    <content dataType="9"></content>
+                </state>
+                <state id="3" userCanChange="true" description="Senha do usuário" instanceState="true">
+                    <content dataType="9"></content>
+                </state>
+                <state id="4" userCanChange="true" description="Aceitar o termo de privacidade?" instanceState="true">
+                    <content dataType="7"></content>
+                </state>
+                <state id="5" userCanChange="true" description="Aceitar o compartilhamento de dados de sistema" instanceState="true">
+                    <content dataType="7"></content>
+                </state>
+                <state id="6" userCanChange="true" description="Optar por upload de dados anônimo" instanceState="true">
+                    <content dataType="7"></content>
+                </state>
+                <state id="7" userCanChange="true" description="Atualmente sendo monitorado pelo sistema" instanceState="true">
+                    <content dataType="7" initialValue="true"></content>
+                </state>
                 <!-- events -->
                 <event id="1" synchronous="false" implementation="1" description="Usuário incluído">
                     <target mandatory="true">2</target>
@@ -941,53 +950,131 @@
         <component id="8" name="Location" class="urbosenti.location.LocationManager"></component>
         <component id="9" name="Resources" class="urbosenti.resouces.ResourceManager"></component>
         <component id="10" name="Concerns" class="urbosenti.concerns.ConcernManager"></component>
-        
-        <component id="7" name="Device" class="DeviceManager">
-            <object id="1" type="1" description="">
-                <state id="1" userCanChange="false" description="">
-                    <content id="1" dataType="4" initialValue="0" superiorLimit="" inferiorLimit="" >
-                        <value default="true"></value>
-                    </content>
-                </state>
-                <action id="1"  description="Adicionar um gatilho temporal de evento">
-                    <parameter id="1" optional="false" dataType="10" label="event">
-                        <description>Evento</description>
-                        <possibleValues>
-                            <value>urbosenti.core.events.Event</value>
-                        </possibleValues>
-                    </parameter>
-                </action>
-                <event id="" synchronous="" implementation="" description="">
-                    <parameter id="1" optional="false" dataType="" label="" description="">
-                        <possibleValues superiorLimit="" inferiorLimit="" initialValue="">
-                            <value></value>
-                        </possibleValues>
-                    </parameter>
-                </event>
-                <event id="" synchronous="" implementation="" >
-                    <target mandatory="true">1</target>
-                    <target mandatory="true">2</target>
-                    <parameter id="1" optional="false" dataType="" label="" default="">
-                        <possibleValues>
-                            <value ></value>
-                        </possibleValues>
-                    </parameter>
-                </event>
-            </object>
-        </component>
-    </components>
+    </device>
     <agentModels>
-        <agent id="1" acl="1">
-            <state></state>
-            <state id="8" userCanChange="false">
-                <description>Capacidade da Bateria</description>
-                <content dataType="5" superiorLimit="" inferiorLimit="" default="">
-                    <possibleValues>
-                        <value default="true"></value>
-                    </possibleValues>
-                </content>
+        <agentModel acl="1" agentType="1">
+            <state id="1" userCanChange="true" description="Taxa de upload">
+                <content dataType="6" inferiorLimit="0.0" superiorLimit="1.0" initialValue="1.0"></content>
             </state>
-            <interaction></interaction>
-        </agent>
+            <interaction id="" type="" interationType="" primaryInteraction="" description="">
+                <communicativeAct></communicativeAct>
+                <parameter id="2" optional="false" dataType="10" label="component">
+                    <description>Componente</description>
+                    <possibleValues>
+                        <value>urbosenti.core.device.ComponentManager</value>
+                    </possibleValues>
+                </parameter>
+            </interaction>
+            <interaction id="1" type="1" direction="1" description="Atualização da taxa de upload">
+                <communicativeAct>8</communicativeAct>
+                <parameter id="1" optional="false" dataType="6" label="uploadRate" state="1">
+                    <description>Taxa de upload</description>
+                </parameter>
+                <parameter id="2" optional="false" dataType="9" label="uid">
+                    <description>UID do servidor</description>
+                </parameter>
+            </interaction>
+            <interaction id="2" type="1" direction="2" description="Assinar taxa de upload">
+                <communicativeAct>22</communicativeAct>
+                <parameter id="1" optional="false" dataType="6" label="address">
+                    <description>Endereço do Assinante</description>
+                </parameter>
+                <parameter id="2" optional="false" dataType="6" label="interface">
+                    <description>Interface de entrada</description>
+                    <possibleValues>
+                        <value>GCM</value>
+                        <value>Socket</value>
+                    </possibleValues>
+                </parameter>
+                <parameter id="3" optional="false" dataType="6" label="uid">
+                    <description>UID do assinante</description>
+                </parameter>
+                <parameter id="4" optional="false" dataType="6" label="layer">
+                    <description>Camada</description>
+                    <possibleValues>
+                        <value>System</value>
+                        <value>Application</value>
+                    </possibleValues>
+                </parameter>
+            </interaction>
+            <interaction id="3" type="2" direction="2" primaryInteraction="2" description="Cancelar assinatura">
+                <communicativeAct>3</communicativeAct>
+                <parameter id="1" optional="false" dataType="6" label="uid">
+                    <description>UID do assinante</description>
+                </parameter>
+                <parameter id="2" optional="false" dataType="3" label="conversation">
+                    <description>Id da conversa primária</description>
+                </parameter>
+                <parameter id="3" optional="false" dataType="3" label="cancelCode">
+                    <description>Id do motivo</description>
+                </parameter>
+                <parameter id="4" optional="false" dataType="6" label="description">
+                    <description>Descrição</description>
+                </parameter>
+            </interaction>
+            <interaction id="4" type="2" direction="1" primaryInteraction="2" description="Falha ao assinar">
+                <communicativeAct>7</communicativeAct>
+                <parameter id="1" optional="false" dataType="3" label="errorCode">
+                    <description>Id da falha</description>
+                </parameter>
+                <parameter id="2" optional="false" dataType="6" label="description">
+                    <description>Descrição da falha</description>
+                </parameter>
+                <parameter id="3" optional="false" dataType="3" label="conversation">
+                    <description>Id da conversa primária</description>
+                </parameter>
+                <parameter id="4" optional="false" dataType="6" label="uid">
+                    <description>UID do servidor</description>
+                </parameter>
+            </interaction>
+            <interaction id="5" type="2" direction="1" primaryInteraction="2" description="Mensagem não entendida">
+                <communicativeAct>11</communicativeAct>
+                <parameter id="1" optional="false" dataType="3" label="conversation">
+                    <description>Id da conversa primária</description>
+                </parameter>
+                <parameter id="2" optional="false" dataType="6" label="uid">
+                    <description>UID do servidor</description>
+                </parameter>
+            </interaction>
+            <interaction id="6" type="2" direction="1" primaryInteraction="2" description="Assinatura aceita">
+                <communicativeAct>2</communicativeAct>
+                <parameter id="1" optional="false" dataType="3" label="conversation">
+                    <description>Id da conversa primária</description>
+                </parameter>
+                <parameter id="2" optional="false" dataType="6" label="uid">
+                    <description>UID do servidor</description>
+                </parameter>
+            </interaction>
+            <interaction id="7" type="2" direction="1" primaryInteraction="2" description="Assinatura recusada">
+                <communicativeAct>17</communicativeAct>
+                <parameter id="1" optional="false" dataType="3" label="conversation">
+                    <description>Id da conversa primária</description>
+                </parameter>
+                <parameter id="2" optional="false" dataType="3" label="refuseCode">
+                    <description>Id do motivo</description>
+                </parameter>
+                <parameter id="3" optional="false" dataType="6" label="conversation">
+                    <description>Motivo da recusa</description>
+                </parameter>
+                <parameter id="4" optional="false" dataType="6" label="uid">
+                    <description>UID do servidor</description>
+                </parameter>
+            </interaction>
+            <interaction id="8" type="2" direction="1" primaryInteraction="2" description="Assinatura cancelada">
+                <communicativeAct>3</communicativeAct>
+                <parameter id="1" optional="false" dataType="6" label="uid">
+                    <description>UID do servidor</description>
+                </parameter>
+                <parameter id="2" optional="false" dataType="3" label="conversation">
+                    <description>Id da conversa primária</description>
+                </parameter>
+                <parameter id="3" optional="false" dataType="3" label="cancelCode">
+                    <description>Id do motivo</description>
+                </parameter>
+                <parameter id="4" optional="false" dataType="6" label="description">
+                    <description>Descrição</description>
+                </parameter>
+            </interaction>
+        </agentModel>
     </agentModels>
 </UrboSentiDevice>
