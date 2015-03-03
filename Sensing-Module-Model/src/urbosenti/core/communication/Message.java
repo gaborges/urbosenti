@@ -5,7 +5,7 @@
 package urbosenti.core.communication;
 
 import java.util.Date;
-import urbosenti.core.device.Agent;
+import urbosenti.core.device.model.Agent;
 
 /**
  *

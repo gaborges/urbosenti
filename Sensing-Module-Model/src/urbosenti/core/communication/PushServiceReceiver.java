@@ -6,7 +6,7 @@ package urbosenti.core.communication;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import urbosenti.core.device.Agent;
+import urbosenti.core.device.model.Agent;
 
 /**
  *

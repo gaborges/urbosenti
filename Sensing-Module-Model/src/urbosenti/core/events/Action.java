@@ -5,7 +5,7 @@
 package urbosenti.core.events;
 
 import java.util.HashMap;
-import urbosenti.core.device.Agent;
+import urbosenti.core.device.model.Agent;
 
 /**
  *

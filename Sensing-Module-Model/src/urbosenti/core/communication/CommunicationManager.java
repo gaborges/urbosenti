@@ -27,7 +27,7 @@ import org.w3c.dom.Element;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import urbosenti.core.data.CommunicationDAO;
-import urbosenti.core.device.Agent;
+import urbosenti.core.device.model.Agent;
 import urbosenti.core.device.ComponentManager;
 import urbosenti.core.device.DeviceManager;
 import urbosenti.core.events.Action;

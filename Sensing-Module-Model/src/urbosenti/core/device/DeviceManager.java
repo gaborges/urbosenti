@@ -4,14 +4,23 @@
  */
 package urbosenti.core.device;
 
+import java.io.File;
+import java.io.IOException;
+import urbosenti.core.device.model.Agent;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.xml.parsers.ParserConfigurationException;
+import org.xml.sax.SAXException;
 import urbosenti.adaptation.AdaptationManager;
 import urbosenti.concerns.ConcernManager;
 import urbosenti.context.ContextManager;
 import urbosenti.core.communication.CommunicationInterface;
 import urbosenti.core.communication.CommunicationManager;
 import urbosenti.core.data.DataManager;
+import urbosenti.core.data.StoringGlobalKnowledgeModel;
+import urbosenti.core.device.model.Device;
 import urbosenti.core.events.Action;
 import urbosenti.core.events.ApplicationEvent;
 import urbosenti.core.events.AsynchronouslyManageableComponent;
@@ -438,7 +447,41 @@ public class DeviceManager extends ComponentManager implements AsynchronouslyMan
     }
 
     public void setDeviceKnowledgeRepresentationModel(Object o, String dataType) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        if (dataType.equals("xmlFile")) {
+            File file = (File) o;
+            StoringGlobalKnowledgeModel kp = new StoringGlobalKnowledgeModel();
+            Device device = null;
+
+            try {
+                /*
+                 Fazer metodos de validação depois. Eles devem testar se tem todos os atributos obrigatórios,
+                 e se existem os valores especificados com as configurações gerais e pependências
+                 */
+//            if(kp.validateGeneralConfigurations(file)) System.exit(-1);
+//            if(kp.validateDeviceModel(file)) System.exit(-1);
+//            if(kp.validateAgentModel(file)) System.exit(-1);
+                /*
+                 processa o arquivo de entrada com o modelo de conhecimento e coloca em memória. Atualmente pronto.
+                 */
+                device = kp.loadingGeneralDefinitions(file);
+                device = kp.loadingDevice(file);
+                device = kp.loadingAgentModels(file);
+                /*
+                 grava no banco de dados os dados processados -- falta fazer. Primeiro fazer gerar os SQLs, depois fazer os DAO
+                 OBS.: Sempre que esses métodos são executados ele verifica a versão salva dos modeloas anteriores e substitui somente 
+                 caso o conhecimento de entrada possuir uma versão mais recente, ou maior.
+                 */
+                kp.saveGeneralDefinitions();
+                //kp.saveDevice();
+                //kp.saveAgentModels();
+            } catch (ParserConfigurationException ex) {
+                Logger.getLogger(DeviceManager.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (IOException ex) {
+                Logger.getLogger(DeviceManager.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (SAXException ex) {
+                Logger.getLogger(DeviceManager.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
     }
 
     public void setAgentKnowledgeRepresentationModel(Object o, String dataType) {
