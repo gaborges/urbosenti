@@ -4,7 +4,7 @@
  */
 package urbosenti.core.events;
 
-import urbosenti.core.device.Agent;
+import urbosenti.core.device.model.Agent;
 import urbosenti.core.device.ComponentManager;
 
 /**

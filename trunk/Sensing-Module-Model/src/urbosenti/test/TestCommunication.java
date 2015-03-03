@@ -9,7 +9,7 @@ import java.net.SocketTimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import urbosenti.core.communication.Message;
-import urbosenti.core.device.Agent;
+import urbosenti.core.device.model.Agent;
 import urbosenti.core.device.DeviceManager;
 
 /**

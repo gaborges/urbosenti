@@ -4,6 +4,7 @@
  */
 package urbosenti;
 
+import java.io.File;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import urbosenti.core.communication.PushServiceReceiver;
@@ -12,7 +13,7 @@ import urbosenti.core.communication.interfaces.MobileDataCommunicationInterface;
 import urbosenti.core.communication.interfaces.WiredCommunicationInterface;
 import urbosenti.core.communication.interfaces.WirelessCommunicationInterface;
 import urbosenti.core.communication.receivers.SocketPushServiceReceiver;
-import urbosenti.core.device.Agent;
+import urbosenti.core.device.model.Agent;
 import urbosenti.core.device.DeviceManager;
 import urbosenti.test.ConcreteApplicationHandler;
 import urbosenti.test.TestCommunication;
@@ -51,7 +52,7 @@ public class Main {
         //DeliveryMessagingService delivaryService = new DeliveryMessagingService(deviceManager.getCommunicationManager());
              
         // Atribuir o modelo de conhecimento do dispositivo que será descoberto pelo mecanismo de adaptação --- Falta fazer - Guilherme    
-        // deviceManager.setDeviceKnowledgeRepresentationModel(Object o,String dataType);
+        deviceManager.setDeviceKnowledgeRepresentationModel(new File("deviceKnowledgeModel.xml"),"xmlFile");
         // deviceManager.validateDeviceKnowledgeRepresentationModel();
         // deviceManager.setAgentKnowledgeRepresentationModel(Object o,String dataType);
         // deviceManager.validateAgentKnowledgeRepresentationModel();

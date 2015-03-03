@@ -7,7 +7,7 @@ package urbosenti.core.communication.receivers;
 
 import urbosenti.core.communication.CommunicationManager;
 import urbosenti.core.communication.PushServiceReceiver;
-import urbosenti.core.device.Agent;
+import urbosenti.core.device.model.Agent;
 
 /**
  *

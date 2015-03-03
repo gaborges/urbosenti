@@ -80,7 +80,7 @@ public class UserManager extends ComponentManager implements AsynchronouslyManag
      *
      * <ul><li>id: 8</li>
      * <li>evento: Configuração de sistema alterada pelo usuário</li>
-     * <li>parâmetros: Componente,Objeto,Estado,Novo Valor</li></ul>
+     * <li>parâmetros: Componente,Entidade,Estado,Novo Valor</li></ul>
      */
     public static final int EVENT_USER_CHANGED_SYSTEM_CONFIGURATION = 8;
     /**
@@ -281,7 +281,7 @@ public class UserManager extends ComponentManager implements AsynchronouslyManag
                 values = new HashMap();
                 values.put("user", user);
                 values.put("component", (ComponentManager) params[1]);
-                values.put("object", (Integer) params[2]);
+                values.put("entity", (Integer) params[2]);
                 values.put("state", (Integer) params[3]);
                 values.put("newValue", params[4]);
 

@@ -2,7 +2,9 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package urbosenti.core.device;
+package urbosenti.core.device.model;
+
+import java.util.List;
 
 /**
  *
@@ -17,7 +19,13 @@ public class Agent {
     private String address;
     private String layer;
     private String description;
-
+    private int id;
+    private String systemAddress;
+    private int systemPort;
+    private AgentType agentType;
+    private List<Conversation> conversations;
+    private AddressAgentType addressType;
+    
     public String getUid() {
         return uid;
     }
@@ -67,4 +75,53 @@ public class Agent {
         return "Agent{" + "uid=" + uid + ", address=" + address + ", layer=" + layer + ", description=" + description + '}';
     }
 
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public String getSystemAddress() {
+        return systemAddress;
+    }
+
+    public void setSystemAddress(String systemAddress) {
+        this.systemAddress = systemAddress;
+    }
+
+    public int getSystemPort() {
+        return systemPort;
+    }
+
+    public void setSystemPort(int systemPort) {
+        this.systemPort = systemPort;
+    }
+
+    public AgentType getAgentType() {
+        return agentType;
+    }
+
+    public void setAgentType(AgentType agentType) {
+        this.agentType = agentType;
+    }
+
+    public List<Conversation> getConversations() {
+        return conversations;
+    }
+
+    public void setConversations(List<Conversation> conversations) {
+        this.conversations = conversations;
+    }
+
+    public AddressAgentType getAddressType() {
+        return addressType;
+    }
+
+    public void setAddressType(AddressAgentType addressType) {
+        this.addressType = addressType;
+    }
+
+    
 }
