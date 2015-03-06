@@ -1,0 +1,53 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package urbosenti.core.data.dao;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import urbosenti.core.device.model.Service;
+/**
+ *
+ * @author Guilherme
+ */
+public class ServiceDAO {
+
+    private final Connection connection;
+    private PreparedStatement stmt;
+
+    public ServiceDAO(Object context) {
+        this.connection = (Connection) context;
+    }
+    
+    public void insert(Service service) throws SQLException {
+        String sql = "INSERT INTO services (description,service_uid,application_uid,address,service_type_id,device_id) "
+                + "VALUES (?,?,?,?,?,?);";
+        this.stmt = this.connection.prepareStatement(sql,Statement.RETURN_GENERATED_KEYS);
+        stmt.setString(1, service.getDescription());
+        stmt.setString(2, service.getServiceUID());
+        stmt.setString(3, (service.getApplicationUID() == null)? "" : service.getApplicationUID());
+        stmt.setString(4, service.getAddress());
+        stmt.setInt(5, service.getServiceType().getId());
+        stmt.setInt(6, service.getDevice().getId());
+        stmt.execute();
+        try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
+            if (generatedKeys.next()) {
+                service.setId(generatedKeys.getInt(1));
+            }
+            else {
+                throw new SQLException("Creating user failed, no ID obtained.");
+            }
+        }
+        stmt.close();
+        System.out.println("INSERT INTO services (id,description,service_uid,application_uid,address,service_type_id,device_id) "
+                + " VALUES ("+service.getId()+",'"+service.getDescription()+"','"
+                +service.getServiceUID()+"','"+service.getApplicationUID()+"','"+service.getAddress()+"',"
+                +service.getServiceType().getId()+","+service.getDevice().getId()+");");
+    }
+    
+}
