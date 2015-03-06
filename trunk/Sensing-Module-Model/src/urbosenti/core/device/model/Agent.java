@@ -16,32 +16,23 @@ public class Agent {
     public static final String LAYER_APPLICATION = "application";
     
     private String uid;
-    private String address;
     private String layer;
     private String description;
     private int id;
-    private String systemAddress;
+    private String address;
     private int systemPort;
     private AgentType agentType;
     private List<Conversation> conversations;
     private AddressAgentType addressType;
-    
+    private Service service;
+    /** Remover métodos em breve, pois o UID está no serviço */
     public String getUid() {
         return uid;
     }
-
+    /** Remover métodos em breve, pois o UID está no serviço */
     public void setUid(String uid) {
         this.uid = uid;
     }
-
-    public String getAddress() {
-        return address;
-    }
-
-    public void setAddress(String address) {
-        this.address = address;
-    }
-
     /**
      * 
      * @return Retorna a camada do agente:
@@ -83,12 +74,12 @@ public class Agent {
         this.id = id;
     }
 
-    public String getSystemAddress() {
-        return systemAddress;
+    public String getAddress() {
+        return this.service.getAddress()+this.address;
     }
 
-    public void setSystemAddress(String systemAddress) {
-        this.systemAddress = systemAddress;
+    public void setServiceAddress(String address) {
+        this.service.setAddress(address);
     }
 
     public int getSystemPort() {
@@ -123,5 +114,19 @@ public class Agent {
         this.addressType = addressType;
     }
 
+    public Service getService() {
+        return service;
+    }
+
+    public void setService(Service service) {
+        this.service = service;
+    }
+
+    public String getRelativeAddress(){
+        return this.address;
+    }
     
+    public void setRelativeAddress(String address){
+        this.address = address;
+    }
 }

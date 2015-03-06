@@ -63,7 +63,7 @@
         <agentAddressType id="2">Remote</agentAddressType>
         <service description="UrboSentiGeneralService" serviceType="1">
             <!-- Pegar os uids dinâmicamente na descoberta, se não atribuído -->
-            <serviceUID>????</serviceUID> <!-- dinâmicamente na descoberta -->
+            <serviceUID>d428f2f7-ae09-4ecf-b57a-b3eaf2362d38</serviceUID> <!-- dinâmicamente na descoberta -->
             <applicationUID>????</applicationUID> <!-- Idealmente dinâmico -->
             <address>http://ubicomp.ufgs.br/UrboSenti/webresources/backend</address>
             <agent type="1" address="/" addressType="2"></agent>

@@ -6,6 +6,7 @@ import java.util.List;
 public class State {
 
     private int id;
+    private int modelId;
     private boolean userCanChange;
     private boolean stateInstance;
     private String description;
@@ -14,6 +15,8 @@ public class State {
     private java.lang.Object initialValue;
     private List<PossibleContent> possibleContents;
     private DataType dataType;
+    private Entity entity;
+    private AgentType agentType;
     private Content content;
 
     public State(int id, DataType dataType) {
@@ -109,6 +112,30 @@ public class State {
 
     public void setStateInstance(boolean stateInstance) {
         this.stateInstance = stateInstance;
+    }
+
+    public Entity getEntity() {
+        return entity;
+    }
+
+    public void setEntity(Entity entity) {
+        this.entity = entity;
+    }
+
+    public int getModelId() {
+        return modelId;
+    }
+
+    public void setModelId(int modelId) {
+        this.modelId = modelId;
+    }
+
+    public AgentType getAgentType() {
+        return agentType;
+    }
+
+    public void setAgentType(AgentType agentType) {
+        this.agentType = agentType;
     }
 
 }

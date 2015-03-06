@@ -8,12 +8,13 @@ public class Entity {
     private int id;
     private String description;
     private EntityType EntityType;
-    private List<Instace> instaces;
+    private Component component;
+    private List<Instance> instaces;
     private List<State> states;
     private List<EventModel> events;
     private List<ActionModel> actions;
 
-    public Entity(int id, String description, EntityType objectType, List<Instace> instace, List<State> state, List<EventModel> event, List<ActionModel> action) {
+    public Entity(int id, String description, EntityType objectType, List<Instance> instace, List<State> state, List<EventModel> event, List<ActionModel> action) {
         this.id = id;
         this.description = description;
         this.EntityType = objectType;
@@ -23,7 +24,7 @@ public class Entity {
         this.actions = action;
     }
     
-    public Entity(String description, EntityType objectType, List<Instace> instace, List<State> state, List<EventModel> event, List<ActionModel> action) {
+    public Entity(String description, EntityType objectType, List<Instance> instace, List<State> state, List<EventModel> event, List<ActionModel> action) {
         this.description = description;
         this.EntityType = objectType;
         this.instaces = instace;
@@ -67,11 +68,11 @@ public class Entity {
         this.EntityType = objectType;
     }
 
-    public List<Instace> getInstaces() {
+    public List<Instance> getInstaces() {
         return instaces;
     }
 
-    public void setInstaces(List<Instace> instace) {
+    public void setInstaces(List<Instance> instace) {
         this.instaces = instace;
     }
 
@@ -97,6 +98,14 @@ public class Entity {
 
     public void setActions(List<ActionModel> actions) {
         this.actions = actions;
+    }
+
+    public Component getComponent() {
+        return component;
+    }
+
+    public void setComponent(Component component) {
+        this.component = component;
     }
 
 }

@@ -1,17 +1,18 @@
 package urbosenti.core.device.model;
 
-import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.List;
 
 public class EventModel {
 
     private int id;
+    private int modelId;
     private String description;
     private boolean synchronous;
     private List<TargetOrigin> targets;
     private Implementation implementation;
     private List<Parameter> parameters;
+    private Entity entity;
 
     public EventModel(int id, String description, Implementation implementation) {
         this();
@@ -74,5 +75,20 @@ public class EventModel {
         this.parameters = parameters;
     }
 
-    
+    public Entity getEntity() {
+        return entity;
+    }
+
+    public void setEntity(Entity entity) {
+        this.entity = entity;
+    }
+
+    public int getModelId() {
+        return modelId;
+    }
+
+    public void setModelId(int modelId) {
+        this.modelId = modelId;
+    }
+
 }

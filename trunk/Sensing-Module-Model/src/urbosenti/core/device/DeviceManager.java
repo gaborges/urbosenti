@@ -438,52 +438,10 @@ public class DeviceManager extends ComponentManager implements AsynchronouslyMan
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
-    public void validateDeviceKnowledgeRepresentationModel() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
-
-    public void validateAgentKnowledgeRepresentationModel() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
-
     public void setDeviceKnowledgeRepresentationModel(Object o, String dataType) {
-        if (dataType.equals("xmlFile")) {
-            File file = (File) o;
-            StoringGlobalKnowledgeModel kp = new StoringGlobalKnowledgeModel();
-            Device device = null;
-
-            try {
-                /*
-                 Fazer metodos de validação depois. Eles devem testar se tem todos os atributos obrigatórios,
-                 e se existem os valores especificados com as configurações gerais e pependências
-                 */
-//            if(kp.validateGeneralConfigurations(file)) System.exit(-1);
-//            if(kp.validateDeviceModel(file)) System.exit(-1);
-//            if(kp.validateAgentModel(file)) System.exit(-1);
-                /*
-                 processa o arquivo de entrada com o modelo de conhecimento e coloca em memória. Atualmente pronto.
-                 */
-                device = kp.loadingGeneralDefinitions(file);
-                device = kp.loadingDevice(file);
-                device = kp.loadingAgentModels(file);
-                /*
-                 grava no banco de dados os dados processados -- falta fazer. Primeiro fazer gerar os SQLs, depois fazer os DAO
-                 OBS.: Sempre que esses métodos são executados ele verifica a versão salva dos modeloas anteriores e substitui somente 
-                 caso o conhecimento de entrada possuir uma versão mais recente, ou maior.
-                 */
-                kp.saveGeneralDefinitions();
-                //kp.saveDevice();
-                //kp.saveAgentModels();
-            } catch (ParserConfigurationException ex) {
-                Logger.getLogger(DeviceManager.class.getName()).log(Level.SEVERE, null, ex);
-            } catch (IOException ex) {
-                Logger.getLogger(DeviceManager.class.getName()).log(Level.SEVERE, null, ex);
-            } catch (SAXException ex) {
-                Logger.getLogger(DeviceManager.class.getName()).log(Level.SEVERE, null, ex);
-            }
-        }
+        this.dataManager.setKnowledgeRepresentation(o, dataType);
     }
-
+   
     public void setAgentKnowledgeRepresentationModel(Object o, String dataType) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }

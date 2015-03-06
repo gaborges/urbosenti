@@ -7,8 +7,13 @@ package urbosenti.core.data;
 
 import java.io.File;
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -29,7 +34,7 @@ import urbosenti.core.device.model.Device;
 import urbosenti.core.device.model.Direction;
 import urbosenti.core.device.model.Entity;
 import urbosenti.core.device.model.Implementation;
-import urbosenti.core.device.model.Instace;
+import urbosenti.core.device.model.Instance;
 import urbosenti.core.device.model.InteractionType;
 import urbosenti.core.device.model.EntityType;
 import urbosenti.core.device.model.EventModel;
@@ -60,8 +65,9 @@ public class StoringGlobalKnowledgeModel {
     private final List<AddressAgentType> agentAddressTypes;
     private final Device device;
     private final boolean showContent;
+    private DataManager dataManager;
 
-    public StoringGlobalKnowledgeModel() {
+    private StoringGlobalKnowledgeModel() {
         this.agentTypes = new ArrayList();
         this.serviceTypes = new ArrayList();
         this.entityTypes = new ArrayList();
@@ -78,6 +84,11 @@ public class StoringGlobalKnowledgeModel {
         this.device.setServices(new ArrayList());
         this.communicativeActs = new ArrayList();
         this.showContent = false;
+    }
+
+    public StoringGlobalKnowledgeModel(DataManager dataManager) {
+        this();
+        this.dataManager = dataManager;
     }
 
     public Device loadingGeneralDefinitions(File file) throws ParserConfigurationException, IOException, SAXException {
@@ -262,7 +273,7 @@ public class StoringGlobalKnowledgeModel {
                 for (int j = 0; j < nList2.getLength(); j++) {
                     eElement2 = (Element) nList2.item(j);
                     this.device.getServices().get(i).setAgent(new Agent());
-                    this.device.getServices().get(i).getAgent().setSystemAddress(
+                    this.device.getServices().get(i).getAgent().setRelativeAddress(
                             eElement2.getAttributes().getNamedItem("address").getTextContent());
                     for (AgentType type : agentTypes) {
                         if (type.getId() == Integer.parseInt(eElement2.getAttributes().getNamedItem("type").getTextContent())) {
@@ -280,7 +291,7 @@ public class StoringGlobalKnowledgeModel {
             }
             if (showContent) {
                 System.out.println("..." + this.device.getServices().get(i).getAddress());
-                System.out.println("..." + this.device.getServices().get(i).getAgent().getSystemAddress());
+                System.out.println("..." + this.device.getServices().get(i).getAgent().getAddress());
             }
         }
         /* ***************** Salvar tudo no banco ******************** */
@@ -307,7 +318,7 @@ public class StoringGlobalKnowledgeModel {
             eComponent = (Element) nListComponents.item(i);
             Component c = new Component(
                     eComponent.getAttribute("name"),
-                    eComponent.getAttribute("urbosenti.core.device.DeviceManager"));
+                    eComponent.getAttribute("class"));
             nListEntities = eComponent.getElementsByTagName("entity");
             if (showContent) {
                 System.out.println("Componemt: " + c.getDescription() + " " + c.getReferedClass());
@@ -401,7 +412,7 @@ public class StoringGlobalKnowledgeModel {
                     // Adicionar as instâncias e seus estados
                     for (int z = 0; z < nListElements.getLength(); z++) {
                         eElement = (Element) nListElements.item(z);
-                        entity.getInstaces().add(new Instace(
+                        entity.getInstaces().add(new Instance(
                                 Integer.parseInt(eElement.getAttribute("id")),
                                 eElement.getAttribute("description"),
                                 representativeClass));
@@ -514,6 +525,7 @@ public class StoringGlobalKnowledgeModel {
                                         if (event.getParameters().get(t).getDataType() == null) {
                                             event.getParameters().get(t).setDataType(state.getDataType());
                                         }
+                                        event.getParameters().get(t).setRelatedState(state);
                                     }
                                 }
                             }
@@ -613,6 +625,7 @@ public class StoringGlobalKnowledgeModel {
                                             action.getParameters().get(t).setDataType(state.getDataType());
                                         }
                                     }
+                                    action.getParameters().get(t).setRelatedState(state);
                                 }
                             }
                             // description - opcional
@@ -856,6 +869,7 @@ public class StoringGlobalKnowledgeModel {
                                     interaction.getParameters().get(t).setDataType(state.getDataType());
                                 }
                             }
+                            interaction.getParameters().get(t).setRelatedState(state);
                         }
                     }
                     // description - opcional
@@ -898,7 +912,9 @@ public class StoringGlobalKnowledgeModel {
                 this.agentTypes.get(baseAgentType).getInteraction().add(interaction);
             }
         }
-        if (showContent) System.out.println("Interaction count: " + this.agentTypes.get(baseAgentType).getInteraction().size());
+        if (showContent) {
+            System.out.println("Interaction count: " + this.agentTypes.get(baseAgentType).getInteraction().size());
+        }
         return device;
     }
 
@@ -1079,7 +1095,7 @@ public class StoringGlobalKnowledgeModel {
                 for (int j = 0; j < nList2.getLength(); j++) {
                     eElement2 = (Element) nList2.item(j);
                     this.device.getServices().get(i).setAgent(new Agent());
-                    this.device.getServices().get(i).getAgent().setSystemAddress(
+                    this.device.getServices().get(i).getAgent().setServiceAddress(
                             eElement2.getAttributes().getNamedItem("address").getTextContent());
                     for (AgentType type : agentTypes) {
                         if (type.getId() == Integer.parseInt(eElement2.getAttributes().getNamedItem("type").getTextContent())) {
@@ -1097,7 +1113,7 @@ public class StoringGlobalKnowledgeModel {
             }
             if (showContent) {
                 System.out.println("..." + this.device.getServices().get(i).getAddress());
-                System.out.println("..." + this.device.getServices().get(i).getAgent().getSystemAddress());
+                System.out.println("..." + this.device.getServices().get(i).getAgent().getAddress());
             }
         }
         /* ***************** Agora pode ser salvo no banco de dados ******************** */
@@ -1122,12 +1138,12 @@ public class StoringGlobalKnowledgeModel {
         // Components
         for (int i = 0; i < nListComponents.getLength(); i++) {
             eComponent = (Element) nListComponents.item(i);
-            Component c = new Component(
+            Component component = new Component(
                     eComponent.getAttribute("name"),
                     eComponent.getAttribute("urbosenti.core.device.DeviceManager"));
             nListEntities = eComponent.getElementsByTagName("entity");
             if (showContent) {
-                System.out.println("Componemt: " + c.getDescription() + " " + c.getReferedClass());
+                System.out.println("Component: " + component.getDescription() + " " + component.getReferedClass());
             }
             // Entities
             for (int j = 0; j < nListEntities.getLength(); j++) {
@@ -1218,7 +1234,7 @@ public class StoringGlobalKnowledgeModel {
                     // Adicionar as instâncias e seus estados
                     for (int z = 0; z < nListElements.getLength(); z++) {
                         eElement = (Element) nListElements.item(z);
-                        entity.getInstaces().add(new Instace(
+                        entity.getInstaces().add(new Instance(
                                 Integer.parseInt(eElement.getAttribute("id")),
                                 eElement.getAttribute("description"),
                                 representativeClass));
@@ -1477,9 +1493,9 @@ public class StoringGlobalKnowledgeModel {
                         System.out.println("    Action count: " + entity.getActions().size());
                     }
                 }
-                c.getEntities().add(entity);
+                component.getEntities().add(entity);
             }
-            this.device.getComponents().add(c);
+            this.device.getComponents().add(component);
             if (showContent) {
                 System.out.println("  Entity count: " + device.getComponents().get(i).getEntities().size());
             }
@@ -1495,16 +1511,610 @@ public class StoringGlobalKnowledgeModel {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
-    public void saveGeneralDefinitions() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    // generalDefinitions
+    public void saveGeneralDefinitions(Connection connection) {
+        // função para checar se é necessário atualizar a base
+
+        try {
+            if (this.dataManager.getDeviceDAO().getCount() > 0) {
+                return;
+            }
+            // device
+            this.dataManager.getDeviceDAO().insert(device);
+            // agentTypes
+            for (AgentType type : agentTypes) {
+                this.dataManager.getAgentTypeDAO().insert(type);
+            }
+            // entityTypes
+            for (EntityType type : entityTypes) {
+                this.dataManager.getEntityTypeDAO().insert(type);
+            }
+            // dataTypes
+            for (DataType type : dataTypes) {
+                this.dataManager.getDataTypeDAO().insert(type);
+            }
+            // implementationTypes
+            for (Implementation type : implementationTypes) {
+                this.dataManager.getImplementationTypeDAO().insert(type);
+            }
+            // agentCommunicationLanguage
+            for (AgentCommunicationLanguage type : agentCommunicationLanguages) {
+                this.dataManager.getAgentCommunicationLanguageDAO().insert(type);
+            }
+            // communicativeAct
+            for (CommunicativeAct type : communicativeActs) {
+                this.dataManager.getCommunicativeActDAO().insert(type);
+            }
+            // interactionType
+            for (InteractionType type : interactionTypes) {
+                this.dataManager.getInteractionTypeDAO().insert(type);
+            }
+            // interactionDirection
+            for (Direction type : interactionDirections) {
+                this.dataManager.getInteractionDirectionDAO().insert(type);
+            }
+            // targetOrigin
+            for (TargetOrigin type : targetsOrigins) {
+                this.dataManager.getTargetOriginDAO().insert(type);
+            }
+            // agentAddressType
+            for (AddressAgentType type : agentAddressTypes) {
+                this.dataManager.getAgentAddressTypeDAO().insert(type);
+            }
+            // service
+            for (Service type : device.getServices()) {
+                type.setDevice(device);
+                this.dataManager.getServiceDAO().insert(type);
+                // agent
+                type.getAgent().setService(type);
+                this.dataManager.getAgentDAO().insert(type.getAgent());
+            }
+        } catch (SQLException ex) {
+            try {
+                Logger.getLogger(StoringGlobalKnowledgeModel.class.getName()).log(Level.SEVERE, null, ex);
+                // se der um erro ou excessão dar um drop em todas as tabelas
+                dropDatabase(connection);
+            } catch (SQLException ex1) {
+                Logger.getLogger(StoringGlobalKnowledgeModel.class.getName()).log(Level.SEVERE, null, ex1);
+            }
+        }
     }
 
-    public void saveDevice() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    public void saveDevice(Connection connection) {
+        try {
+            // devices
+            /// components
+            for (Component component : this.device.getComponents()) {
+                component.setDevice(this.device);
+                this.dataManager.getComponentDAO().insert(component);
+                //// entities
+                for (Entity entity : component.getEntities()) {
+                    entity.setComponent(component);
+                    this.dataManager.getEntityDAO().insert(entity);
+                    ///// states
+                    for (State state : entity.getStates()) {
+                        state.setEntity(entity);
+                        this.dataManager.getStateDAO().insert(state);
+                        if (state.getPossibleContents().size() > 0) {
+                            // Possible contents
+                            this.dataManager.getStateDAO().insertPossibleContents(state);
+                        }
+                    }
+                    ///// event
+                    for (EventModel event : entity.getEvents()) {
+                        event.setEntity(entity);
+                        this.dataManager.getEventDAO().insert(event);
+                        // parameters
+                        this.dataManager.getEventDAO().insertParameters(event);
+                        // targets
+                        this.dataManager.getEventDAO().insertTargets(event);
+                        // parameters -> possible contents
+                        for (Parameter parameter : event.getParameters()) {
+                            // Possible contents
+                            this.dataManager.getEventDAO().insertPossibleParameterContents(parameter, event);
+                        }
+
+                    }
+                    ///// action
+                    for (ActionModel action : entity.getActions()) {
+                        action.setEntity(entity);
+                        this.dataManager.getActionDAO().insert(action);
+                        // feedbackanswers
+                        this.dataManager.getActionDAO().insertFeedbackAnswers(action);
+                        // parameters
+                        this.dataManager.getActionDAO().insertParameters(action);
+                        // parameters -> possible contents
+                        for (Parameter parameter : action.getParameters()) {
+                            // Possible contents
+                            this.dataManager.getActionDAO().insertPossibleParameterContents(parameter, action);
+                        }
+                    }
+                    ///// instance
+                    for (Instance instance : entity.getInstaces()) {
+                        instance.setEntity(entity);
+                        this.dataManager.getInstanceDAO().insert(instance);
+                        // states
+                        for (State state : instance.getStates()) {
+                            this.dataManager.getInstanceDAO().insertState(state, instance);
+                            // states possible contents
+                            if (state.getPossibleContents().size() > 0) {
+                                // Possible contents
+                                this.dataManager.getInstanceDAO().insertPossibleStateContents(state, instance);
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (SQLException ex) {
+            Logger.getLogger(StoringGlobalKnowledgeModel.class.getName()).log(Level.SEVERE, null, ex);
+            try {
+                // se der um erro ou excessão dar um drop em todas as tabelas
+                dropDatabase(connection);
+            } catch (SQLException ex1) {
+                Logger.getLogger(StoringGlobalKnowledgeModel.class.getName()).log(Level.SEVERE, null, ex1);
+            }
+        }
     }
 
-    public void saveAgentModels() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    public void saveAgentModels(Connection connection) {
+        try {
+            // agent
+            for (AgentType agentModel : agentTypes) {
+                /// agent states
+                for (State state : agentModel.getStates()) {
+                    state.setAgentType(agentModel);
+                    this.dataManager.getAgentTypeDAO().insertState(state);
+                    // states possible contents
+                    if (state.getPossibleContents().size() > 0) {
+                        // Possible contents
+                        this.dataManager.getAgentTypeDAO().insertPossibleStateContents(state);
+                    }
+                }
+                /// interaction
+                for (Interaction interaction : agentModel.getInteraction()) {
+                    //// parameter
+                    this.dataManager.getAgentTypeDAO().insertParameters(interaction);
+                    // parameters -> possible contents
+                    for (Parameter parameter : interaction.getParameters()) {
+                        // Possible contents
+                        this.dataManager.getAgentTypeDAO().insertPossibleParameterContents(parameter, interaction);
+                    }
+                }
+            }
+            throw new SQLException("Limpar banco de dados");
+        } catch (SQLException ex) {
+            Logger.getLogger(StoringGlobalKnowledgeModel.class.getName()).log(Level.SEVERE, null, ex);
+            try {
+                // se der um erro ou excessão dar um drop em todas as tabelas
+                dropDatabase(connection);
+            } catch (SQLException ex1) {
+                Logger.getLogger(StoringGlobalKnowledgeModel.class.getName()).log(Level.SEVERE, null, ex1);
+            }
+        }
     }
 
+    void createDataBase(Connection connection) throws SQLException {
+        Statement stmt = connection.createStatement();
+        String sql = "CREATE TABLE IF NOT EXISTS devices (\n"
+                + "	id integer not null primary key autoincrement,\n"
+                + "	description varchar(100) not null,\n"
+                + "	generalDefinitionsVersion double not null default 1.0,\n"
+                + "	deviceVersion double not null default 1.0,\n"
+                + "	agentModelVersion double not null default 1.0\n"
+                + ");\n"
+                + "\n"
+                + "CREATE TABLE IF NOT EXISTS agent_types (\n"
+                + "	id integer not null primary key autoincrement,\n"
+                + "	description varchar(100) not null\n"
+                + ");\n"
+                + "\n"
+                + "CREATE TABLE IF NOT EXISTS service_types (\n"
+                + "	id integer not null primary key autoincrement,\n"
+                + "	description varchar(100) not null\n"
+                + ");\n"
+                + "\n"
+                + "CREATE TABLE IF NOT EXISTS entity_types (\n"
+                + "	id integer not null primary key autoincrement,\n"
+                + "	description varchar(100) not null\n"
+                + ");\n"
+                + "\n"
+                + "CREATE TABLE IF NOT EXISTS data_types (\n"
+                + "	id integer not null primary key autoincrement,\n"
+                + "	description varchar(100) not null,\n"
+                + "	initial_value varchar(20) not null\n"
+                + ");\n"
+                + "\n"
+                + "CREATE TABLE IF NOT EXISTS implementation_types (\n"
+                + "	id integer not null primary key autoincrement,\n"
+                + "	description varchar(100) not null\n"
+                + ");\n"
+                + "\n"
+                + "CREATE TABLE IF NOT EXISTS agent_communication_languages (\n"
+                + "	id integer not null primary key autoincrement,\n"
+                + "	description varchar(100) not null\n"
+                + ");\n"
+                + "\n"
+                + "CREATE TABLE IF NOT EXISTS communicative_acts (\n"
+                + "	id integer not null primary key autoincrement,\n"
+                + "	description varchar(100) not null,\n"
+                + "	agent_communication_language_id integer not null,\n"
+                + "	foreign key (agent_communication_language_id) references agent_communication_languages (id)\n"
+                + ");\n"
+                + "\n"
+                + "CREATE TABLE IF NOT EXISTS interaction_types (\n"
+                + "	id integer not null primary key autoincrement,\n"
+                + "	description varchar(100) not null\n"
+                + ");\n"
+                + "\n"
+                + "CREATE TABLE IF NOT EXISTS interaction_directions (\n"
+                + "	id integer not null primary key autoincrement,\n"
+                + "	description varchar(100) not null\n"
+                + ");\n"
+                + "\n"
+                + "CREATE TABLE IF NOT EXISTS targets_origins (\n"
+                + "	id integer not null primary key autoincrement,\n"
+                + "	description varchar(100) not null\n"
+                + ");\n"
+                + "\n"
+                + "CREATE TABLE IF NOT EXISTS agent_address_types (\n"
+                + "	id integer not null primary key autoincrement,\n"
+                + "	description varchar(100) not null\n"
+                + ");\n"
+                + "\n"
+                + "CREATE TABLE IF NOT EXISTS agents (\n"
+                + "	id integer not null primary key autoincrement,\n"
+                + "	address varchar (100) not null default '/',\n"
+                + "	agent_type_id integer not null,\n"
+                + "	service_id integer not null,\n"
+                + "	foreign key (agent_type_id) references agent_types (id),\n"
+                + "	foreign key (service_id) references services (id)\n"
+                + ");\n"
+                + "\n"
+                + "CREATE TABLE IF NOT EXISTS services (\n"
+                + "	id integer not null primary key autoincrement,\n"
+                + "	description varchar(100) not null,\n"
+                + "	service_uid varchar (200) not null,\n"
+                + "	application_uid varchar (200) not null default \"\",\n"
+                + "	address varchar (200) not null,\n"
+                + "	service_type_id integer not null,\n"
+                + "	device_id integer not null,\n"
+                + "	foreign key (service_type_id) references service_types (id),\n"
+                + "	foreign key (device_id) references devices (id)\n"
+                + ");\n"
+                + "\n"
+                + "CREATE TABLE IF NOT EXISTS components (\n"
+                + "	id integer not null primary key autoincrement,\n"
+                + "	description varchar(100) not null,\n"
+                + "	code_class varchar (100) not null,\n"
+                + "	device_id integer not null,\n"
+                + "	foreign key (device_id) references devices (id)\n"
+                + ");\n"
+                + "\n"
+                + "CREATE TABLE IF NOT EXISTS entities (\n"
+                + "	id integer not null primary key autoincrement,\n"
+                + "	description varchar(100) not null,\n"
+                + "	entity_type_id integer not null,\n"
+                + "	component_id integer not null,\n"
+                + "	foreign key (component_id) references components (id),\n"
+                + "	foreign key (entity_type_id) references entity_types (id)\n"
+                + ");\n"
+                + "\n"
+                + "CREATE TABLE IF NOT EXISTS instances (\n"
+                + "	id integer not null primary key autoincrement,\n"
+                + "	description varchar(100) not null,\n"
+                + "	representative_class varchar(100) not null,\n"
+                + "	entity_id integer not null,\n"
+                + "	foreign key (entity_id) references entities (id)\n"
+                + ");\n"
+                + "\n"
+                + "CREATE TABLE IF NOT EXISTS instance_states (\n"
+                + "	id integer not null primary key autoincrement,\n"
+                + "	description varchar(100) not null, \n"
+                + "	user_can_change boolean not null default false,\n"
+                + "	superior_limit varchar (100) default null,\n"
+                + "	inferior_limit varchar (100) default null,\n"
+                + "	initial_value varchar (100) default null,\n"
+                + "	data_type_id integer not null,\n"
+                + "	instance_id integer not null,\n"
+                + "	foreign key (instance_id) references instances (id),\n"
+                + "	foreign key (data_type_id) references data_types (id)\n"
+                + ");\n"
+                + "\n"
+                + "CREATE TABLE IF NOT EXISTS possible_instance_contents (\n"
+                + "	id integer not null primary key autoincrement,\n"
+                + "	possible_value varchar(100) not null, \n"
+                + "	default_value boolean not null default false,\n"
+                + "	instance_state_id integer not null,\n"
+                + "	foreign key (instance_state_id) references instance_states (id)\n"
+                + ");\n"
+                + "\n"
+                + "CREATE TABLE IF NOT EXISTS instance_state_contents (\n"
+                + "	id integer not null primary key autoincrement,\n"
+                + "	reading_value varchar(100) not null,\n"
+                + "	reading_time timestamp not null default current_timestamp,\n"
+                + "	/* monitored_user_instance_id integer default null,  --- para os estados dos normais, o cara que está sendo monitorado */\n"
+                + "	instance_state_id integer not null,\n"
+                + "	/* foreign key (monitored_user_instance_id) references instances (id), */\n"
+                + "	foreign key (instance_state_id) references instance_states (id)\n"
+                + ");\n"
+                + "\n"
+                + "CREATE TABLE IF NOT EXISTS entity_states (\n"
+                + "	id integer not null primary key autoincrement,\n"
+                + "	model_id integer not null,\n"
+                + "	description varchar(100) not null, \n"
+                + "	user_can_change boolean not null default false,\n"
+                + "	instance_state boolean not null default false,\n"
+                + "	superior_limit varchar (100) default null,\n"
+                + "	inferior_limit varchar (100) default null,\n"
+                + "	initial_value varchar (100) default null,\n"
+                + "	data_type_id integer not null,\n"
+                + "	entity_id integer not null,\n"
+                + "	foreign key (entity_id) references entities (id),\n"
+                + "	foreign key (data_type_id) references data_types (id)\n"
+                + ");"
+                + "\n"
+                + "CREATE TABLE IF NOT EXISTS possible_entity_contents (\n"
+                + "	id integer not null primary key autoincrement,\n"
+                + "	possible_value varchar(100) not null,\n"
+                + "	default_value boolean not null default false,\n"
+                + "	entity_state_id integer not null,\n"
+                + "	foreign key (entity_state_id) references entity_states (id)\n"
+                + ");\n"
+                + "\n"
+                + "CREATE TABLE IF NOT EXISTS entity_state_contents (\n"
+                + "	id integer not null primary key autoincrement,\n"
+                + "	reading_value varchar(100) not null,\n"
+                + "	reading_time timestamp not null default current_timestamp,\n"
+                + "	monitored_user_instance_id integer default null,  /* -- para os estados dos normais, o cara que está sendo monitorado */\n"
+                + "	entity_state_id integer not null,\n"
+                + "	foreign key (monitored_user_instance_id) references instances (id), \n"
+                + "	foreign key (entity_state_id) references entity_states (id)\n"
+                + ");\n"
+                + "\n"
+                + "CREATE TABLE IF NOT EXISTS events (\n"
+                + "	id integer not null primary key autoincrement,\n"
+                + "	model_id integer not null,\n"
+                + "	description varchar(100) not null, \n"
+                + "	synchronous boolean not null default false,\n"
+                + "	implementation_type_id integer not null,\n"
+                + "	entity_id integer not null,\n"
+                + "	foreign key (implementation_type_id) references implementation_types (id), \n"
+                + "	foreign key (entity_id) references entities (id)\n"
+                + ");\n"
+                + "\n"
+                + "CREATE TABLE IF NOT EXISTS event_targets_origins (\n"
+                + "	event_id integer not null,\n"
+                + "	target_origin_id integer not null,\n"
+                + "	mandatory boolean not null default true,\n"
+                + "	primary key (event_id, target_origin_id),\n"
+                + "	foreign key (event_id) references events (id),\n"
+                + "	foreign key (target_origin_id) references targets_origins (id)\n"
+                + ");\n"
+                + "\n"
+                + "CREATE TABLE IF NOT EXISTS event_parameters (\n"
+                + "	id integer not null primary key autoincrement,\n"
+                + "	description varchar(100) default null, \n"
+                + "	optional boolean not null default false,\n"
+                + "	parameter_label varchar (100) not null,\n"
+                + "	superior_limit varchar (100) default null,\n"
+                + "	inferior_limit varchar (100) default null,\n"
+                + "	initial_value varchar (100) default null,\n"
+                + "	entity_state_id integer default null,\n"
+                + "	data_type_id integer not null,\n"
+                + "	event_id integer not null,\n"
+                + "	foreign key (event_id) references events (id),\n"
+                + "	foreign key (data_type_id) references data_types (id),\n"
+                + "	foreign key (entity_state_id) references entity_states (id)	\n"
+                + ");\n"
+                + "\n"
+                + "CREATE TABLE IF NOT EXISTS possible_event_contents (\n"
+                + "	id integer not null primary key autoincrement,\n"
+                + "	possible_value varchar(100) not null,\n"
+                + "	default_value boolean not null default false,\n"
+                + "	event_parameter_id integer not null,\n"
+                + "	foreign key (event_parameter_id) references event_parameters (id)\n"
+                + ");\n"
+                + "\n"
+                + "CREATE TABLE IF NOT EXISTS event_contents (\n"
+                + "	id integer not null primary key autoincrement,\n"
+                + "	reading_value varchar(100) not null,\n"
+                + "	reading_time timestamp not null default current_timestamp,\n"
+                + "	event_parameter_id integer not null,\n"
+                + "	foreign key (event_parameter_id) references event_parameters (id)\n"
+                + ");\n"
+                + "\n"
+                + "CREATE TABLE IF NOT EXISTS actions (\n"
+                + "	id integer not null primary key autoincrement,\n"
+                + "	model_id integer not null,\n"
+                + "	description varchar(100) not null, \n"
+                + "	has_feedback boolean not null default false,\n"
+                + "	entity_id integer not null,\n"
+                + "	foreign key (entity_id) references entities (id)\n"
+                + ");\n"
+                + "\n"
+                + "CREATE TABLE IF NOT EXISTS action_parameters (\n"
+                + "	id integer not null primary key autoincrement,\n"
+                + "	description varchar(100) default null, \n"
+                + "	label varchar(100) not null,\n"
+                + "	optional boolean not null default false,\n"
+                + "	parameter_label varchar (100) not null,\n"
+                + "	superior_limit varchar (100) default null,\n"
+                + "	inferior_limit varchar (100) default null,\n"
+                + "	initial_value varchar (100) default null,\n"
+                + "	entity_state_id integer default null,\n"
+                + "	data_type_id integer not null,\n"
+                + "	action_id integer not null,\n"
+                + "	foreign key (action_id) references actions (id),\n"
+                + "	foreign key (data_type_id) references data_types (id),\n"
+                + "	foreign key (entity_state_id) references entity_states (id)	\n"
+                + ");\n"
+                + "\n"
+                + "CREATE TABLE IF NOT EXISTS possible_action_contents (\n"
+                + "	id integer not null primary key autoincrement,\n"
+                + "	possible_value varchar(100) not null,\n"
+                + "	default_value boolean not null default false,\n"
+                + "	action_parameter_id integer not null,\n"
+                + "	foreign key (action_parameter_id) references action_parameters (id)\n"
+                + ");\n"
+                + "\n"
+                + "CREATE TABLE IF NOT EXISTS action_contents (\n"
+                + "	id integer not null primary key autoincrement,\n"
+                + "	reading_value varchar(100) not null,\n"
+                + "	reading_time timestamp not null default current_timestamp,\n"
+                + "	score double precision not null default 0.0,\n"
+                + "	action_parameter_id integer not null,\n"
+                + "	foreign key (action_parameter_id) references action_parameters (id)\n"
+                + ");\n"
+                + "\n"
+                + "CREATE TABLE IF NOT EXISTS action_feedback_answer (\n"
+                + "	id integer not null primary key autoincrement,\n"
+                + "	description varchar(100) default null,\n"
+                + "	action_id integer not null,\n"
+                + "	foreign key (action_id) references actions (id)\n"
+                + ");\n"
+                + "\n"
+                + "CREATE TABLE IF NOT EXISTS interactions (\n"
+                + "	id integer not null primary key autoincrement,\n"
+                + "	description varchar(100) not null,\n"
+                + "	agent_type_id integer not null,\n"
+                + "	communicative_act_id integer not null,\n"
+                + "	interaction_type_id integer not null,\n"
+                + "	direction_id integer not null,\n"
+                + "	interaction_id integer not null,\n"
+                + "	foreign key (agent_type_id) references agent_types (id),\n"
+                + "	foreign key (communicative_act_id) references communicative_acts (id),\n"
+                + "	foreign key (interaction_type_id) references interaction_types (id),\n"
+                + "	foreign key (direction_id) references interaction_directions (id),\n"
+                + "	foreign key (interaction_id) references interactions (id)\n"
+                + ");\n"
+                + "\n"
+                + "CREATE TABLE IF NOT EXISTS interaction_states (\n"
+                + "	id integer not null primary key autoincrement,\n"
+                + "	description varchar(100) not null,\n"
+                + "	superior_limit varchar (100) default null,\n"
+                + "	inferior_limit varchar (100) default null,\n"
+                + "	initial_value varchar (100) default null,\n"
+                + "	data_type_id integer not null,\n"
+                + "	interaction_id integer not null,\n"
+                + "	foreign key (interaction_id) references interactions (id),\n"
+                + "	foreign key (data_type_id) references data_types (id)\n"
+                + ");\n"
+                + "\n"
+                + "CREATE TABLE IF NOT EXISTS possible_interaction_state_contents (\n"
+                + "	id integer not null primary key autoincrement,\n"
+                + "	possible_value varchar(100) not null,\n"
+                + "	default_value boolean not null default false,\n"
+                + "	interaction_state_id integer not null,\n"
+                + "	foreign key (interaction_state_id) references interaction_states (id)\n"
+                + ");\n"
+                + "\n"
+                + "CREATE TABLE IF NOT EXISTS interaction_state_contents (\n"
+                + "	id integer not null primary key autoincrement,\n"
+                + "	reading_value varchar(100) not null,\n"
+                + "	reading_time timestamp not null default current_timestamp,\n"
+                + "	interaction_state_id integer not null,\n"
+                + "	foreign key (interaction_state_id) references interaction_states (id)\n"
+                + ");\n"
+                + "\n"
+                + "CREATE TABLE IF NOT EXISTS interaction_parameters (\n"
+                + "	id integer not null primary key autoincrement,\n"
+                + "	description varchar(100) default null,\n"
+                + "	label varchar(100) not null,\n"
+                + "	optional boolean not null default false,\n"
+                + "	parameter_label varchar (100) not null,\n"
+                + "	superior_limit varchar (100) default null,\n"
+                + "	inferior_limit varchar (100) default null,\n"
+                + "	initial_value varchar (100) default null,\n"
+                + "	data_type_id integer not null,\n"
+                + "	interaction_id integer not null,\n"
+                + "	foreign key (interaction_id) references interactions (id),\n"
+                + "	foreign key (data_type_id) references data_types (id)\n"
+                + ");\n"
+                + "\n"
+                + "CREATE TABLE IF NOT EXISTS possible_interaction_contents (\n"
+                + "	id integer not null primary key autoincrement,\n"
+                + "	possible_value varchar(100) not null,\n"
+                + "	default_value boolean not null default false,\n"
+                + "	interaction_parameter_id integer not null,\n"
+                + "	foreign key (interaction_parameter_id) references interaction_parameters (id)\n"
+                + ");\n"
+                + "\n"
+                + "CREATE TABLE IF NOT EXISTS conversations (\n"
+                + "	id integer not null primary key autoincrement,\n"
+                + "	created_time timestamp not null default current_timestamp,\n"
+                + "	agent_id integer not null,\n"
+                + "	finished_time timestamp default null,\n"
+                + "	foreign key (agent_id) references agents (id)\n"
+                + ");\n"
+                + "\n"
+                + "CREATE TABLE IF NOT EXISTS messages (\n"
+                + "	id integer not null primary key autoincrement,\n"
+                + "	message_time timestamp not null default current_timestamp,\n"
+                + "	interaction_id integer not null,\n"
+                + "	conversation_id integer not null,\n"
+                + "	foreign key (interaction_id) references interactions (id),\n"
+                + "	foreign key (conversation_id) references conversations (id)\n"
+                + ");\n"
+                + "\n"
+                + "CREATE TABLE IF NOT EXISTS interaction_contents (\n"
+                + "	id integer not null primary key autoincrement,\n"
+                + "	reading_value varchar(100) not null,\n"
+                + "	reading_time timestamp not null default current_timestamp,\n"
+                + "	message_id integer not null,\n"
+                + "	interaction_parameter_id integer not null,\n"
+                + "	foreign key (interaction_parameter_id) references interaction_parameters (id),\n"
+                + "	foreign key (message_id) references messages (id)\n"
+                + ");";
+        stmt.executeUpdate(sql);
+        stmt.close();
+    }
+
+    public void dropDatabase(Connection connection) throws SQLException {
+        Statement stmt = connection.createStatement();
+        String sql
+                = "DROP TABLE agent_address_types;\n"
+                + "DROP TABLE communicative_acts;\n"
+                + "DROP TABLE agent_communication_languages;\n"
+                + "DROP TABLE agent_types;\n"
+                + "DROP TABLE data_types;\n"
+                + "DROP TABLE implementation_types;\n"
+                + "DROP TABLE devices;\n"
+                + "DROP TABLE targets_origins;\n"
+                + "DROP TABLE agents;\n"
+                + "DROP TABLE services;\n"
+                + "DROP TABLE interaction_directions;\n"
+                + "DROP TABLE interaction_types;\n"
+                + "DROP TABLE entity_types;\n"
+                + "DROP TABLE service_types;\n"
+                + "DROP TABLE \"main\".\"action_contents\";\n"
+                + "DROP TABLE \"main\".\"action_feedback_answer\";\n"
+                + "DROP TABLE \"main\".\"action_parameters\";\n"
+                + "DROP TABLE \"main\".\"actions\";\n"
+                + "DROP TABLE \"main\".\"components\";\n"
+                + "DROP TABLE \"main\".\"entities\";\n"
+                + "DROP TABLE \"main\".\"entity_state_contents\";\n"
+                + "DROP TABLE \"main\".\"entity_states\";\n"
+                + "DROP TABLE \"main\".\"event_contents\";\n"
+                + "DROP TABLE \"main\".\"event_parameters\";\n"
+                + "DROP TABLE \"main\".\"event_targets_origins\";\n"
+                + "DROP TABLE \"main\".\"events\";\n"
+                + "DROP TABLE \"main\".\"instance_state_contents\";\n"
+                + "DROP TABLE \"main\".\"instance_states\";\n"
+                + "DROP TABLE \"main\".\"instances\";\n"
+                + "DROP TABLE \"main\".\"possible_action_contents\";\n"
+                + "DROP TABLE \"main\".\"possible_event_contents\";\n"
+                + "DROP TABLE \"main\".\"possible_instance_contents\";\n"
+                + "DROP TABLE \"main\".\"possible_entity_contents\";\n"
+                + "DROP TABLE \"main\".\"conversations\";\n"
+                + "DROP TABLE \"main\".\"messages\";\n"
+                + "DROP TABLE \"main\".\"possible_interaction_contents\";\n"
+                + "DROP TABLE \"main\".\"possible_interaction_state_contents\";\n"
+                + "DROP TABLE \"main\".\"interaction_contents\";\n"
+                + "DROP TABLE \"main\".\"interaction_parameters\";\n"
+                + "DROP TABLE \"main\".\"interaction_state_contents\";\n"
+                + "DROP TABLE \"main\".\"interaction_states\";\n"
+                + "DROP TABLE \"main\".\"interactions\";";
+        stmt.executeUpdate(sql);
+        stmt.close();
+    }
 }

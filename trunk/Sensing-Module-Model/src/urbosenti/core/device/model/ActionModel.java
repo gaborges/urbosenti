@@ -6,11 +6,13 @@ import java.util.List;
 public class ActionModel {
 
     private int id;
+    private int modelId;
     private String description;
     private boolean hasFeedback;
     private TargetOrigin origin;
     private List<Parameter> parameters;
     private List<FeedbackAnswer> feedbackAnswers;
+    private Entity entity;
 
     public ActionModel() {
         this.description = "unknown";
@@ -75,6 +77,22 @@ public class ActionModel {
 
     public void setFeedbackAnswers(List<FeedbackAnswer> feedbackAnswers) {
         this.feedbackAnswers = feedbackAnswers;
+    }
+
+    public Entity getEntity() {
+        return entity;
+    }
+
+    public void setEntity(Entity entity) {
+        this.entity = entity;
+    }
+
+    public int getModelId() {
+        return modelId;
+    }
+
+    public void setModelId(int modelId) {
+        this.modelId = modelId;
     }
     
 }
