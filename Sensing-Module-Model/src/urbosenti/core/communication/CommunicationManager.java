@@ -26,7 +26,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
-import urbosenti.core.data.CommunicationDAO;
+import urbosenti.core.data.dao.CommunicationDAO;
 import urbosenti.core.device.model.Agent;
 import urbosenti.core.device.ComponentManager;
 import urbosenti.core.device.DeviceManager;
@@ -766,11 +766,11 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
                 msg.getSender().setDescription(((Element) header.getElementsByTagName("origin").item(0)).getElementsByTagName("name").item(0).getTextContent());
             }
             if (((Element) header.getElementsByTagName("origin").item(0)).getElementsByTagName("address").getLength() > 0) {
-                msg.getSender().setAddress(((Element) header.getElementsByTagName("origin").item(0)).getElementsByTagName("address").item(0).getTextContent());
+                msg.getSender().setServiceAddress(((Element) header.getElementsByTagName("origin").item(0)).getElementsByTagName("address").item(0).getTextContent());
             }
             msg.getSender().setLayer(((Element) header.getElementsByTagName("origin").item(0)).getElementsByTagName("layer").item(0).getTextContent());
             msg.getTarget().setUid(((Element) header.getElementsByTagName("target").item(0)).getElementsByTagName("uid").item(0).getTextContent());
-            msg.getTarget().setAddress(((Element) header.getElementsByTagName("target").item(0)).getElementsByTagName("address").item(0).getTextContent());
+            msg.getTarget().setServiceAddress(((Element) header.getElementsByTagName("target").item(0)).getElementsByTagName("address").item(0).getTextContent());
             msg.getTarget().setLayer(((Element) header.getElementsByTagName("target").item(0)).getElementsByTagName("layer").item(0).getTextContent());
             msg.setContentType(header.getElementsByTagName("contentType").item(0).getTextContent());
             msg.setSubject(header.getElementsByTagName("subject").item(0).getTextContent());
@@ -791,7 +791,7 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
             msg.setContent(response.getElementsByTagName("content").item(0).getTextContent());
 
             if (origin != null && msg.getSender().getAddress().isEmpty()) {
-                msg.getSender().setAddress(origin.getAddress());
+                msg.getSender().setServiceAddress(origin.getAddress());
             }
 
             System.out.println("Layer: " + msg.getTarget().getLayer());

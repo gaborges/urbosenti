@@ -3,26 +3,27 @@ package urbosenti.core.device.model;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Instace {
+public class Instance {
 
     private int id;
     private String description;
     private String representativeClass;
     private List<State> states;
+    private Entity entity;
 
-    public Instace(int id, String description) {
+    public Instance(int id, String description) {
         this.id = id;
         this.description = description;
     }
 
-    public Instace(int id, String description, String representativeClass) {
+    public Instance(int id, String description, String representativeClass) {
         this.id = id;
         this.description = description;
         this.representativeClass = representativeClass;
         this.states = new ArrayList();
     }
     
-    public Instace() {
+    public Instance() {
     }
 
     public int getId() {
@@ -56,4 +57,13 @@ public class Instace {
     public void setRepresentativeClass(String representativeClass) {
         this.representativeClass = representativeClass;
     }
+
+    public Entity getEntity() {
+        return entity;
+    }
+
+    public void setEntity(Entity entity) {
+        this.entity = entity;
+    }
+    
 }

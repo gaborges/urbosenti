@@ -54,7 +54,7 @@ public class SocketPushServiceReceiver extends PushServiceReceiver{
 "       </content>" +
 "     </message>";
         Agent origin = new Agent();
-        origin.setAddress("http://exemplo:8084/TestServer/webresources/test/return");
+        origin.setServiceAddress("http://exemplo:8084/TestServer/webresources/test/return");
         super.communicationManager.newPushMessage(origin,message);
     }
     

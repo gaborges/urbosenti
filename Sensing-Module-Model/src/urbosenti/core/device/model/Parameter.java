@@ -15,6 +15,7 @@ public class Parameter {
     private DataType dataType;
     private Content content;
     private List<PossibleContent> possibleContents;
+    private State relatedState;
     
     public Parameter(String label) {
         this();
@@ -38,6 +39,7 @@ public class Parameter {
         this.dataType = null;
         this.content = null;
         this.possibleContents = new ArrayList();
+        this.relatedState = null;
     }
 
     public int getId() {
@@ -96,8 +98,6 @@ public class Parameter {
         this.initialValue = initialValue;
     }
 
-   
-
     public DataType getDataType() {
         return dataType;
     }
@@ -123,4 +123,12 @@ public class Parameter {
         this.possibleContents = possibleContents;
     }
 
+    public State getRelatedState() {
+        return relatedState;
+    }
+
+    public void setRelatedState(State relatedState) {
+        this.relatedState = relatedState;
+    }
+    
 }

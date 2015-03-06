@@ -2,9 +2,10 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package urbosenti.core.data;
+package urbosenti.core.data.dao;
 
 import java.io.IOException;
+import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -16,6 +17,8 @@ import urbosenti.core.communication.MessageWrapper;
  * @author Guilherme
  */
 public class CommunicationDAO {
+    
+    private Connection connection;
     
     public final static int  MOBILE_DATA_POLICY = 1;
     public final static int  MESSAGE_STORAGE_POLICY = 2;
@@ -36,6 +39,11 @@ public class CommunicationDAO {
         this.availableCommunicationInterfaces = new ArrayList<CommunicationInterface>();
         countIdMessages = 0;
         storedMessages = new ArrayList<MessageWrapper>();
+    }
+    
+    public CommunicationDAO(Object context) {
+        this();
+        this.connection = (Connection) context;
     }
     
     private final List<CommunicationInterface> availableCommunicationInterfaces;
@@ -170,7 +178,7 @@ public class CommunicationDAO {
      *  No caso em questão todas já existem. Adicionar a nova possíbilidade em futuras implementações.;
      * @param ci
      */
-    protected void addAvailableCommunicationInterface(CommunicationInterface ci) {
+    public void addAvailableCommunicationInterface(CommunicationInterface ci) {
         ci.setStatus(CommunicationInterface.STATUS_AVAILABLE);
         /*
          * Persiste no banco de dados. Se já existe somente atualiza.

@@ -15,6 +15,7 @@ import urbosenti.core.communication.interfaces.WirelessCommunicationInterface;
 import urbosenti.core.communication.receivers.SocketPushServiceReceiver;
 import urbosenti.core.device.model.Agent;
 import urbosenti.core.device.DeviceManager;
+import urbosenti.core.device.model.Service;
 import urbosenti.test.ConcreteApplicationHandler;
 import urbosenti.test.TestCommunication;
 
@@ -57,9 +58,11 @@ public class Main {
         // deviceManager.setAgentKnowledgeRepresentationModel(Object o,String dataType);
         // deviceManager.validateAgentKnowledgeRepresentationModel();
         
-         // Servidor ainda não criado
+        // Servidor ainda não criado - pegar direto do banco de dados ou a mão
         Agent backendServer = new Agent();
-        backendServer.setAddress("http://ubicomp.ufgs.br/UrboSenti/webresources/backend"); // Endereço fictício
+        Service service = new Service();
+        backendServer.setService(service);
+        backendServer.setServiceAddress("http://ubicomp.ufgs.br/UrboSenti/webresources/backend"); // Endereço fictício
         backendServer.setDescription("Backend Application Service");
         backendServer.setUid(""); // Colocar um UID no backend e atribuir aqui
         

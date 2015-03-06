@@ -39,7 +39,7 @@ public class TestCommunication {
     public void testaEnvioMensagemSemRetorno(){
         // Envio normal de mensagem sem retorno
         Agent target = new Agent();
-        target.setAddress("http://localhost:8090/Test2Server/webresources/generic");
+        target.setServiceAddress("http://localhost:8090/Test2Server/webresources/generic");
         target.setUid("666");
         target.setLayer("application");
         target.setDescription("Backend Module");
@@ -68,7 +68,7 @@ public class TestCommunication {
     
     public void testaEnvioMensagemComRetorno(){
         Agent target = new Agent();
-        target.setAddress("http://localhost:8090/Test2Server/webresources/generic/return");
+        target.setServiceAddress("http://localhost:8090/Test2Server/webresources/generic/return");
         target.setUid("666");
         target.setLayer("application");
         target.setDescription("Backend Module");
@@ -98,7 +98,7 @@ public class TestCommunication {
     
     public void testaUploadServer(){
         Agent target = new Agent();
-        target.setAddress("http://localhost:8090/Test2Server/webresources/generic");
+        target.setServiceAddress("http://localhost:8090/Test2Server/webresources/generic");
         target.setUid("666");
         target.setLayer("application");
         target.setDescription("Backend Module");

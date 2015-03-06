@@ -8,6 +8,7 @@ public class Component {
     private int id;
     private String description;
     private String referedClass;
+    private Device device;
     private List<Entity> entities;
 
     public Component(int id, String description, String referedClass) {
@@ -55,6 +56,14 @@ public class Component {
 
     public void setEntities(List<Entity> entities) {
         this.entities = entities;
+    }
+
+    public Device getDevice() {
+        return device;
+    }
+
+    public void setDevice(Device device) {
+        this.device = device;
     }
 
 }

@@ -2,6 +2,7 @@ package urbosenti.core.device.model;
 
 public class Service {
 
+    private int id;
     /**
      * ID do servi�o
      */
@@ -15,6 +16,7 @@ public class Service {
     private int port;
     private ServiceType serviceType;
     private Agent agent;
+    private Device device;
 
     public Service(String serviceUID, String applicationUID, String description, String address, int port, ServiceType serviceType, Agent agent) {
         this.serviceUID = serviceUID;
@@ -83,6 +85,22 @@ public class Service {
 
     public void setAgent(Agent agent) {
         this.agent = agent;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public Device getDevice() {
+        return device;
+    }
+
+    public void setDevice(Device device) {
+        this.device = device;
     }
 
 }

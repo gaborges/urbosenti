@@ -3,8 +3,9 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package urbosenti.core.data;
+package urbosenti.core.data.dao;
 
+import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
 import urbosenti.user.User;
@@ -16,11 +17,12 @@ import urbosenti.user.User;
 public class UserDAO {
 
     private final List<User> users;
+    private final Connection connection;
 
-    public UserDAO() {
-        this.users = new ArrayList<>();
+    public UserDAO(Object context) {
+        this.users = new ArrayList();
+        this.connection = (Connection) context;
     }
-
     /**
      * Insere o usuário no sistema e atribui um id único nele, além das
      * preferências padrão (falta fazer). Também nele é atribuído todas as
