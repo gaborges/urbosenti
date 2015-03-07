@@ -12,6 +12,7 @@ public class Interaction {
     private Direction direction;
     private Interaction primaryInteraction;
     private CommunicativeAct communicativeAct;
+    private AgentType agentType;
 
     public Interaction(int id, String description) {
         this();
@@ -77,6 +78,14 @@ public class Interaction {
 
     public void setPrimaryInteraction(Interaction primaryInteraction) {
         this.primaryInteraction = primaryInteraction;
+    }
+
+    public AgentType getAgentType() {
+        return agentType;
+    }
+
+    public void setAgentType(AgentType agentType) {
+        this.agentType = agentType;
     }
 
 }
