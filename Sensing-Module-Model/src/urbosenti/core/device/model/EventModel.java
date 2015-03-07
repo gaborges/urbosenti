@@ -9,7 +9,7 @@ public class EventModel {
     private int modelId;
     private String description;
     private boolean synchronous;
-    private List<TargetOrigin> targets;
+    private List<EventTarget> targets;
     private Implementation implementation;
     private List<Parameter> parameters;
     private Entity entity;
@@ -59,11 +59,11 @@ public class EventModel {
         this.implementation = implementation;
     }
 
-    public List<TargetOrigin> getTargets() {
+    public List<EventTarget> getTargets() {
         return targets;
     }
 
-    public void setTargets(List<TargetOrigin> targets) {
+    public void setTargets(List<EventTarget> targets) {
         this.targets = targets;
     }
 

@@ -38,6 +38,7 @@ import urbosenti.core.device.model.Instance;
 import urbosenti.core.device.model.InteractionType;
 import urbosenti.core.device.model.EntityType;
 import urbosenti.core.device.model.EventModel;
+import urbosenti.core.device.model.EventTarget;
 import urbosenti.core.device.model.Interaction;
 import urbosenti.core.device.model.Parameter;
 import urbosenti.core.device.model.PossibleContent;
@@ -483,9 +484,17 @@ public class StoringGlobalKnowledgeModel {
                         // Target
                         nListSubElements = eElement.getElementsByTagName("target");
                         for (int t = 0; t < nListSubElements.getLength(); t++) {
-                            eSubElement = (Element) nListComponents.item(t);
-                            event.getTargets().add(new TargetOrigin(eSubElement.getTextContent(),
-                                    eSubElement.getAttribute("mandatory").equals("true")));
+                            eSubElement = (Element) nListSubElements.item(t);
+                            EventTarget target = new EventTarget();
+                            target.setEvent(event);
+                            target.setMandatory(eSubElement.getAttribute("mandatory").equals("true"));
+                            for (TargetOrigin to : targetsOrigins) {
+                                if (to.getId() == Integer.parseInt(eSubElement.getTextContent())) {
+                                    target.setTarget(to);
+                                    break;
+                                }
+                            }
+                            event.getTargets().add(target);
                         }
                         // Parameter
                         nListSubElements = eElement.getElementsByTagName("parameter");
@@ -811,7 +820,7 @@ public class StoringGlobalKnowledgeModel {
                     boolean flag = true;
                     for (Interaction interact : this.agentTypes.get(baseAgentType).getInteraction()) {
                         if (interact.getId() == Integer.parseInt(eElement.getAttribute("primaryInteraction"))) {
-                            interaction = interact;
+                            interaction.setPrimaryInteraction(interact);
                             flag = false;
                             break;
                         }
@@ -839,6 +848,7 @@ public class StoringGlobalKnowledgeModel {
                         for (DataType type : dataTypes) { // data type obrigatório, se não adicionado deve pegar do estado
                             if (type.getId() == Integer.parseInt(eSubElement.getAttribute("dataType"))) {
                                 interaction.getParameters().get(t).setDataType(type);
+                                break;
                             }
                         }
                     } else {
@@ -1305,9 +1315,17 @@ public class StoringGlobalKnowledgeModel {
                         // Target
                         nListSubElements = eElement.getElementsByTagName("target");
                         for (int t = 0; t < nListSubElements.getLength(); t++) {
-                            eSubElement = (Element) nListComponents.item(t);
-                            event.getTargets().add(new TargetOrigin(eSubElement.getTextContent(),
-                                    eSubElement.getAttribute("mandatory").equals("true")));
+                            eSubElement = (Element) nListSubElements.item(t);
+                            EventTarget target = new EventTarget();
+                            target.setEvent(event);
+                            target.setMandatory(eSubElement.getAttribute("mandatory").equals("true"));
+                            for (TargetOrigin to : targetsOrigins) {
+                                if (to.getId() == Integer.parseInt(eSubElement.getTextContent())) {
+                                    target.setTarget(to);
+                                    break;
+                                }
+                            }
+                            event.getTargets().add(target);
                         }
                         // Parameter
                         nListSubElements = eElement.getElementsByTagName("parameter");
@@ -1516,58 +1534,62 @@ public class StoringGlobalKnowledgeModel {
         // função para checar se é necessário atualizar a base
 
         try {
-            if (this.dataManager.getDeviceDAO().getCount() > 0) {
-                return;
-            }
-            // device
-            this.dataManager.getDeviceDAO().insert(device);
-            // agentTypes
-            for (AgentType type : agentTypes) {
-                this.dataManager.getAgentTypeDAO().insert(type);
-            }
-            // entityTypes
-            for (EntityType type : entityTypes) {
-                this.dataManager.getEntityTypeDAO().insert(type);
-            }
-            // dataTypes
-            for (DataType type : dataTypes) {
-                this.dataManager.getDataTypeDAO().insert(type);
-            }
-            // implementationTypes
-            for (Implementation type : implementationTypes) {
-                this.dataManager.getImplementationTypeDAO().insert(type);
-            }
-            // agentCommunicationLanguage
-            for (AgentCommunicationLanguage type : agentCommunicationLanguages) {
-                this.dataManager.getAgentCommunicationLanguageDAO().insert(type);
-            }
-            // communicativeAct
-            for (CommunicativeAct type : communicativeActs) {
-                this.dataManager.getCommunicativeActDAO().insert(type);
-            }
-            // interactionType
-            for (InteractionType type : interactionTypes) {
-                this.dataManager.getInteractionTypeDAO().insert(type);
-            }
-            // interactionDirection
-            for (Direction type : interactionDirections) {
-                this.dataManager.getInteractionDirectionDAO().insert(type);
-            }
-            // targetOrigin
-            for (TargetOrigin type : targetsOrigins) {
-                this.dataManager.getTargetOriginDAO().insert(type);
-            }
-            // agentAddressType
-            for (AddressAgentType type : agentAddressTypes) {
-                this.dataManager.getAgentAddressTypeDAO().insert(type);
-            }
-            // service
-            for (Service type : device.getServices()) {
-                type.setDevice(device);
-                this.dataManager.getServiceDAO().insert(type);
-                // agent
-                type.getAgent().setService(type);
-                this.dataManager.getAgentDAO().insert(type.getAgent());
+//            if (this.dataManager.getDeviceDAO().getCount() > 0) {
+//                return;
+//            }
+            if (device.getDeviceVersion() > this.dataManager.getDeviceDAO().getStoredGeneralDefinitionsVersion(device)) {
+                // device
+                this.dataManager.getDeviceDAO().insert(device);
+                // agentTypes
+                for (AgentType type : agentTypes) {
+                    this.dataManager.getAgentTypeDAO().insert(type);
+                }
+                // entityTypes
+                for (EntityType type : entityTypes) {
+                    this.dataManager.getEntityTypeDAO().insert(type);
+                }
+                // dataTypes
+                for (DataType type : dataTypes) {
+                    this.dataManager.getDataTypeDAO().insert(type);
+                }
+                // implementationTypes
+                for (Implementation type : implementationTypes) {
+                    this.dataManager.getImplementationTypeDAO().insert(type);
+                }
+                // agentCommunicationLanguage
+                for (AgentCommunicationLanguage type : agentCommunicationLanguages) {
+                    this.dataManager.getAgentCommunicationLanguageDAO().insert(type);
+                }
+                // communicativeAct
+                for (CommunicativeAct type : communicativeActs) {
+                    this.dataManager.getCommunicativeActDAO().insert(type);
+                }
+                // interactionType
+                for (InteractionType type : interactionTypes) {
+                    this.dataManager.getInteractionTypeDAO().insert(type);
+                }
+                // interactionDirection
+                for (Direction type : interactionDirections) {
+                    this.dataManager.getInteractionDirectionDAO().insert(type);
+                }
+                // targetOrigin
+                for (TargetOrigin type : targetsOrigins) {
+                    this.dataManager.getTargetOriginDAO().insert(type);
+                }
+                // agentAddressType
+                for (AddressAgentType type : agentAddressTypes) {
+                    this.dataManager.getAgentAddressTypeDAO().insert(type);
+                }
+                // service
+                for (Service type : device.getServices()) {
+                    type.setDevice(device);
+                    this.dataManager.getServiceDAO().insert(type);
+                    // agent
+                    type.getAgent().setService(type);
+                    this.dataManager.getAgentDAO().insert(type.getAgent());
+                }
+                // update version
+                this.dataManager.getDeviceDAO().updateStoredGeneralDefinitionsVersion(device);
             }
         } catch (SQLException ex) {
             try {
@@ -1583,67 +1605,71 @@ public class StoringGlobalKnowledgeModel {
     public void saveDevice(Connection connection) {
         try {
             // devices
-            /// components
-            for (Component component : this.device.getComponents()) {
-                component.setDevice(this.device);
-                this.dataManager.getComponentDAO().insert(component);
-                //// entities
-                for (Entity entity : component.getEntities()) {
-                    entity.setComponent(component);
-                    this.dataManager.getEntityDAO().insert(entity);
-                    ///// states
-                    for (State state : entity.getStates()) {
-                        state.setEntity(entity);
-                        this.dataManager.getStateDAO().insert(state);
-                        if (state.getPossibleContents().size() > 0) {
-                            // Possible contents
-                            this.dataManager.getStateDAO().insertPossibleContents(state);
-                        }
-                    }
-                    ///// event
-                    for (EventModel event : entity.getEvents()) {
-                        event.setEntity(entity);
-                        this.dataManager.getEventDAO().insert(event);
-                        // parameters
-                        this.dataManager.getEventDAO().insertParameters(event);
-                        // targets
-                        this.dataManager.getEventDAO().insertTargets(event);
-                        // parameters -> possible contents
-                        for (Parameter parameter : event.getParameters()) {
-                            // Possible contents
-                            this.dataManager.getEventDAO().insertPossibleParameterContents(parameter, event);
-                        }
-
-                    }
-                    ///// action
-                    for (ActionModel action : entity.getActions()) {
-                        action.setEntity(entity);
-                        this.dataManager.getActionDAO().insert(action);
-                        // feedbackanswers
-                        this.dataManager.getActionDAO().insertFeedbackAnswers(action);
-                        // parameters
-                        this.dataManager.getActionDAO().insertParameters(action);
-                        // parameters -> possible contents
-                        for (Parameter parameter : action.getParameters()) {
-                            // Possible contents
-                            this.dataManager.getActionDAO().insertPossibleParameterContents(parameter, action);
-                        }
-                    }
-                    ///// instance
-                    for (Instance instance : entity.getInstaces()) {
-                        instance.setEntity(entity);
-                        this.dataManager.getInstanceDAO().insert(instance);
-                        // states
-                        for (State state : instance.getStates()) {
-                            this.dataManager.getInstanceDAO().insertState(state, instance);
-                            // states possible contents
-                            if (state.getPossibleContents().size() > 0) {
+            if (device.getDeviceVersion() > this.dataManager.getDeviceDAO().getStoredDeviceVersion(device)) {
+                /// components
+                for (Component component : this.device.getComponents()) {
+                    component.setDevice(this.device);
+                    this.dataManager.getComponentDAO().insert(component);
+                    //// entities
+                    for (Entity entity : component.getEntities()) {
+                        entity.setComponent(component);
+                        this.dataManager.getEntityDAO().insert(entity);
+                        ///// states
+                        for (State state : entity.getStates()) {
+                            state.setEntity(entity);
+                            this.dataManager.getStateDAO().insert(state);
+                            if ((state.getPossibleContents() == null) ? false : state.getPossibleContents().size() > 0) {
                                 // Possible contents
-                                this.dataManager.getInstanceDAO().insertPossibleStateContents(state, instance);
+                                this.dataManager.getStateDAO().insertPossibleContents(state);
+                            }
+                        }
+                        ///// event
+                        for (EventModel event : entity.getEvents()) {
+                            event.setEntity(entity);
+                            this.dataManager.getEventDAO().insert(event);
+                            // parameters
+                            this.dataManager.getEventDAO().insertParameters(event);
+                            // targets
+                            this.dataManager.getEventDAO().insertTargets(event);
+                            // parameters -> possible contents
+                            for (Parameter parameter : event.getParameters()) {
+                                // Possible contents
+                                this.dataManager.getEventDAO().insertPossibleParameterContents(parameter);
+                            }
+
+                        }
+                        ///// action
+                        for (ActionModel action : entity.getActions()) {
+                            action.setEntity(entity);
+                            this.dataManager.getActionDAO().insert(action);
+                            // feedbackanswers
+                            this.dataManager.getActionDAO().insertFeedbackAnswers(action);
+                            // parameters
+                            this.dataManager.getActionDAO().insertParameters(action);
+                            // parameters -> possible contents
+                            for (Parameter parameter : action.getParameters()) {
+                                // Possible contents
+                                this.dataManager.getActionDAO().insertPossibleParameterContents(parameter);
+                            }
+                        }
+                        ///// instance
+                        for (Instance instance : entity.getInstaces()) {
+                            instance.setEntity(entity);
+                            this.dataManager.getInstanceDAO().insert(instance);
+                            // states
+                            for (State state : instance.getStates()) {
+                                this.dataManager.getInstanceDAO().insertState(state, instance);
+                                // states possible contents
+                                if ((state.getPossibleContents() != null) ? state.getPossibleContents().size() > 0 : false) {
+                                    // Possible contents
+                                    this.dataManager.getInstanceDAO().insertPossibleStateContents(state, instance);
+                                }
                             }
                         }
                     }
                 }
+                // update version
+                this.dataManager.getDeviceDAO().updateStoredDeviceVersion(device);
             }
         } catch (SQLException ex) {
             Logger.getLogger(StoringGlobalKnowledgeModel.class.getName()).log(Level.SEVERE, null, ex);
@@ -1658,30 +1684,35 @@ public class StoringGlobalKnowledgeModel {
 
     public void saveAgentModels(Connection connection) {
         try {
-            // agent
-            for (AgentType agentModel : agentTypes) {
-                /// agent states
-                for (State state : agentModel.getStates()) {
-                    state.setAgentType(agentModel);
-                    this.dataManager.getAgentTypeDAO().insertState(state);
-                    // states possible contents
-                    if (state.getPossibleContents().size() > 0) {
-                        // Possible contents
-                        this.dataManager.getAgentTypeDAO().insertPossibleStateContents(state);
+            if (device.getAgentModelVersion() > this.dataManager.getDeviceDAO().getStoredAgentModelVersion(device)) {
+                // agent
+                for (AgentType agentModel : agentTypes) {
+                    /// agent states
+                    for (State state : agentModel.getStates()) {
+                        state.setAgentType(agentModel);
+                        this.dataManager.getAgentTypeDAO().insertState(state);
+                        // states possible contents
+                        if ((state.getPossibleContents() != null) ? state.getPossibleContents().size() > 0 : false) {
+                            // Possible contents
+                            this.dataManager.getAgentTypeDAO().insertPossibleStateContents(state);
+                        }
+                    }
+                    /// interaction
+                    for (Interaction interaction : agentModel.getInteraction()) {
+                        interaction.setAgentType(agentModel);
+                        this.dataManager.getAgentTypeDAO().insertInteraction(interaction);
+                        //// parameter
+                        this.dataManager.getAgentTypeDAO().insertParameters(interaction);
+                        // parameters -> possible contents
+                        for (Parameter parameter : interaction.getParameters()) {
+                            // Possible contents
+                            this.dataManager.getAgentTypeDAO().insertPossibleParameterContents(parameter);
+                        }
                     }
                 }
-                /// interaction
-                for (Interaction interaction : agentModel.getInteraction()) {
-                    //// parameter
-                    this.dataManager.getAgentTypeDAO().insertParameters(interaction);
-                    // parameters -> possible contents
-                    for (Parameter parameter : interaction.getParameters()) {
-                        // Possible contents
-                        this.dataManager.getAgentTypeDAO().insertPossibleParameterContents(parameter, interaction);
-                    }
-                }
+                // update version
+                this.dataManager.getDeviceDAO().updateStoredAgentModelVersion(device);
             }
-            throw new SQLException("Limpar banco de dados");
         } catch (SQLException ex) {
             Logger.getLogger(StoringGlobalKnowledgeModel.class.getName()).log(Level.SEVERE, null, ex);
             try {
@@ -1698,9 +1729,9 @@ public class StoringGlobalKnowledgeModel {
         String sql = "CREATE TABLE IF NOT EXISTS devices (\n"
                 + "	id integer not null primary key autoincrement,\n"
                 + "	description varchar(100) not null,\n"
-                + "	generalDefinitionsVersion double not null default 1.0,\n"
-                + "	deviceVersion double not null default 1.0,\n"
-                + "	agentModelVersion double not null default 1.0\n"
+                + "	generalDefinitionsVersion double not null default 0.0,\n"
+                + "	deviceVersion double not null default 0.0,\n"
+                + "	agentModelVersion double not null default 0.0\n"
                 + ");\n"
                 + "\n"
                 + "CREATE TABLE IF NOT EXISTS agent_types (\n"
@@ -1937,7 +1968,6 @@ public class StoringGlobalKnowledgeModel {
                 + "	description varchar(100) default null, \n"
                 + "	label varchar(100) not null,\n"
                 + "	optional boolean not null default false,\n"
-                + "	parameter_label varchar (100) not null,\n"
                 + "	superior_limit varchar (100) default null,\n"
                 + "	inferior_limit varchar (100) default null,\n"
                 + "	initial_value varchar (100) default null,\n"
@@ -1980,13 +2010,13 @@ public class StoringGlobalKnowledgeModel {
                 + "	communicative_act_id integer not null,\n"
                 + "	interaction_type_id integer not null,\n"
                 + "	direction_id integer not null,\n"
-                + "	interaction_id integer not null,\n"
+                + "	interaction_id integer default null,\n"
                 + "	foreign key (agent_type_id) references agent_types (id),\n"
                 + "	foreign key (communicative_act_id) references communicative_acts (id),\n"
                 + "	foreign key (interaction_type_id) references interaction_types (id),\n"
                 + "	foreign key (direction_id) references interaction_directions (id),\n"
                 + "	foreign key (interaction_id) references interactions (id)\n"
-                + ");\n"
+                + ");"
                 + "\n"
                 + "CREATE TABLE IF NOT EXISTS interaction_states (\n"
                 + "	id integer not null primary key autoincrement,\n"
@@ -1995,8 +2025,8 @@ public class StoringGlobalKnowledgeModel {
                 + "	inferior_limit varchar (100) default null,\n"
                 + "	initial_value varchar (100) default null,\n"
                 + "	data_type_id integer not null,\n"
-                + "	interaction_id integer not null,\n"
-                + "	foreign key (interaction_id) references interactions (id),\n"
+                + "	agent_type_id integer not null,\n"
+                + "	foreign key (agent_type_id) references agent_types (id),\n"
                 + "	foreign key (data_type_id) references data_types (id)\n"
                 + ");\n"
                 + "\n"
@@ -2021,12 +2051,13 @@ public class StoringGlobalKnowledgeModel {
                 + "	description varchar(100) default null,\n"
                 + "	label varchar(100) not null,\n"
                 + "	optional boolean not null default false,\n"
-                + "	parameter_label varchar (100) not null,\n"
                 + "	superior_limit varchar (100) default null,\n"
                 + "	inferior_limit varchar (100) default null,\n"
                 + "	initial_value varchar (100) default null,\n"
+                + "	interaction_state_id integer default null,\n"
                 + "	data_type_id integer not null,\n"
                 + "	interaction_id integer not null,\n"
+                + "	foreign key (interaction_state_id) references interaction_states (id),\n"
                 + "	foreign key (interaction_id) references interactions (id),\n"
                 + "	foreign key (data_type_id) references data_types (id)\n"
                 + ");\n"
