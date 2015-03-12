@@ -8,6 +8,8 @@ public class Content {
     private java.lang.Object value;
     private Date time;
     private double score;
+    private Instance  monitoredInstance;
+    private AgentMessage message;
 
     public Content(int id, java.lang.Object value, Date time, double score) {
         this.id = id;
@@ -49,6 +51,22 @@ public class Content {
 
     public void setScore(double score) {
         this.score = score;
+    }
+
+    public Instance getMonitoredInstance() {
+        return monitoredInstance;
+    }
+
+    public void setMonitoredInstance(Instance monitoredInstance) {
+        this.monitoredInstance = monitoredInstance;
+    }
+
+    public AgentMessage getMessage() {
+        return message;
+    }
+
+    public void setMessage(AgentMessage message) {
+        this.message = message;
     }
     
 }

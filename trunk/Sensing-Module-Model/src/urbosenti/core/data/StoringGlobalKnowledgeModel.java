@@ -346,9 +346,10 @@ public class StoringGlobalKnowledgeModel {
                             State state = new State();
                             state.setId(Integer.parseInt(eElement.getAttribute("id")));
                             for (DataType type : dataTypes) {
-                                if (type.getId() == Integer.parseInt(eEntity.getElementsByTagName("content")
+                                if (type.getId() == Integer.parseInt(eElement.getElementsByTagName("content")
                                         .item(0).getAttributes().getNamedItem("dataType").getTextContent())) {
                                     state.setDataType(type);
+                                    state.setInitialValue(type.getInitialValue());
                                     break;
                                 }
                             }
@@ -363,16 +364,16 @@ public class StoringGlobalKnowledgeModel {
                                     state.setUserCanChange(false);
                                 }
                             }
-                            if (eEntity.getElementsByTagName("content").item(0).getAttributes().getNamedItem("initialValue") != null) {
-                                state.setInitialValue(eEntity.getElementsByTagName("content")
+                            if (eElement.getElementsByTagName("content").item(0).getAttributes().getNamedItem("initialValue") != null) {
+                                state.setInitialValue(eElement.getElementsByTagName("content")
                                         .item(0).getAttributes().getNamedItem("initialValue").getTextContent());
                             }
-                            if (eEntity.getElementsByTagName("content").item(0).getAttributes().getNamedItem("superiorLimit") != null) {
-                                state.setSuperiorLimit(eEntity.getElementsByTagName("content")
+                            if (eElement.getElementsByTagName("content").item(0).getAttributes().getNamedItem("superiorLimit") != null) {
+                                state.setSuperiorLimit(eElement.getElementsByTagName("content")
                                         .item(0).getAttributes().getNamedItem("superiorLimit").getTextContent());
                             }
-                            if (eEntity.getElementsByTagName("content").item(0).getAttributes().getNamedItem("inferiorLimit") != null) {
-                                state.setInferiorLimit(eEntity.getElementsByTagName("content")
+                            if (eElement.getElementsByTagName("content").item(0).getAttributes().getNamedItem("inferiorLimit") != null) {
+                                state.setInferiorLimit(eElement.getElementsByTagName("content")
                                         .item(0).getAttributes().getNamedItem("inferiorLimit").getTextContent());
                             }
                             if (eElement.hasAttribute("instanceState")) {
@@ -383,7 +384,7 @@ public class StoringGlobalKnowledgeModel {
                                 }
                             }
                             // verificar se possui algum valor possível
-                            nListSubElements = ((Element) eEntity.getElementsByTagName("content").item(0)).getElementsByTagName("value");
+                            nListSubElements = ((Element) eElement.getElementsByTagName("content").item(0)).getElementsByTagName("value");
                             if (nListSubElements.getLength() > 0) {
                                 for (int z = 0; z < nListSubElements.getLength(); z++) {
                                     eSubElement = (Element) nListSubElements.item(z);
@@ -737,6 +738,7 @@ public class StoringGlobalKnowledgeModel {
                         if (type.getId() == Integer.parseInt(eElement.getElementsByTagName("content")
                                 .item(0).getAttributes().getNamedItem("dataType").getTextContent())) {
                             state.setDataType(type);
+                            state.setInitialValue(type.getInitialValue());
                             break;
                         }
                     }
@@ -1177,9 +1179,10 @@ public class StoringGlobalKnowledgeModel {
                             State state = new State();
                             state.setId(Integer.parseInt(eElement.getAttribute("id")));
                             for (DataType type : dataTypes) {
-                                if (type.getId() == Integer.parseInt(eEntity.getElementsByTagName("content")
+                                if (type.getId() == Integer.parseInt(eElement.getElementsByTagName("content")
                                         .item(0).getAttributes().getNamedItem("dataType").getTextContent())) {
                                     state.setDataType(type);
+                                    state.setInitialValue(state.getInitialValue());
                                     break;
                                 }
                             }
@@ -1194,16 +1197,16 @@ public class StoringGlobalKnowledgeModel {
                                     state.setUserCanChange(false);
                                 }
                             }
-                            if (eEntity.getElementsByTagName("content").item(0).getAttributes().getNamedItem("initialValue") != null) {
-                                state.setInitialValue(eEntity.getElementsByTagName("content")
+                            if (eElement.getElementsByTagName("content").item(0).getAttributes().getNamedItem("initialValue") != null) {
+                                state.setInitialValue(eElement.getElementsByTagName("content")
                                         .item(0).getAttributes().getNamedItem("initialValue").getTextContent());
                             }
-                            if (eEntity.getElementsByTagName("content").item(0).getAttributes().getNamedItem("superiorLimit") != null) {
-                                state.setSuperiorLimit(eEntity.getElementsByTagName("content")
+                            if (eElement.getElementsByTagName("content").item(0).getAttributes().getNamedItem("superiorLimit") != null) {
+                                state.setSuperiorLimit(eElement.getElementsByTagName("content")
                                         .item(0).getAttributes().getNamedItem("superiorLimit").getTextContent());
                             }
-                            if (eEntity.getElementsByTagName("content").item(0).getAttributes().getNamedItem("inferiorLimit") != null) {
-                                state.setInferiorLimit(eEntity.getElementsByTagName("content")
+                            if (eElement.getElementsByTagName("content").item(0).getAttributes().getNamedItem("inferiorLimit") != null) {
+                                state.setInferiorLimit(eElement.getElementsByTagName("content")
                                         .item(0).getAttributes().getNamedItem("inferiorLimit").getTextContent());
                             }
                             if (eElement.hasAttribute("instanceState")) {
@@ -1214,7 +1217,7 @@ public class StoringGlobalKnowledgeModel {
                                 }
                             }
                             // verificar se possui algum valor possível
-                            nListSubElements = ((Element) eEntity.getElementsByTagName("content").item(0)).getElementsByTagName("value");
+                            nListSubElements = ((Element) eElement.getElementsByTagName("content").item(0)).getElementsByTagName("value");
                             if (nListSubElements.getLength() > 0) {
                                 for (int z = 0; z < nListSubElements.getLength(); z++) {
                                     eSubElement = (Element) nListSubElements.item(z);
@@ -1544,6 +1547,10 @@ public class StoringGlobalKnowledgeModel {
                 for (AgentType type : agentTypes) {
                     this.dataManager.getAgentTypeDAO().insert(type);
                 }
+                // serviceTypes
+                for (ServiceType serviceType : serviceTypes){
+                    this.dataManager.getServiceTypeDAO().insert(serviceType);
+                }
                 // entityTypes
                 for (EntityType type : entityTypes) {
                     this.dataManager.getEntityTypeDAO().insert(type);
@@ -1862,7 +1869,7 @@ public class StoringGlobalKnowledgeModel {
                 + "CREATE TABLE IF NOT EXISTS instance_state_contents (\n"
                 + "	id integer not null primary key autoincrement,\n"
                 + "	reading_value varchar(100) not null,\n"
-                + "	reading_time timestamp not null default current_timestamp,\n"
+                + "	reading_time varchar(100) not null ,\n"
                 + "	/* monitored_user_instance_id integer default null,  --- para os estados dos normais, o cara que está sendo monitorado */\n"
                 + "	instance_state_id integer not null,\n"
                 + "	/* foreign key (monitored_user_instance_id) references instances (id), */\n"
@@ -1882,7 +1889,7 @@ public class StoringGlobalKnowledgeModel {
                 + "	entity_id integer not null,\n"
                 + "	foreign key (entity_id) references entities (id),\n"
                 + "	foreign key (data_type_id) references data_types (id)\n"
-                + ");"
+                + ");\n"
                 + "\n"
                 + "CREATE TABLE IF NOT EXISTS possible_entity_contents (\n"
                 + "	id integer not null primary key autoincrement,\n"
@@ -1895,7 +1902,7 @@ public class StoringGlobalKnowledgeModel {
                 + "CREATE TABLE IF NOT EXISTS entity_state_contents (\n"
                 + "	id integer not null primary key autoincrement,\n"
                 + "	reading_value varchar(100) not null,\n"
-                + "	reading_time timestamp not null default current_timestamp,\n"
+                + "	reading_time varchar(100) not null ,\n"
                 + "	monitored_user_instance_id integer default null,  /* -- para os estados dos normais, o cara que está sendo monitorado */\n"
                 + "	entity_state_id integer not null,\n"
                 + "	foreign key (monitored_user_instance_id) references instances (id), \n"
@@ -1949,7 +1956,7 @@ public class StoringGlobalKnowledgeModel {
                 + "CREATE TABLE IF NOT EXISTS event_contents (\n"
                 + "	id integer not null primary key autoincrement,\n"
                 + "	reading_value varchar(100) not null,\n"
-                + "	reading_time timestamp not null default current_timestamp,\n"
+                + "	reading_time varchar(100) not null ,\n"
                 + "	event_parameter_id integer not null,\n"
                 + "	foreign key (event_parameter_id) references event_parameters (id)\n"
                 + ");\n"
@@ -1990,7 +1997,7 @@ public class StoringGlobalKnowledgeModel {
                 + "CREATE TABLE IF NOT EXISTS action_contents (\n"
                 + "	id integer not null primary key autoincrement,\n"
                 + "	reading_value varchar(100) not null,\n"
-                + "	reading_time timestamp not null default current_timestamp,\n"
+                + "	reading_time varchar(100) not null ,\n"
                 + "	score double precision not null default 0.0,\n"
                 + "	action_parameter_id integer not null,\n"
                 + "	foreign key (action_parameter_id) references action_parameters (id)\n"
@@ -2016,7 +2023,7 @@ public class StoringGlobalKnowledgeModel {
                 + "	foreign key (interaction_type_id) references interaction_types (id),\n"
                 + "	foreign key (direction_id) references interaction_directions (id),\n"
                 + "	foreign key (interaction_id) references interactions (id)\n"
-                + ");"
+                + ");\n"
                 + "\n"
                 + "CREATE TABLE IF NOT EXISTS interaction_states (\n"
                 + "	id integer not null primary key autoincrement,\n"
@@ -2041,7 +2048,7 @@ public class StoringGlobalKnowledgeModel {
                 + "CREATE TABLE IF NOT EXISTS interaction_state_contents (\n"
                 + "	id integer not null primary key autoincrement,\n"
                 + "	reading_value varchar(100) not null,\n"
-                + "	reading_time timestamp not null default current_timestamp,\n"
+                + "	reading_time varchar(100) not null ,\n"
                 + "	interaction_state_id integer not null,\n"
                 + "	foreign key (interaction_state_id) references interaction_states (id)\n"
                 + ");\n"
@@ -2072,15 +2079,15 @@ public class StoringGlobalKnowledgeModel {
                 + "\n"
                 + "CREATE TABLE IF NOT EXISTS conversations (\n"
                 + "	id integer not null primary key autoincrement,\n"
-                + "	created_time timestamp not null default current_timestamp,\n"
+                + "	created_time varchar(100) not null ,\n"
                 + "	agent_id integer not null,\n"
-                + "	finished_time timestamp default null,\n"
+                + "	finished_time varchar(100) default null,\n"
                 + "	foreign key (agent_id) references agents (id)\n"
                 + ");\n"
                 + "\n"
                 + "CREATE TABLE IF NOT EXISTS messages (\n"
                 + "	id integer not null primary key autoincrement,\n"
-                + "	message_time timestamp not null default current_timestamp,\n"
+                + "	message_time varchar(100) not null ,\n"
                 + "	interaction_id integer not null,\n"
                 + "	conversation_id integer not null,\n"
                 + "	foreign key (interaction_id) references interactions (id),\n"
@@ -2090,7 +2097,7 @@ public class StoringGlobalKnowledgeModel {
                 + "CREATE TABLE IF NOT EXISTS interaction_contents (\n"
                 + "	id integer not null primary key autoincrement,\n"
                 + "	reading_value varchar(100) not null,\n"
-                + "	reading_time timestamp not null default current_timestamp,\n"
+                + "	reading_time varchar(100) not null ,\n"
                 + "	message_id integer not null,\n"
                 + "	interaction_parameter_id integer not null,\n"
                 + "	foreign key (interaction_parameter_id) references interaction_parameters (id),\n"

@@ -9,6 +9,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import urbosenti.core.device.model.TargetOrigin;
+import urbosenti.util.DeveloperSettings;
 
 /**
  *
@@ -22,7 +23,7 @@ public class TargetOriginDAO {
     public TargetOriginDAO(Object context) {
         this.connection = (Connection) context;
     }
-    
+
     public void insert(TargetOrigin type) throws SQLException {
         String sql = "INSERT INTO targets_origins (id, description) "
                 + "VALUES (?,?);";
@@ -31,8 +32,10 @@ public class TargetOriginDAO {
         this.stmt.setString(2, type.getDescription());
         this.stmt.execute();
         this.stmt.close();
-        System.out.println("INSERT INTO targets_origins (id, description) "
-                + " VALUES ("+type.getId()+",'"+type.getDescription()+"');");
+        if (DeveloperSettings.SHOW_DAO_SQL) {
+            System.out.println("INSERT INTO targets_origins (id, description) "
+                    + " VALUES (" + type.getId() + ",'" + type.getDescription() + "');");
+        }
     }
-    
+
 }

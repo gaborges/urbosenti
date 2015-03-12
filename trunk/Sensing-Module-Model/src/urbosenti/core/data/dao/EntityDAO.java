@@ -10,7 +10,11 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
+import urbosenti.core.device.model.Component;
 import urbosenti.core.device.model.Entity;
+import urbosenti.core.device.model.EntityType;
 import urbosenti.core.device.model.EventModel;
 
 /**
@@ -44,5 +48,28 @@ public class EntityDAO {
         stmt.close();
         System.out.println("INSERT INTO entities (id,description,entity_type_id, component_id) "
                 + " VALUES ("+entity.getId()+",'"+entity.getDescription()+"',"+entity.getEntityType().getId()+","+entity.getComponent().getId()+");");
+    }
+    
+    public List<Entity> getComponentEntities(Component component) throws SQLException {
+        List<Entity> entities = new ArrayList();
+        Entity entity = null;
+        String sql = "SELECT entities.id as entity_id, entity_type_id, "
+                + " entities.description as entity_desc, entity_types.description as type_desc\n"
+                + " FROM entities, entity_types\n"
+                + " WHERE component_id = ? and entity_type_id = entity_types.id;";
+        stmt = this.connection.prepareStatement(sql);
+        stmt.setInt(1, component.getId());
+        ResultSet rs = stmt.executeQuery();
+        while(rs.next()){
+            entity = new Entity();
+            entity.setId(rs.getInt("entity_id"));
+            entity.setDescription(rs.getString("entity_desc"));
+            EntityType type = new EntityType(rs.getInt("entity_type_id"),rs.getString("type_desc"));
+            entity.setEntityType(type);
+            entities.add(entity);
+        }
+        rs.close();
+        stmt.close();
+        return entities;
     }
 }

@@ -9,6 +9,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import urbosenti.core.device.model.AddressAgentType;
+import urbosenti.util.DeveloperSettings;
+
 /**
  *
  * @author Guilherme
@@ -19,9 +21,9 @@ public class AgentAddressTypeDAO {
     private PreparedStatement stmt;
 
     public AgentAddressTypeDAO(Object context) {
-        this.connection = (Connection)context;
+        this.connection = (Connection) context;
     }
-    
+
     public void insert(AddressAgentType type) throws SQLException {
         String sql = "INSERT INTO agent_address_types (id, description) "
                 + "VALUES (?,?);";
@@ -30,8 +32,10 @@ public class AgentAddressTypeDAO {
         this.stmt.setString(2, type.getDescription());
         this.stmt.execute();
         this.stmt.close();
-        System.out.println("INSERT INTO agent_address_types (id, description) "
-                + " VALUES ("+type.getId()+",'"+type.getDescription()+"');");
+        if (DeveloperSettings.SHOW_DAO_SQL) {
+            System.out.println("INSERT INTO agent_address_types (id, description) "
+                    + " VALUES (" + type.getId() + ",'" + type.getDescription() + "');");
+        }
     }
-    
+
 }

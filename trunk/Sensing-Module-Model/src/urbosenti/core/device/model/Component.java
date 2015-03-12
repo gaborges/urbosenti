@@ -12,18 +12,20 @@ public class Component {
     private List<Entity> entities;
 
     public Component(int id, String description, String referedClass) {
+        this();
         this.id = id;
         this.description = description;
         this.referedClass = referedClass;
     }
     
     public Component(String description, String referedClass) {
+        this();
         this.description = description;
         this.referedClass = referedClass;
-        this.entities = new ArrayList();
     }
 
     public Component() {
+        this.entities = new ArrayList();
     }
 
     public int getId() {

@@ -20,34 +20,46 @@ public abstract class PushServiceReceiver implements Runnable{
     private int id;
     public final CommunicationManager communicationManager;
     private Thread t;
+    private final Boolean flag;
         
     public PushServiceReceiver(CommunicationManager communicationManager) {
         this.communicationManager = communicationManager;
         this.t = null;
         this.status = STATUS_STOPPED;
         this.communicationManager.addPushServiceReceiver(this);
+        this.flag = true;
     }
         
     @Override
     public abstract void run();
     
-    public synchronized void start() {
+    public void start() {
         // Create a Service to receive Push Messages in text format
-        if(t==null) {
-            t = new Thread(this);
-            t.start();
-        }
-        this.t.notifyAll();
-        this.status = STATUS_LISTENING;
+        synchronized (flag){
+            if(t==null) {
+                t = new Thread(this);
+                t.start();
+            }
+            this.status = STATUS_LISTENING;
+        }        
     }
 
-    public synchronized void stop() {
+    public void stop() {
         try {
-            this.t.wait();
+            synchronized (flag){
+                this.t.wait();
+            }
         } catch (InterruptedException ex) {
             Logger.getLogger(PushServiceReceiver.class.getName()).log(Level.SEVERE, null, ex);
         }
         this.status = STATUS_STOPPED;
+    }
+    
+    public synchronized void resume() {
+        synchronized (flag){
+            this.t.notifyAll();
+            this.status = STATUS_LISTENING;
+        }
     }
 
     public int getStatus() {

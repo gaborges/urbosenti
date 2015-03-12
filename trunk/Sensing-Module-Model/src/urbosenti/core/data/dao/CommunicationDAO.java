@@ -6,11 +6,18 @@ package urbosenti.core.data.dao;
 
 import java.io.IOException;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import urbosenti.core.communication.CommunicationInterface;
 import urbosenti.core.communication.MessageWrapper;
+import static urbosenti.core.data.dao.DeviceDAO.COMPONENT_ID;
+import urbosenti.core.device.model.Component;
+import urbosenti.core.device.model.Entity;
+import urbosenti.core.device.model.EntityType;
 
 /**
  *
@@ -19,7 +26,7 @@ import urbosenti.core.communication.MessageWrapper;
 public class CommunicationDAO {
     
     private Connection connection;
-    
+    public final static int  COMPONENT_ID = 4;
     public final static int  MOBILE_DATA_POLICY = 1;
     public final static int  MESSAGE_STORAGE_POLICY = 2;
     public final static int  RECONNECTION_POLICY = 3;
@@ -30,6 +37,7 @@ public class CommunicationDAO {
     private int messageStoragePolicy; // Política de armazenamento de mensagem
     private int reconnectionPolicy; // Política de reconexão
     private int uploadMessagingPolicy; // política de Upload periódico de Mensagens
+    private PreparedStatement stmt;
 
     public CommunicationDAO() {
         this.mobileDataPolicy = 1; // sem mobilidade - Default
@@ -186,6 +194,34 @@ public class CommunicationDAO {
         availableCommunicationInterfaces.add(ci);
     }
     
-    
+    public Component getComponentDeviceModel() throws SQLException {
+        Component deviceComponent = null;
+        EntityStateDAO stateDAO = new EntityStateDAO(connection);
+        String sql = "SELECT components.description as component_desc, code_class, entities.id as entity_id, "
+                + " entities.description as entity_desc, entity_type_id, entity_types.description as type_desc\n"
+                + " FROM components, entities, entity_types\n"
+                + " WHERE components.id = ? and component_id = components.id and entity_type_id = entity_types.id;";
+        stmt = this.connection.prepareStatement(sql);
+        stmt.setInt(1, COMPONENT_ID);
+        ResultSet rs = stmt.executeQuery();
+        while(rs.next()){
+            if(deviceComponent == null){
+                deviceComponent = new Component();
+                deviceComponent.setId(COMPONENT_ID);
+                deviceComponent.setDescription(rs.getString("component_desc"));
+                deviceComponent.setReferedClass(rs.getString("code_class"));
+            }
+            Entity entity = new Entity();
+            entity.setId(rs.getInt("entity_id"));
+            entity.setDescription(rs.getString("entity_desc"));
+            EntityType type = new EntityType(rs.getInt("entity_type_id"),rs.getString("type_desc"));
+            entity.setEntityType(type);
+            entity.setStates(stateDAO.getEntityStates(entity));
+            deviceComponent.getEntities().add(entity);
+        }
+        rs.close();
+        stmt.close();
+        return deviceComponent;
+    }
     
 }

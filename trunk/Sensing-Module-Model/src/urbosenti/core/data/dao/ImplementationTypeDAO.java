@@ -9,6 +9,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import urbosenti.core.device.model.Implementation;
+import urbosenti.util.DeveloperSettings;
 
 /**
  *
@@ -22,7 +23,7 @@ public class ImplementationTypeDAO {
     public ImplementationTypeDAO(Object context) {
         this.connection = (Connection) context;
     }
-    
+
     public void insert(Implementation type) throws SQLException {
         String sql = "INSERT INTO implementation_types (id, description) "
                 + " VALUES (?,?);";
@@ -31,8 +32,10 @@ public class ImplementationTypeDAO {
         this.stmt.setString(2, type.getDescription());
         this.stmt.execute();
         this.stmt.close();
-        System.out.println("INSERT INTO implementation_types (id, description) "
-                + " VALUES ("+type.getId()+",'"+type.getDescription()+"');");
+        if (DeveloperSettings.SHOW_DAO_SQL) {
+            System.out.println("INSERT INTO implementation_types (id, description) "
+                    + " VALUES (" + type.getId() + ",'" + type.getDescription() + "');");
+        }
     }
-    
+
 }
