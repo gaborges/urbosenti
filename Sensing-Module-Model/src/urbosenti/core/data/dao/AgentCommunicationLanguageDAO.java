@@ -9,6 +9,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import urbosenti.core.device.model.AgentCommunicationLanguage;
+import urbosenti.util.DeveloperSettings;
+
 /**
  *
  * @author Guilherme
@@ -21,7 +23,7 @@ public class AgentCommunicationLanguageDAO {
     public AgentCommunicationLanguageDAO(Object context) {
         this.connection = (Connection) context;
     }
-    
+
     public void insert(AgentCommunicationLanguage type) throws SQLException {
         String sql = "INSERT INTO agent_communication_languages (id, description) "
                 + "VALUES (?,?);";
@@ -30,8 +32,10 @@ public class AgentCommunicationLanguageDAO {
         this.stmt.setString(2, type.getDescription());
         this.stmt.execute();
         this.stmt.close();
-        System.out.println("INSERT INTO agent_communication_languages (id, description) "
-                + " VALUES ("+type.getId()+",'"+type.getDescription()+"');");
+        if (DeveloperSettings.SHOW_DAO_SQL) {
+            System.out.println("INSERT INTO agent_communication_languages (id, description) "
+                    + " VALUES (" + type.getId() + ",'" + type.getDescription() + "');");
+        }
     }
-    
+
 }

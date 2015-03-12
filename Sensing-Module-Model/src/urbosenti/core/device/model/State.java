@@ -20,18 +20,19 @@ public class State {
     private Content content;
 
     public State(int id, DataType dataType) {
+        this();
         this.id = id;
-        this.userCanChange = false;
-        this.stateInstance = false;
-        this.description = "";
         this.dataType = dataType;
-        this.superiorLimit = null;
-        this.inferiorLimit = null;
         this.initialValue = dataType.getInitialValue();
-        this.possibleContents = new ArrayList();
     }
 
     public State() {
+        this.userCanChange = false;
+        this.stateInstance = false;
+        this.description = "";
+        this.superiorLimit = null;
+        this.inferiorLimit = null;
+        this.possibleContents = new ArrayList();
     }
 
     public int getId() {
@@ -98,6 +99,13 @@ public class State {
         this.dataType = dataType;
     }
 
+    /**
+     * Retora o último conteúdo lido por este estado. Caso nenhum conteúdo foi
+     * ainda adicionado, retorna o valor null indicando que o valor inicial deve
+     * ser utilizado.
+     *
+     * @return
+     */
     public Content getContent() {
         return content;
     }
@@ -137,5 +145,11 @@ public class State {
     public void setAgentType(AgentType agentType) {
         this.agentType = agentType;
     }
-
+/**
+ * Retorna o valor dentro do content. Caso este seja null, então retorna o valor inicial.
+ * @return 
+ */
+    public Object getCurrentValue(){
+        return (this.content == null)? this.initialValue : this.content.getValue();
+    }
 }

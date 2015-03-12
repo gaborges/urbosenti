@@ -64,7 +64,7 @@
         <service description="UrboSentiGeneralService" serviceType="1">
             <!-- Pegar os uids dinâmicamente na descoberta, se não atribuído -->
             <serviceUID>d428f2f7-ae09-4ecf-b57a-b3eaf2362d38</serviceUID> <!-- dinâmicamente na descoberta -->
-            <applicationUID>????</applicationUID> <!-- Idealmente dinâmico -->
+            <applicationUID>????</applicationUID> <!-- Idealmente dinâmico e deve ser maior que 6 caracteres -->
             <address>http://ubicomp.ufgs.br/UrboSenti/webresources/backend</address>
             <agent type="1" address="/" addressType="2"></agent>
         </service>
@@ -76,7 +76,7 @@
                 <state id="1" userCanChange="false" description="Usuário Remoto">
                     <content dataType="9"></content>
                 </state>
-                <state id="2" userCanChange="false" description="Usuário Remoto">
+                <state id="2" userCanChange="false" description="Password Remoto">
                     <content dataType="9"></content>
                 </state>
                 <state id="3" userCanChange="false" description="Identificador Único da Aplicação">
@@ -327,7 +327,7 @@
                     <content dataType="3" inferiorLimit="0"></content>
                 </state>
                 <state id="2" userCanChange="true" description="Quantidade limite de mensagens armazenadas">
-                    <content dataType="3" inferiorLimit="0"></content>
+                    <content dataType="3" inferiorLimit="0" initialValue="10000"></content>
                 </state>
                 <state id="3" userCanChange="true" description="Tempo limite de uma mensagem">
                     <content dataType="10">
@@ -454,7 +454,8 @@
                     </content>
                 </state>
                 <state id="3" userCanChange="false" description="Taxa de upload (inicial 100%)">
-                    <content dataType="6" inferiorLimit="0.0" superiorLimit="1.0" initialValue="1.0"></content>
+                    <content dataType="6" inferiorLimit="0.0" superiorLimit="1.0" initialValue="1.0">
+                    </content>
                 </state>
                 <state id="4" userCanChange="false" description="Executando?">
                     <content dataType="7" initialValue="false"></content>

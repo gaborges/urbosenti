@@ -108,6 +108,7 @@ public class DeviceManager extends ComponentManager implements AsynchronouslyMan
     private ResourceManager resourceManager = null;
     private ConcernManager concernManager = null;
     private String UID;
+    private OperatingSystemDiscovery OSDiscovery = null;
 
     /**
      *
@@ -434,8 +435,16 @@ public class DeviceManager extends ComponentManager implements AsynchronouslyMan
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
-    public boolean discoverDeviceStates() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    public HashMap<String,Object> discoverDeviceStates() {
+        // primeiro verifica se o objeto de descoberta foi atribuído
+        if(this.OSDiscovery != null){
+            // retorna o que for descoberto
+            return this.OSDiscovery.discovery();
+        }
+        // caso não atribuído pega o valor do conhecimento
+        
+        // coloca os valores encontrados em um hashmap e retorna ele
+        return null;
     }
 
     public void setDeviceKnowledgeRepresentationModel(Object o, String dataType) {
@@ -444,6 +453,10 @@ public class DeviceManager extends ComponentManager implements AsynchronouslyMan
    
     public void setAgentKnowledgeRepresentationModel(Object o, String dataType) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    public void setOSDiscovery(OperatingSystemDiscovery OSDiscovery) {
+        this.OSDiscovery = OSDiscovery;
     }
 
 }

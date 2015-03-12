@@ -11,10 +11,10 @@ import java.util.List;
  * @author Guilherme
  */
 public class Agent {
-    
+
     public static final String LAYER_SYSTEM = "system";
     public static final String LAYER_APPLICATION = "application";
-    
+
     private String uid;
     private String layer;
     private String description;
@@ -24,7 +24,9 @@ public class Agent {
     private AgentType agentType;
     private List<Conversation> conversations;
     private AddressAgentType addressType;
+    private String serviceAddress;
     private Service service;
+    
     /** Remover métodos em breve, pois o UID está no serviço */
     public String getUid() {
         return uid;
@@ -34,25 +36,23 @@ public class Agent {
         this.uid = uid;
     }
     /**
-     * 
-     * @return Retorna a camada do agente:
-     *  Agent.LAYER_SYSTEM = "system";
-     *  Agent.LAYER_APPLICATION = "application";
+     *
+     * @return Retorna a camada do agente: Agent.LAYER_SYSTEM = "system";
+     * Agent.LAYER_APPLICATION = "application";
      */
     public String getLayer() {
         return layer;
     }
 
     /**
-     * 
-     * @param layer pode conter os valores:
-     *  Agent.LAYER_SYSTEM = "system";
-     *  Agent.LAYER_APPLICATION = "application";
+     *
+     * @param layer pode conter os valores: Agent.LAYER_SYSTEM = "system";
+     * Agent.LAYER_APPLICATION = "application";
      */
     public void setLayer(String layer) {
         this.layer = layer;
     }
-
+    
     public String getDescription() {
         return description;
     }
@@ -63,7 +63,7 @@ public class Agent {
 
     @Override
     public String toString() {
-        return "Agent{" + "uid=" + uid + ", address=" + address + ", layer=" + layer + ", description=" + description + '}';
+        return "Agent{" + "id=" + id + ", address=" + address + ", layer=" + layer + ", description=" + description + '}';
     }
 
     public int getId() {
@@ -75,11 +75,18 @@ public class Agent {
     }
 
     public String getAddress() {
-        return this.service.getAddress()+this.address;
+        if (this.service == null) {
+            return this.serviceAddress + this.address;
+        }
+        return this.service.getAddress() + this.address;
     }
 
     public void setServiceAddress(String address) {
-        this.service.setAddress(address);
+        if (this.service == null) {
+            this.serviceAddress = address;
+        } else {
+            this.service.setAddress(address);
+        }
     }
 
     public int getSystemPort() {
@@ -122,11 +129,11 @@ public class Agent {
         this.service = service;
     }
 
-    public String getRelativeAddress(){
+    public String getRelativeAddress() {
         return this.address;
     }
-    
-    public void setRelativeAddress(String address){
+
+    public void setRelativeAddress(String address) {
         this.address = address;
     }
 }

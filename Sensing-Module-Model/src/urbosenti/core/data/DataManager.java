@@ -19,12 +19,15 @@ import javax.xml.parsers.ParserConfigurationException;
 import org.xml.sax.SAXException;
 import urbosenti.core.communication.CommunicationInterface;
 import urbosenti.core.data.dao.ActionDAO;
+import urbosenti.core.data.dao.AdaptationDAO;
 import urbosenti.core.data.dao.AgentAddressTypeDAO;
 import urbosenti.core.data.dao.AgentCommunicationLanguageDAO;
 import urbosenti.core.data.dao.AgentDAO;
 import urbosenti.core.data.dao.AgentTypeDAO;
 import urbosenti.core.data.dao.CommunicativeActDAO;
 import urbosenti.core.data.dao.ComponentDAO;
+import urbosenti.core.data.dao.ConcernsDAO;
+import urbosenti.core.data.dao.ContextDAO;
 import urbosenti.core.data.dao.DataTypeDAO;
 import urbosenti.core.data.dao.DeviceDAO;
 import urbosenti.core.data.dao.EntityDAO;
@@ -35,7 +38,10 @@ import urbosenti.core.data.dao.InstanceDAO;
 import urbosenti.core.data.dao.InteractionDirectionDAO;
 import urbosenti.core.data.dao.InteractionTypeDAO;
 import urbosenti.core.data.dao.ServiceDAO;
-import urbosenti.core.data.dao.StateDAO;
+import urbosenti.core.data.dao.EntityStateDAO;
+import urbosenti.core.data.dao.LocationDAO;
+import urbosenti.core.data.dao.ResourcesDAO;
+import urbosenti.core.data.dao.ServiceTypeDAO;
 import urbosenti.core.data.dao.TargetOriginDAO;
 import urbosenti.core.device.ComponentManager;
 import urbosenti.core.device.DeviceManager;
@@ -68,10 +74,16 @@ public class DataManager extends ComponentManager implements AsynchronouslyManag
     private AgentTypeDAO agentTypeDAO;
     private ComponentDAO componentDAO;
     private EntityDAO entityDAO;
-    private StateDAO stateDAO;
+    private EntityStateDAO stateDAO;
     private EventDAO eventDAO;
     private ActionDAO actionDAO;
     private InstanceDAO instanceDAO;
+    private AdaptationDAO adaptationDAO;
+    private LocationDAO locationDAO;
+    private ContextDAO contextDAO;
+    private ResourcesDAO resourcesDAO;
+    private ConcernsDAO concernsDAO;
+    private ServiceTypeDAO serviceTypeDAO;
     
     public DataManager(DeviceManager deviceManager) {
         super(deviceManager);
@@ -104,8 +116,13 @@ public class DataManager extends ComponentManager implements AsynchronouslyManag
         // instancia todos os DAO;
         communicationDAO = new CommunicationDAO(connection);
         userDAO = new UserDAO(connection);
+        adaptationDAO = new AdaptationDAO(connection);
+        contextDAO = new ContextDAO(connection);
+        locationDAO = new LocationDAO(connection);
+        concernsDAO = new ConcernsDAO(connection);
         // General Definition DAOs
         this.agentTypeDAO = new AgentTypeDAO(connection);
+        this.serviceTypeDAO = new ServiceTypeDAO(connection);
         this.entityTypeDAO = new EntityTypeDAO(connection);
         this.dataTypeDAO = new DataTypeDAO(connection);
         this.implementationTypeDAO = new ImplementationTypeDAO(connection);
@@ -121,7 +138,7 @@ public class DataManager extends ComponentManager implements AsynchronouslyManag
         // Device DAO
         this.componentDAO = new ComponentDAO(connection);
         this.entityDAO = new EntityDAO(connection);
-        this.stateDAO = new StateDAO(connection);
+        this.stateDAO = new EntityStateDAO(connection);
         this.eventDAO = new EventDAO(connection);
         this.actionDAO = new ActionDAO(connection);
         this.instanceDAO = new InstanceDAO(connection);
@@ -267,7 +284,7 @@ public class DataManager extends ComponentManager implements AsynchronouslyManag
         return entityDAO;
     }
 
-    public StateDAO getStateDAO() {
+    public EntityStateDAO getStateDAO() {
         return stateDAO;
     }
 
@@ -281,6 +298,30 @@ public class DataManager extends ComponentManager implements AsynchronouslyManag
 
     public InstanceDAO getInstanceDAO() {
         return instanceDAO;
+    }
+
+    public AdaptationDAO getAdaptationDAO() {
+        return adaptationDAO;
+    }
+
+    public LocationDAO getLocationDAO() {
+        return locationDAO;
+    }
+
+    public ContextDAO getContextDAO() {
+        return contextDAO;
+    }
+
+    public ResourcesDAO getResourcesDAO() {
+        return resourcesDAO;
+    }
+
+    public ConcernsDAO getConcernsDAO() {
+        return concernsDAO;
+    }
+
+    public ServiceTypeDAO getServiceTypeDAO() {
+        return serviceTypeDAO;
     }
     
 }

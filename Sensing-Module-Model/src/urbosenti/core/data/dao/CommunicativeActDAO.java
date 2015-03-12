@@ -9,19 +9,21 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import urbosenti.core.device.model.CommunicativeAct;
+import urbosenti.util.DeveloperSettings;
+
 /**
  *
  * @author Guilherme
  */
 public class CommunicativeActDAO {
-    
+
     private final Connection connection;
     private PreparedStatement stmt;
 
     public CommunicativeActDAO(Object context) {
         this.connection = (Connection) context;
     }
-    
+
     public void insert(CommunicativeAct type) throws SQLException {
         String sql = "INSERT INTO communicative_acts (id, description, agent_communication_language_id) "
                 + "VALUES (?,?,?);";
@@ -31,8 +33,10 @@ public class CommunicativeActDAO {
         this.stmt.setInt(3, type.getAgentCommunicationLanguage().getId());
         this.stmt.execute();
         this.stmt.close();
-        System.out.println("INSERT INTO communicative_acts (id, description, agent_communication_language_id) "
-                + " VALUES ("+type.getId()+",'"+type.getDescription()+"',"+type.getAgentCommunicationLanguage().getId()+");");
+        if (DeveloperSettings.SHOW_DAO_SQL) {
+            System.out.println("INSERT INTO communicative_acts (id, description, agent_communication_language_id) "
+                    + " VALUES (" + type.getId() + ",'" + type.getDescription() + "'," + type.getAgentCommunicationLanguage().getId() + ");");
+        }
     }
-    
+
 }

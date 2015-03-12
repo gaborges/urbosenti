@@ -10,7 +10,12 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import urbosenti.core.data.DataManager;
+import urbosenti.core.device.model.Component;
 import urbosenti.core.device.model.Device;
+import urbosenti.core.device.model.Entity;
+import urbosenti.core.device.model.EntityType;
+import urbosenti.core.device.model.Service;
 
 /**
  *
@@ -18,6 +23,8 @@ import urbosenti.core.device.model.Device;
  */
 public class DeviceDAO {
 
+    public static final int COMPONENT_ID = 1;
+    public static final int DEVICE_DB_ID = 1;
     private final Connection connection;
     private PreparedStatement stmt;
 
@@ -28,7 +35,7 @@ public class DeviceDAO {
     public void insert(Device device) throws SQLException {
         String sql = "INSERT INTO devices (description) "
                 + "VALUES (?);";
-        stmt = this.connection.prepareStatement(sql,Statement.RETURN_GENERATED_KEYS);
+        stmt = this.connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
         stmt.setString(1, device.getDescription());
         //stmt.setDouble(2, device.getDeviceVersion());
         //stmt.setDouble(3, device.getGeneralDefinitionsVersion());
@@ -37,8 +44,7 @@ public class DeviceDAO {
         try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
             if (generatedKeys.next()) {
                 device.setId(generatedKeys.getInt(1));
-            }
-            else {
+            } else {
                 throw new SQLException("Creating user failed, no ID obtained.");
             }
         }
@@ -56,55 +62,19 @@ public class DeviceDAO {
         try (ResultSet res = stmt.getResultSet()) {
             if (res.next()) {
                 count = res.getInt(1);
-            }
-            else {
+            } else {
                 throw new SQLException("Creating user failed, no ID obtained.");
             }
         }
         stmt.close();
         return count;
     }
-    
+
     public double getStoredDeviceVersion(Device device) throws SQLException {
         double count = 0.0;
         String sql = "SELECT deviceVersion FROM devices WHERE id = ?;";
         stmt = this.connection.prepareStatement(sql);
-        stmt.setInt(1, (device.getId()>0)?device.getId():1);
-        stmt.execute();
-        try (ResultSet res = stmt.getResultSet()) {
-            if (res.next()) {
-                count = res.getDouble(1);
-            }else {
-                count = 0.0;
-            }
-        }
-        stmt.close();
-        return count;
-    }
-    
-    
-    public double getStoredAgentModelVersion(Device device) throws SQLException {
-        double count = 0.0;
-        String sql = "SELECT agentModelVersion FROM devices WHERE id = ?;";
-        stmt = this.connection.prepareStatement(sql);
-        stmt.setInt(1, (device.getId()>0)?device.getId():1);
-        stmt.execute();
-        try (ResultSet res = stmt.getResultSet()) {
-            if (res.next()) {
-                count = res.getDouble(1);
-            }else {
-                count = 0.0;
-            }
-        }
-        stmt.close();
-        return count;
-    }
-    
-    public double getStoredGeneralDefinitionsVersion(Device device) throws SQLException {
-        double count = 0.0;
-        String sql = "SELECT generalDefinitionsVersion FROM devices WHERE id = ?;";
-        stmt = this.connection.prepareStatement(sql);
-        stmt.setInt(1, (device.getId()>0)?device.getId():1);
+        stmt.setInt(1, (device.getId() > 0) ? device.getId() : 1);
         stmt.execute();
         try (ResultSet res = stmt.getResultSet()) {
             if (res.next()) {
@@ -116,9 +86,110 @@ public class DeviceDAO {
         stmt.close();
         return count;
     }
+
+    public double getStoredAgentModelVersion(Device device) throws SQLException {
+        double count = 0.0;
+        String sql = "SELECT agentModelVersion FROM devices WHERE id = ?;";
+        stmt = this.connection.prepareStatement(sql);
+        stmt.setInt(1, (device.getId() > 0) ? device.getId() : 1);
+        stmt.execute();
+        try (ResultSet res = stmt.getResultSet()) {
+            if (res.next()) {
+                count = res.getDouble(1);
+            } else {
+                count = 0.0;
+            }
+        }
+        stmt.close();
+        return count;
+    }
+
+    public double getStoredGeneralDefinitionsVersion(Device device) throws SQLException {
+        double count = 0.0;
+        String sql = "SELECT generalDefinitionsVersion FROM devices WHERE id = ?;";
+        stmt = this.connection.prepareStatement(sql);
+        stmt.setInt(1, (device.getId() > 0) ? device.getId() : 1);
+        stmt.execute();
+        try (ResultSet res = stmt.getResultSet()) {
+            if (res.next()) {
+                count = res.getDouble(1);
+            } else {
+                count = 0.0;
+            }
+        }
+        stmt.close();
+        return count;
+    }
+
+    public Device getDevice() throws SQLException {
+        Device device = null;
+        String sql = "SELECT agentModelVersion,description,deviceVersion,generalDefinitionsVersion FROM devices WHERE id = ?;";
+        stmt = this.connection.prepareStatement(sql);
+        stmt.setInt(1, DEVICE_DB_ID);
+        stmt.execute();
+        try (ResultSet rs = stmt.getResultSet()) {
+            if (rs.next()) {
+                device = new Device();
+                device.setId(DEVICE_DB_ID);
+                device.setDescription(rs.getString("description"));
+                device.setAgentModelVersion(rs.getDouble("agentModelVersion"));
+                device.setDeviceVersion(rs.getDouble("deviceVersion"));
+                device.setGeneralDefinitionsVersion(rs.getDouble("generalDefinitionsVersion"));
+            } 
+        }
+        stmt.close();
+        return device;
+    }
     
-    public Device getDevice(){
-        return null;
+    public Device getDeviceModel(DataManager dataManager) throws SQLException {
+        Device device = getDevice();
+        device.setComponents(dataManager.getComponentDAO().getDeviceComponents(device));
+        for(Component component :device.getComponents()){
+            component.setEntities(dataManager.getEntityDAO().getComponentEntities(component));
+            for(Entity entity : component.getEntities()){
+                entity.setActions(dataManager.getActionDAO().getEntityActions(entity));
+                entity.setEvents(dataManager.getEventDAO().getEntityEvents(entity));
+                entity.setInstaces(dataManager.getInstanceDAO().getEntityInstaces(entity));
+                entity.setStates(dataManager.getStateDAO().getEntityStates(entity));
+            }
+        }
+        device.setServices(dataManager.getServiceDAO().getDeviceServices(device));
+        for(Service service : device.getServices()){
+            service.getAgent().getAgentType().setInteraction(dataManager.getAgentTypeDAO().getAgentInteractions(service.getAgent().getAgentType()));
+            service.getAgent().getAgentType().setStates(dataManager.getAgentTypeDAO().getAgentStates(service.getAgent().getAgentType()));
+            service.getAgent().setConversations(dataManager.getAgentTypeDAO().getAgentConversations(service.getAgent()));
+        }
+        return device;
+    }
+
+    public Component getComponentDeviceModel() throws SQLException {
+        Component deviceComponent = null;
+        EntityStateDAO stateDAO = new EntityStateDAO(connection);
+        String sql = "SELECT components.description as component_desc, code_class, entities.id as entity_id, "
+                + " entities.description as entity_desc, entity_type_id, entity_types.description as type_desc\n"
+                + " FROM components, entities, entity_types\n"
+                + " WHERE components.id = ? and component_id = components.id and entity_type_id = entity_types.id;";
+        stmt = this.connection.prepareStatement(sql);
+        stmt.setInt(1, COMPONENT_ID);
+        ResultSet rs = stmt.executeQuery();
+        while(rs.next()){
+            if(deviceComponent == null){
+                deviceComponent = new Component();
+                deviceComponent.setId(COMPONENT_ID);
+                deviceComponent.setDescription(rs.getString("component_desc"));
+                deviceComponent.setReferedClass(rs.getString("code_class"));
+            }
+            Entity entity = new Entity();
+            entity.setId(rs.getInt("entity_id"));
+            entity.setDescription(rs.getString("entity_desc"));
+            EntityType type = new EntityType(rs.getInt("entity_type_id"),rs.getString("type_desc"));
+            entity.setEntityType(type);
+            entity.setStates(stateDAO.getEntityStates(entity));
+            deviceComponent.getEntities().add(entity);
+        }
+        rs.close();
+        stmt.close();
+        return deviceComponent;
     }
 
     public void updateStoredAgentModelVersion(Device device) throws SQLException {
@@ -138,7 +209,7 @@ public class DeviceDAO {
         stmt.executeUpdate();
         stmt.close();
     }
-    
+
     public void updateStoredDeviceVersion(Device device) throws SQLException {
         String sql = "UPDATE devices SET deviceVersion = ? WHERE id = ?;";
         stmt = this.connection.prepareStatement(sql);

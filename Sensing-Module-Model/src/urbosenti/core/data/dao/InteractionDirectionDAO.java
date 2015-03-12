@@ -9,6 +9,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import urbosenti.core.device.model.Direction;
+import urbosenti.util.DeveloperSettings;
+
 /**
  *
  * @author Guilherme
@@ -21,7 +23,7 @@ public class InteractionDirectionDAO {
     public InteractionDirectionDAO(Object context) {
         this.connection = (Connection) context;
     }
-    
+
     public void insert(Direction type) throws SQLException {
         String sql = "INSERT INTO interaction_directions (id, description) "
                 + " VALUES (?,?);";
@@ -30,8 +32,10 @@ public class InteractionDirectionDAO {
         this.stmt.setString(2, type.getDescription());
         this.stmt.execute();
         this.stmt.close();
-        System.out.println("INSERT INTO interaction_directions (id, description) "
-                + " VALUES ("+type.getId()+",'"+type.getDescription()+"');");
+        if (DeveloperSettings.SHOW_DAO_SQL) {
+            System.out.println("INSERT INTO interaction_directions (id, description) "
+                    + " VALUES (" + type.getId() + ",'" + type.getDescription() + "');");
+        }
     }
-    
+
 }
