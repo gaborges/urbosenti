@@ -1,0 +1,2 @@
+This project aims to propose a construction of a generic architecture for Smart Cities, that including several area challenges.
+Concerns: Privacy, Fault Tolerance, Opportunistic Networts,  adaptation, context, social networks and mobile computing.
