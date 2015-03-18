@@ -6,9 +6,11 @@ package urbosenti.core.device;
 
 import java.io.File;
 import java.io.IOException;
+import java.sql.SQLException;
 import urbosenti.core.device.model.Agent;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.xml.parsers.ParserConfigurationException;
@@ -18,9 +20,16 @@ import urbosenti.concerns.ConcernManager;
 import urbosenti.context.ContextManager;
 import urbosenti.core.communication.CommunicationInterface;
 import urbosenti.core.communication.CommunicationManager;
+import urbosenti.core.communication.PushServiceReceiver;
 import urbosenti.core.data.DataManager;
 import urbosenti.core.data.StoringGlobalKnowledgeModel;
+import urbosenti.core.data.dao.CommunicationDAO;
+import urbosenti.core.data.dao.DeviceDAO;
+import urbosenti.core.device.model.Content;
 import urbosenti.core.device.model.Device;
+import urbosenti.core.device.model.Entity;
+import urbosenti.core.device.model.Instance;
+import urbosenti.core.device.model.State;
 import urbosenti.core.events.Action;
 import urbosenti.core.events.ApplicationEvent;
 import urbosenti.core.events.AsynchronouslyManageableComponent;
@@ -89,14 +98,14 @@ public class DeviceManager extends ComponentManager implements AsynchronouslyMan
     public static final int EVENT_DEVICE_ERROR_WHILE_COLLECTING_INFORMATION = 6;
     /* Identificadores dos componentes internos */
     public final static int DEVICE_COMPONENT = 1;
-    public final static int DATA_COMPONENT = 2;
-    public final static int EVENTS_COMPONENT = 3;
+    public final static int EVENTS_COMPONENT = 2;
+    public final static int DATA_COMPONENT = 3;
     public final static int COMMUNICATION_COMPONENT = 4;
     public final static int ADAPTATION_COMPONENT = 5;
     public final static int USER_COMPONENT = 6;
     public final static int CONTEXT_COMPONENT = 7;
-    public final static int RECURSOS_COMPONENT = 8;
-    public final static int LOCALIZACAO_COMPONENT = 9;
+    public final static int LOCALIZACAO_COMPONENT = 8;
+    public final static int RECURSOS_COMPONENT = 9;
     public final static int CONCERNS_COMPONENT = 10;
     private CommunicationManager communicationManager = null;
     private DataManager dataManager = null;
@@ -224,40 +233,115 @@ public class DeviceManager extends ComponentManager implements AsynchronouslyMan
 
     @Override
     public void onCreate() { // Before the execution
-        this.dataManager.onCreate(); // Deve ser o primeiro a ser executado. Os demais irão utilizar esse gerente para acessar dados
-        this.communicationManager.onCreate(); // Instancia os monitores gerais de funcionalidade e os atuadores gerais
+        try {
+            // instancia um estado para ser usado na ativaçaõ dos módulos sobdemanda
+            State entityState;
+            // Conteúdo usado para habilitar os componentes da urbosenti
+            Content content = new Content();
+            content.setTime(new Date());
+            content.setValue(true);
+            this.dataManager.onCreate(); // Deve ser o primeiro a ser executado. Os demais irão utilizar esse gerente para acessar dados
+            // Faz a descoberta que interfaces estão disponíveis
+            this.outputCommunicationInterfacesDiscovery();
+            this.inputCommunicationInterfacesDiscovery();
+            this.deviceDiscovery(); // descobre as informações do dispositivo
+            this.communicationManager.onCreate(); // Instancia os monitores gerais de funcionalidade e os atuadores gerais
 
-        // ativação dos Módulos sobdemanda
-        if (this.userManager != null) {
-            this.userManager.onCreate();
-        }
-        if (this.contextManager != null) {
-            this.contextManager.onCreate();
-        }
-        if (this.localizationManager != null) {
-            this.localizationManager.onCreate();
-        }
-        if (this.resourceManager != null) {
-            this.resourceManager.onCreate();
-        }
-        if (this.concernManager != null) {
-            this.concernManager.onCreate();
-        }
+            // ativação dos Módulos sobdemanda
+            if (this.userManager != null) {
+                // Estado respectivo que simboliza que este compoenente está ativo
+                entityState = this.dataManager.getEntityStateDAO()
+                        .getEntityState(
+                                DeviceDAO.COMPONENT_ID, 
+                                DeviceDAO.ENTITY_ID_OF_URBOSENTI_SERVICES, 
+                                DeviceDAO.STATE_ID_OF_URBOSENTI_SERVICES_USER_COMPONENT_STATUS);
+                // torna habilitado no conhecimento
+                this.dataManager.getEntityStateDAO().insertContent(entityState);
+                // onCreate do componente
+                this.userManager.onCreate();
 
-        // adaptation Discovery
-        if (adaptationManager != null) {
-            if (contextManager != null) {
-                if (userManager != null) {
-                    adaptationDiscovery(adaptationManager, contextManager, userManager);
-                } else {
-                    adaptationDiscovery(adaptationManager, contextManager);
-                }
-            } else if (userManager != null) {
-                adaptationDiscovery(adaptationManager, userManager);
-            } else {
-                adaptationDiscovery(adaptationManager);
             }
-            this.adaptationManager.onCreate();
+            if (this.contextManager != null) {
+                // Estado respectivo que simboliza que este compoenente está ativo
+                entityState = this.dataManager.getEntityStateDAO()
+                        .getEntityState(
+                                DeviceDAO.COMPONENT_ID, 
+                                DeviceDAO.ENTITY_ID_OF_URBOSENTI_SERVICES, 
+                                DeviceDAO.STATE_ID_OF_URBOSENTI_SERVICES_CONTEXT_COMPONENT_STATUS);
+                // torna habilitado no conhecimento
+                this.dataManager.getEntityStateDAO().insertContent(entityState);
+                // onCreate do componente
+                this.contextManager.onCreate();
+            }
+            if (this.localizationManager != null) {
+                // Estado respectivo que simboliza que este compoenente está ativo
+                entityState = this.dataManager.getEntityStateDAO()
+                        .getEntityState(
+                                DeviceDAO.COMPONENT_ID, 
+                                DeviceDAO.ENTITY_ID_OF_URBOSENTI_SERVICES, 
+                                DeviceDAO.STATE_ID_OF_URBOSENTI_SERVICES_LOCATION_COMPONENT_STATUS);
+                // torna habilitado no conhecimento
+                this.dataManager.getEntityStateDAO().insertContent(entityState);
+                // onCreate do componente
+                this.localizationManager.onCreate();
+            }
+            if (this.resourceManager != null) {
+                // Estado respectivo que simboliza que este compoenente está ativo
+                entityState = this.dataManager.getEntityStateDAO()
+                        .getEntityState(
+                                DeviceDAO.COMPONENT_ID, 
+                                DeviceDAO.ENTITY_ID_OF_URBOSENTI_SERVICES, 
+                                DeviceDAO.STATE_ID_OF_URBOSENTI_SERVICES_RESOURCES_COMPONENT_STATUS);
+                // torna habilitado no conhecimento
+                this.dataManager.getEntityStateDAO().insertContent(entityState);
+                // onCreate do componente
+                this.resourceManager.onCreate();
+            }
+            if (this.concernManager != null) {
+                // Estado respectivo que simboliza que este compoenente está ativo
+                entityState = this.dataManager.getEntityStateDAO()
+                        .getEntityState(
+                                DeviceDAO.COMPONENT_ID, 
+                                DeviceDAO.ENTITY_ID_OF_URBOSENTI_SERVICES, 
+                                DeviceDAO.STATE_ID_OF_URBOSENTI_SERVICES_CONCERNS_COMPONENT_STATUS);
+                // torna habilitado no conhecimento
+                this.dataManager.getEntityStateDAO().insertContent(entityState);
+                // onCreate do componente
+                this.concernManager.onCreate();
+            }
+
+            // adaptation Discovery
+            if (adaptationManager != null) {
+                // Estado respectivo que simboliza que este compoenente está ativo
+                entityState = this.dataManager.getEntityStateDAO()
+                        .getEntityState(
+                                DeviceDAO.COMPONENT_ID, 
+                                DeviceDAO.ENTITY_ID_OF_URBOSENTI_SERVICES, 
+                                DeviceDAO.STATE_ID_OF_URBOSENTI_SERVICES_ADAPTATION_COMPONENT_STATUS);
+                // torna habilitado no conhecimento
+                this.dataManager.getEntityStateDAO().insertContent(entityState);
+                // onCreate do componente
+                if (contextManager != null) {
+                    if (userManager != null) {
+                        adaptationDiscovery(adaptationManager, contextManager, userManager);
+                    } else {
+                        adaptationDiscovery(adaptationManager, contextManager);
+                    }
+                } else if (userManager != null) {
+                    adaptationDiscovery(adaptationManager, userManager);
+                } else {
+                    adaptationDiscovery(adaptationManager);
+                }
+                this.adaptationManager.onCreate();
+            }
+            // Descoberta dos recursos do dispositivo e interfaces habilitadas
+            this.deviceDiscovery();
+            // Executar evento - UrboSenti Serviços Iniciados
+            // dar start em todos os serviços (Adaptation, interfaces de entrada, etc...) ---- falta isso 
+            this.newInternalEvent(EVENT_DEVICE_SERVICES_INITIATED);
+        } catch (SQLException ex) {
+            Logger.getLogger(DeviceManager.class.getName()).log(Level.SEVERE, null, ex);
+            throw new Error(ex);
         }
     }
 
@@ -435,28 +519,245 @@ public class DeviceManager extends ComponentManager implements AsynchronouslyMan
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
-    public HashMap<String,Object> discoverDeviceStates() {
+    public HashMap<String, Object> discoverDeviceStates() {  
         // primeiro verifica se o objeto de descoberta foi atribuído
-        if(this.OSDiscovery != null){
+        if (this.OSDiscovery != null) {
             // retorna o que for descoberto
             return this.OSDiscovery.discovery();
         }
-        // caso não atribuído pega o valor do conhecimento
-        
-        // coloca os valores encontrados em um hashmap e retorna ele
         return null;
     }
 
     public void setDeviceKnowledgeRepresentationModel(Object o, String dataType) {
         this.dataManager.setKnowledgeRepresentation(o, dataType);
     }
-   
+
     public void setAgentKnowledgeRepresentationModel(Object o, String dataType) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
     public void setOSDiscovery(OperatingSystemDiscovery OSDiscovery) {
         this.OSDiscovery = OSDiscovery;
+    }
+
+    private void deviceDiscovery() {
+        try {
+            // carrega as informações básicas da entidade do dispositivo
+            Entity entity = this.dataManager.getEntityDAO().getEntity(
+                    DeviceDAO.COMPONENT_ID,
+                    DeviceDAO.ENTITY_ID_OF_BASIC_DEVICE_INFORMATIONS);
+            entity.setStates(this.dataManager.getEntityStateDAO().getEntityStates(entity));
+            Content content;
+            Date discoveryTime = new Date();
+            // verifica se os estados já foram descobertos, se já foram para o processo de descoberta
+            // Se qualquer estado possuir um conteúdo, então já foi executado o processo de descoberta.
+            for(State s : entity.getStates()){
+                if(s.getContent() != null) {
+                    return;
+                }
+            }
+            // descobre as informações do dispositivo baseado no objeto de descoberta do sistema operacional
+            HashMap<String, Object> discoveredInformation = discoverDeviceStates();
+            // Se retornar nulo armazena os estados iniciais, pois o objeto de descoberta não foi inserido, ou não encontrou nenhum estado
+            if(discoveredInformation != null){
+                // espaço de armazenamento do dispositivo
+                if(discoveredInformation.containsKey(OperatingSystemDiscovery.AVAILABLE_STORAGE_SPACE)){
+                    content = new Content();
+                    content.setValue(Content.parseContent(
+                            entity.getStates().get(DeviceDAO.STATE_ID_OF_BASIC_DEVICE_INFORMATIONS_ABOUT_STORAGE_SYSTEM-1)
+                                    .getDataType(), 
+                            discoveredInformation.get(OperatingSystemDiscovery.AVAILABLE_STORAGE_SPACE)));
+                    content.setTime(discoveryTime);
+                    entity.getStates().get(
+                            DeviceDAO.STATE_ID_OF_BASIC_DEVICE_INFORMATIONS_ABOUT_STORAGE_SYSTEM-1)
+                            .setContent(content);
+                }
+                // Quantidade de núcleos de processamento
+                if(discoveredInformation.containsKey(OperatingSystemDiscovery.CPU_CORE_COUNT)){
+                    content = new Content();content.setValue(Content.parseContent(
+                            entity.getStates().get(DeviceDAO.STATE_ID_OF_BASIC_DEVICE_INFORMATIONS_ABOUT_STORAGE_SYSTEM-1)
+                                    .getDataType(), 
+                            discoveredInformation.get(OperatingSystemDiscovery.CPU_CORE_COUNT)));
+                    content.setTime(discoveryTime);
+                    entity.getStates().get(
+                            DeviceDAO.STATE_ID_OF_BASIC_DEVICE_INFORMATIONS_ABOUT_CPU_CORES-1)
+                            .setContent(content);
+                }
+                // frequência dos processadores
+                if(discoveredInformation.containsKey(OperatingSystemDiscovery.CPU_CORE_FREQUENCY)){
+                    content = new Content();
+                    content.setValue(Content.parseContent(
+                            entity.getStates().get(DeviceDAO.STATE_ID_OF_BASIC_DEVICE_INFORMATIONS_ABOUT_STORAGE_SYSTEM-1)
+                                    .getDataType(), 
+                            discoveredInformation.get(OperatingSystemDiscovery.CPU_CORE_FREQUENCY)));
+                    content.setTime(discoveryTime);
+                    entity.getStates().get(
+                            DeviceDAO.STATE_ID_OF_BASIC_DEVICE_INFORMATIONS_ABOUT_CPU_CORE_FREQUENCY_CLOCK-1)
+                            .setContent(content);
+                }
+                // Modelo de CPU
+                if(discoveredInformation.containsKey(OperatingSystemDiscovery.CPU_MODEL)){
+                    content = new Content();
+                    content.setValue(Content.parseContent(
+                            entity.getStates().get(DeviceDAO.STATE_ID_OF_BASIC_DEVICE_INFORMATIONS_ABOUT_STORAGE_SYSTEM-1)
+                                    .getDataType(),
+                            discoveredInformation.get(OperatingSystemDiscovery.CPU_MODEL)));
+                    content.setTime(discoveryTime);
+                    entity.getStates().get(
+                            DeviceDAO.STATE_ID_OF_BASIC_DEVICE_INFORMATIONS_ABOUT_CPU_MODEL-1)
+                            .setContent(content);
+                }
+                // Modelo do dispositivo
+                if(discoveredInformation.containsKey(OperatingSystemDiscovery.DEVICE_MODEL)){
+                    content = new Content();
+                    content.setValue(Content.parseContent(
+                            entity.getStates().get(DeviceDAO.STATE_ID_OF_BASIC_DEVICE_INFORMATIONS_ABOUT_STORAGE_SYSTEM-1)
+                                    .getDataType(),
+                            discoveredInformation.get(OperatingSystemDiscovery.DEVICE_MODEL)));
+                    content.setTime(discoveryTime);
+                    entity.getStates().get(
+                            DeviceDAO.STATE_ID_OF_BASIC_DEVICE_INFORMATIONS_ABOUT_DEVICE_MODEL-1)
+                            .setContent(content);
+                }
+                // Capacidade de armazenamento da bateria do dispositivo
+                if(discoveredInformation.containsKey(OperatingSystemDiscovery.BATTERY_CAPACITY)){
+                    content = new Content();
+                    content.setValue(Content.parseContent(
+                            entity.getStates().get(DeviceDAO.STATE_ID_OF_BASIC_DEVICE_INFORMATIONS_ABOUT_STORAGE_SYSTEM-1)
+                                    .getDataType(),
+                            discoveredInformation.get(OperatingSystemDiscovery.BATTERY_CAPACITY)));
+                    content.setTime(discoveryTime);
+                    entity.getStates().get(
+                            DeviceDAO.STATE_ID_OF_BASIC_DEVICE_INFORMATIONS_ABOUT_BATTERY_CAPACITY-1)
+                            .setContent(content);
+                }
+                // Sistema operacional nativo
+                if(discoveredInformation.containsKey(OperatingSystemDiscovery.NATIVE_OPERATION_SYSTEM)){
+                    content = new Content();
+                    content.setValue(Content.parseContent(
+                            entity.getStates().get(DeviceDAO.STATE_ID_OF_BASIC_DEVICE_INFORMATIONS_ABOUT_STORAGE_SYSTEM-1)
+                                    .getDataType(),
+                            discoveredInformation.get(OperatingSystemDiscovery.NATIVE_OPERATION_SYSTEM)));
+                    content.setTime(discoveryTime);
+                    entity.getStates().get(
+                            DeviceDAO.STATE_ID_OF_BASIC_DEVICE_INFORMATIONS_ABOUT_NATIVE_OPERATIONAL_SYSTEM-1)
+                            .setContent(content);
+                }
+                // Memória RAM disponível pelo dispositivo
+                if(discoveredInformation.containsKey(OperatingSystemDiscovery.RAM_AVAILABLE)){
+                    content = new Content();
+                    content.setValue(Content.parseContent(
+                            entity.getStates().get(DeviceDAO.STATE_ID_OF_BASIC_DEVICE_INFORMATIONS_ABOUT_STORAGE_SYSTEM-1)
+                                    .getDataType(),
+                            discoveredInformation.get(OperatingSystemDiscovery.RAM_AVAILABLE)));
+                    content.setTime(discoveryTime);
+                    entity.getStates().get(
+                            DeviceDAO.STATE_ID_OF_BASIC_DEVICE_INFORMATIONS_ABOUT_MEMORY_RAM-1)
+                            .setContent(content);
+                }
+            }
+            // Para cada valor checa se for retornado algum valor conhecido senão, armazena o valor inicial
+            for(State s: entity.getStates()){
+                if(s.getContent() == null){
+                    content = new Content();
+                    content.setValue(s.getInitialValue());
+                    content.setTime(discoveryTime);
+                    s.setContent(content);
+                }
+                this.dataManager.getEntityStateDAO().insertContent(s);
+            }
+            // gera um evento contendo todos dados descobertos -- não necessário, pois é realizado antes do módulo de adaptação ser descoberto    
+        } catch (SQLException ex) {
+            Logger.getLogger(DeviceManager.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+    
+    private void outputCommunicationInterfacesDiscovery() throws SQLException{
+        // Verifica interfaces disponíveis
+        for(CommunicationInterface ci : this.dataManager.getCommunicationDAO().getAvailableInterfaces()){
+            Content content = new Content();
+            content.setTime(new Date());
+            content.setValue(true);
+            // verifica se o ID de cada uma dessas instâncias existe, se existe relaciona as duas senão cria uma nova instância.
+            Instance instance = this.dataManager.getInstanceDAO().getInstance(ci.getId(),CommunicationDAO.ENTITY_ID_OF_OUTPUT_COMMUNICATION_INTERFACES);
+            if(instance != null){
+                ci.setInstance(instance);
+                for(State s :instance.getStates()){
+                    if(s.getModelId()==CommunicationDAO.STATE_ID_OF_OUTPUT_COMMUNICATION_INTERFACE_IS_ENABLED){
+                        s.setContent(content);
+                        this.dataManager.getInstanceDAO().insertContent(s);
+                        break;
+                    }
+                }
+            } else{ // cria uma nova instância se ela não estiver cadastrada
+                instance = new Instance(
+                        0, 
+                        ci.getName(), 
+                        CommunicationInterface.class.toString());
+                instance.setEntity(this.dataManager.getEntityDAO().getEntity(CommunicationDAO.COMPONENT_ID, CommunicationDAO.ENTITY_ID_OF_OUTPUT_COMMUNICATION_INTERFACES));
+                // busca o maior model ID dos estados e adiciona + 1 para atribuir na interface
+                List<State> states = this.dataManager.getInstanceDAO().getInstanceStates(instance);
+                int maior = 0;
+                for(State s : states){
+                    if (s.getModelId() > maior) maior = s.getModelId();
+                }
+                instance.setModelId(maior+1); // atribui o próximo model_id vafo
+                this.dataManager.getInstanceDAO().insert(instance);
+                // Pega os estados que são de instância
+                states = this.dataManager.getEntityStateDAO().getInitialModelInstanceStates(instance.getEntity());
+                instance.setStates(states);
+                for(State s : states){
+                    this.dataManager.getInstanceDAO().insertState(s, instance);
+                }
+                ci.setInstance(instance);
+                for(State s :instance.getStates()){
+                    if(s.getModelId()==CommunicationDAO.STATE_ID_OF_OUTPUT_COMMUNICATION_INTERFACE_IS_ENABLED){
+                        s.setContent(content);
+                        this.dataManager.getInstanceDAO().insertContent(s);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    private void inputCommunicationInterfacesDiscovery() throws SQLException {
+        // Verifica interfaces disponíveis
+        for(PushServiceReceiver psr : this.dataManager.getCommunicationDAO().getInputCommunicationInterfaces()){
+            Content content = new Content();
+            content.setTime(new Date());
+            content.setValue(true);
+            // verifica se o ID de cada uma dessas instâncias existe, se existe relaciona as duas senão cria uma nova instância.
+            Instance instance = this.dataManager.getInstanceDAO().getInstance(psr.getId(),CommunicationDAO.ENTITY_ID_OF_INPUT_COMMUNICATION_INTERFACES);
+            if(instance != null){
+                psr.setInstance(instance);
+            } else{ // cria uma nova instância se ela não estiver cadastrada
+                instance = new Instance(
+                        0, 
+                        psr.getDescription(), 
+                        CommunicationInterface.class.toString());
+                instance.setEntity(this.dataManager.getEntityDAO().getEntity(CommunicationDAO.COMPONENT_ID, CommunicationDAO.ENTITY_ID_OF_INPUT_COMMUNICATION_INTERFACES));
+                // busca o maior model ID dos estados e adiciona + 1 para atribuir na interface
+                List<State> states = this.dataManager.getInstanceDAO().getInstanceStates(instance);
+                int maior = 0;
+                for(State s : states){
+                    if (s.getModelId() > maior) maior = s.getModelId();
+                }
+                instance.setModelId(maior+1); // atribui o próximo model_id vafo
+                this.dataManager.getInstanceDAO().insert(instance);
+                // Pega os estados que são de instância
+                states = this.dataManager.getEntityStateDAO().getInitialModelInstanceStates(instance.getEntity());
+                instance.setStates(states);
+                for(State s : states){
+                    this.dataManager.getInstanceDAO().insertState(s, instance);
+                }
+                psr.setInstance(instance);
+            }
+        }
+    }
+
+    public void addSupportedInputCommunicationInterface(PushServiceReceiver inputCommunicationInterface) {
+        dataManager.addSupportedInputCommunicationInterface(inputCommunicationInterface);
     }
 
 }

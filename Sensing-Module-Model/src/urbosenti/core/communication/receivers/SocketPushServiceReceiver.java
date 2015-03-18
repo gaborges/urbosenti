@@ -17,6 +17,8 @@ public class SocketPushServiceReceiver extends PushServiceReceiver{
 
     public SocketPushServiceReceiver(CommunicationManager communicationManager) {
         super(communicationManager);
+        super.setId(1);
+        super.setDescription("Socket Input Interface");
     }
 
     @Override

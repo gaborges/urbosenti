@@ -17,7 +17,7 @@ public class DTNCommunicationInterface extends CommunicationInterface{
     
     public DTNCommunicationInterface() {
         super();
-        setId(3);
+        setId(4);
         setName("Delay Tolerant Network (DTN) Interface");
         setUsesMobileData(false);
         setStatus(CommunicationInterface.STATUS_UNAVAILABLE);

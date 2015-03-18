@@ -229,11 +229,7 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
         // Preparar configurações inicias para execução
         // Para tanto utilizar o DataManager para acesso aos dados.
         System.out.println("Activating: " + getClass());
-        try {
-            this.communicationInterfaces = super.getDeviceManager().getDataManager().getCommunicationDAO().getAvailableInterfaces();
-        } catch (IOException ex) {
-            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
-        }
+        this.communicationInterfaces = super.getDeviceManager().getDataManager().getCommunicationDAO().getAvailableInterfaces();
         this.currentCommunicationInterface = this.communicationInterfaces.get(0);
 //        
 //        this.mobileDataPolicy = 1; // sem mobilidade - Default

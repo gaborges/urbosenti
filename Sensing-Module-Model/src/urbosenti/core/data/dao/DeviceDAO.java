@@ -24,6 +24,35 @@ import urbosenti.core.device.model.Service;
 public class DeviceDAO {
 
     public static final int COMPONENT_ID = 1;
+    public static final int ENTITY_ID_OF_SERVICE_REGISTRATION = 1;
+    public static final int ENTITY_ID_OF_URBOSENTI_SERVICES = 2;
+    public static final int ENTITY_ID_OF_BASIC_DEVICE_INFORMATIONS = 3;
+    public static final int STATE_ID_OF_URBOSENTI_SERVICES_ACTIVITY_STATUS = 1;
+    public static final int STATE_ID_OF_URBOSENTI_SERVICES_ADAPTATION_COMPONENT_STATUS = 2;
+    public static final int STATE_ID_OF_URBOSENTI_SERVICES_LOCATION_COMPONENT_STATUS = 3;
+    public static final int STATE_ID_OF_URBOSENTI_SERVICES_CONTEXT_COMPONENT_STATUS = 4;
+    public static final int STATE_ID_OF_URBOSENTI_SERVICES_USER_COMPONENT_STATUS = 5;
+    public static final int STATE_ID_OF_URBOSENTI_SERVICES_CONCERNS_COMPONENT_STATUS = 6;
+    public static final int STATE_ID_OF_URBOSENTI_SERVICES_RESOURCES_COMPONENT_STATUS = 7;
+    public static final int STATE_ID_OF_URBOSENTI_SERVICES_WIRED_COMMUNICATION_INTERFACE_STATUS = 8;
+    public static final int STATE_ID_OF_URBOSENTI_SERVICES_WIFI_COMMUNICATION_INTERFACE_STATUS = 9;
+    public static final int STATE_ID_OF_URBOSENTI_SERVICES_MOBILE_DATA_COMMUNICATION_INTERFACE_STATUS = 10;
+    public static final int STATE_ID_OF_URBOSENTI_SERVICES_DTN_COMMUNICATION_INTERFACE_STATUS = 11;
+    public static final int STATE_ID_OF_URBOSENTI_SERVICES_GCM_INPUT_INTERFACE_STATUS = 12;
+    public static final int STATE_ID_OF_URBOSENTI_SERVICES_SOCKET_INPUT_INTERFACE_STATUS = 13;
+    public static final int STATE_ID_OF_SERVICE_REGISTRATION_FOR_REMOTE_LOGIN = 1;
+    public static final int STATE_ID_OF_SERVICE_REGISTRATION_FOR_REMOTE_PASSWORD = 2;
+    public static final int STATE_ID_OF_SERVICE_REGISTRATION_FOR_APPLICATION_UID = 3;
+    public static final int STATE_ID_OF_SERVICE_REGISTRATION_FOR_SERVICE_EXPIRATION_TIME = 4;
+    public static final int STATE_ID_OF_BASIC_DEVICE_INFORMATIONS_ABOUT_STORAGE_SYSTEM = 1;
+    public static final int STATE_ID_OF_BASIC_DEVICE_INFORMATIONS_ABOUT_CPU_CORES = 2;
+    public static final int STATE_ID_OF_BASIC_DEVICE_INFORMATIONS_ABOUT_CPU_CORE_FREQUENCY_CLOCK = 3;
+    public static final int STATE_ID_OF_BASIC_DEVICE_INFORMATIONS_ABOUT_CPU_MODEL = 4;
+    public static final int STATE_ID_OF_BASIC_DEVICE_INFORMATIONS_ABOUT_NATIVE_OPERATIONAL_SYSTEM = 5;
+    public static final int STATE_ID_OF_BASIC_DEVICE_INFORMATIONS_ABOUT_MEMORY_RAM = 6;
+    public static final int STATE_ID_OF_BASIC_DEVICE_INFORMATIONS_ABOUT_DEVICE_MODEL = 7;
+    public static final int STATE_ID_OF_BASIC_DEVICE_INFORMATIONS_ABOUT_BATTERY_CAPACITY = 8;
+    
     public static final int DEVICE_DB_ID = 1;
     private final Connection connection;
     private PreparedStatement stmt;
@@ -37,9 +66,9 @@ public class DeviceDAO {
                 + "VALUES (?);";
         stmt = this.connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
         stmt.setString(1, device.getDescription());
-        //stmt.setDouble(2, device.getDeviceVersion());
-        //stmt.setDouble(3, device.getGeneralDefinitionsVersion());
-        //stmt.setDouble(4, device.getAgentModelVersion());
+        stmt.setDouble(2, device.getDeviceVersion());
+        stmt.setDouble(3, device.getGeneralDefinitionsVersion());
+        stmt.setDouble(4, device.getAgentModelVersion());
         stmt.execute();
         try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
             if (generatedKeys.next()) {
@@ -49,9 +78,9 @@ public class DeviceDAO {
             }
         }
         stmt.close();
-        //System.out.println("INSERT INTO devices (id,description, generalDefinitionsVersion, deviceVersion, agentModelVersion) "
-        //        + " VALUES ("+device.getId()+",'"+device.getDescription()+"',"+device.getDeviceVersion()+","+device.getGeneralDefinitionsVersion()+","+device.getAgentModelVersion()+");");
-        System.out.println("INSERT INTO devices (id,description)  VALUES (\"+device.getId()+\",'\"+device.getDescription()+\"');");
+        System.out.println("INSERT INTO devices (id,description, generalDefinitionsVersion, deviceVersion, agentModelVersion) "
+                + " VALUES ("+device.getId()+",'"+device.getDescription()+"',"+device.getDeviceVersion()+","+device.getGeneralDefinitionsVersion()+","+device.getAgentModelVersion()+");");
+        //System.out.println("INSERT INTO devices (id,description)  VALUES ("+device.getId()+",'"+device.getDescription()+"');");
     }
 
     public int getCount() throws SQLException {
@@ -150,7 +179,7 @@ public class DeviceDAO {
                 entity.setActions(dataManager.getActionDAO().getEntityActions(entity));
                 entity.setEvents(dataManager.getEventDAO().getEntityEvents(entity));
                 entity.setInstaces(dataManager.getInstanceDAO().getEntityInstaces(entity));
-                entity.setStates(dataManager.getStateDAO().getEntityStates(entity));
+                entity.setStates(dataManager.getEntityStateDAO().getEntityStates(entity));
             }
         }
         device.setServices(dataManager.getServiceDAO().getDeviceServices(device));

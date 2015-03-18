@@ -75,7 +75,7 @@ public class AgentTypeDAO {
     }
 
     public void insertPossibleStateContents(State state) throws SQLException {
-        String sql = "INSERT INTO possible_interaction_state_contents (possible_value, default_value, interaction_state_id) "
+        String sql = "INSERT INTO possible_agent_state_contents (possible_value, default_value, agent_state_id) "
                 + " VALUES (?,?,?);";
         PreparedStatement statement;
         if (state.getPossibleContents() != null) {
@@ -93,14 +93,14 @@ public class AgentTypeDAO {
                     }
                 }
                 statement.close();
-                System.out.println("INSERT INTO possible_interaction_state_contents (id,possible_value, default_value, interaction_state_id) "
+                System.out.println("INSERT INTO possible_agent_state_contents (id,possible_value, default_value, agent_state_id) "
                         + " VALUES (" + possibleContent.getId() + "," + possibleContent.getValue() + "," + possibleContent.isIsDefault() + "," + state.getId() + ");");
             }
         }
     }
 
     public void insertState(State state) throws SQLException {
-        String sql = "INSERT INTO interaction_states (id,description,agent_type_id,data_type_id,superior_limit,inferior_limit,initial_value) "
+        String sql = "INSERT INTO agent_states (id,description,agent_type_id,data_type_id,superior_limit,inferior_limit,initial_value) "
                 + " VALUES (?,?,?,?,?,?,?);";
         this.stmt = this.connection.prepareStatement(sql);
         this.stmt.setInt(1, state.getId());
@@ -112,13 +112,13 @@ public class AgentTypeDAO {
         this.stmt.setObject(7, state.getInitialValue());
         this.stmt.execute();
         stmt.close();
-        System.out.println("INSERT INTO interaction_states (id,description,agent_type_id,data_type_id,superior_limit,inferior_limit,initial_value) "
+        System.out.println("INSERT INTO agent_states (id,description,agent_type_id,data_type_id,superior_limit,inferior_limit,initial_value) "
                 + " VALUES (" + state.getId() + ",'" + state.getDescription() + "'," + state.getAgentType().getId() + "," + state.getDataType().getId()
                 + ",'" + state.getSuperiorLimit() + "','" + state.getInferiorLimit() + "','" + state.getInitialValue() + "');");
     }
 
     public void insertParameters(Interaction interaction) throws SQLException {
-        String sql = "INSERT INTO interaction_parameters (description,optional,label,superior_limit,inferior_limit,initial_value,interaction_state_id,data_type_id,interaction_id) "
+        String sql = "INSERT INTO interaction_parameters (description,optional,label,superior_limit,inferior_limit,initial_value,agent_state_id,data_type_id,interaction_id) "
                 + " VALUES (?,?,?,?,?,?,?,?,?);";
         PreparedStatement statement;
         if (interaction.getParameters() != null) {
@@ -142,7 +142,7 @@ public class AgentTypeDAO {
                     }
                 }
                 statement.close();
-                System.out.println("INSERT INTO interaction_parameters (description,optional,label,superior_limit,inferior_limit,initial_value,interaction_state_id,data_type_id,interaction_id) "
+                System.out.println("INSERT INTO interaction_parameters (description,optional,label,superior_limit,inferior_limit,initial_value,agent_state_id,data_type_id,interaction_id) "
                         + " VALUES (" + parameter.getId() + ",'" + parameter.getDescription() + "','" + parameter.getLabel() + "','" + parameter.getSuperiorLimit()
                         + "','" + parameter.getInferiorLimit() + "','" + parameter.getInitialValue() + "'," + ((parameter.getRelatedState() == null) ? -1 : parameter.getRelatedState().getId())
                         + "," + parameter.getDataType().getId() + "," + interaction.getId() + ");");
@@ -179,8 +179,8 @@ public class AgentTypeDAO {
     public Content getCurrentContentValue(State state) throws SQLException {
         Content content = null;
         String sql = "SELECT id, reading_value, reading_time "
-                + "FROM interaction_state_contents\n"
-                + "WHERE interaction_state_id = ? ORDER BY id DESC LIMIT 1;";
+                + "FROM agent_state_contents\n"
+                + "WHERE agent_state_id = ? ORDER BY id DESC LIMIT 1;";
         stmt = this.connection.prepareStatement(sql);
         stmt.setInt(1, state.getId());
         ResultSet rs = stmt.executeQuery();
@@ -197,7 +197,7 @@ public class AgentTypeDAO {
     }
 
     public void insertContent(State state) throws SQLException {
-        String sql = "INSERT INTO interaction_state_contents (reading_value,reading_time,interaction_state_id) "
+        String sql = "INSERT INTO agent_state_contents (reading_value,reading_time,agent_state_id) "
                 + " VALUES (?,?,?);";
         this.stmt = this.connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
         this.stmt.setObject(1, state.getContent().getValue());
@@ -213,7 +213,7 @@ public class AgentTypeDAO {
         }
         stmt.close();
         if (DeveloperSettings.SHOW_DAO_SQL) {
-            System.out.println("INSERT INTO interaction_state_contents (id,reading_value,reading_time,interaction_state_id) "
+            System.out.println("INSERT INTO agent_state_contents (id,reading_value,reading_time,agent_state_id) "
                     + " VALUES (" + state.getContent().getId() + ",'" + state.getContent().getValue() + "',"
                     + ",'" + state.getContent().getTime().getTime() + "'," + "," + state.getId() + ");");
         }
@@ -238,6 +238,7 @@ public class AgentTypeDAO {
             content.setScore(rs.getDouble("score"));
             content.setMessage(new AgentMessage());
             content.getMessage().setId(rs.getInt("message_id"));
+            content.getMessage().setTime(rs.getDate("message_time"));
         }
         rs.close();
         stmt.close();
@@ -332,11 +333,11 @@ public class AgentTypeDAO {
     List<State> getAgentStates(AgentType agentType) throws SQLException {
         List<State> states = new ArrayList();
         State state = null;
-        String sql = "SELECT interaction_states.id as state_id, interaction_states.description as state_desc, "
+        String sql = "SELECT agent_states.id as state_id, agent_states.description as state_desc, "
                 + " superior_limit, inferior_limit, \n"
-                + " interaction_states.initial_value, data_type_id, data_types.initial_value as data_initial_value, "
+                + " agent_states.initial_value, data_type_id, data_types.initial_value as data_initial_value, "
                 + " data_types.description as data_desc\n"
-                + " FROM interaction_states, data_types\n" // trocar nome interaction_states para - agent_states
+                + " FROM agent_states, data_types\n"
                 + " WHERE agent_type_id = ? and data_types.id = data_type_id;";
         stmt = this.connection.prepareStatement(sql);
         stmt.setInt(1, agentType.getId());
@@ -390,9 +391,6 @@ public class AgentTypeDAO {
             interaction.setDirection(new Direction(rs.getInt("direction_id"), rs.getString("direction_desc")));
             interaction.setAgentType(new AgentType(rs.getInt("agent_type_id"), rs.getString("agent_type_description")));
             interaction.setInteractionType(new InteractionType(rs.getInt("interaction_type_id"), rs.getString("type_desc")));
-            if (rs.getInt("interaction_id") > 0) {
-                interaction.setPrimaryInteraction(this.getPrimaryInteraction(rs.getInt("interaction_id")));
-            }
             interaction.setParameters(this.getInteractionParameters(interaction));
         }
         rs.close();
@@ -404,7 +402,7 @@ public class AgentTypeDAO {
         List<Parameter> parameters = new ArrayList();
         Parameter parameter = null;
         String sql = "SELECT interaction_parameters.id as interation_id, label, interaction_parameters.description as parameter_desc, \n"
-                + "                optional, superior_limit, inferior_limit, interaction_state_id,\n"
+                + "                optional, superior_limit, inferior_limit, agent_state_id,\n"
                 + "                interaction_parameters.initial_value, data_type_id, data_types.initial_value as data_initial_value,\n"
                 + "                data_types.description as data_desc\n"
                 + "                FROM interaction_parameters, data_types\n"
@@ -421,8 +419,8 @@ public class AgentTypeDAO {
             parameter.setSuperiorLimit(rs.getObject("superior_limit"));
             parameter.setInitialValue(rs.getObject("initial_value"));
             parameter.setOptional(rs.getBoolean("optional"));
-            if (rs.getInt("interaction_state_id") > 0) {
-                parameter.setRelatedState(this.getInteractionState(rs.getInt("interaction_state_id")));
+            if (rs.getInt("agent_state_id") > 0) {
+                parameter.setRelatedState(this.getInteractionState(rs.getInt("agent_state_id")));
             }
             DataType type = new DataType();
             type.setId(rs.getInt("data_type_id"));
@@ -443,12 +441,12 @@ public class AgentTypeDAO {
 
     private State getInteractionState(int id) throws SQLException {
         State state = null;
-        String sql = "SELECT interaction_states.id as state_id, interaction_states.description as state_desc, \n"
+        String sql = "SELECT agent_states.id as state_id, agent_states.description as state_desc, \n"
                 + "                superior_limit, inferior_limit, \n"
-                + "                interaction_states.initial_value, data_type_id, data_types.initial_value as data_initial_value,  \n"
+                + "                agent_states.initial_value, data_type_id, data_types.initial_value as data_initial_value,  \n"
                 + "                data_types.description as data_desc \n"
-                + "                FROM interaction_states, data_types \n"
-                + "                WHERE interaction_states.id = ? and data_types.id = data_type_id;";
+                + "                FROM agent_states, data_types \n"
+                + "                WHERE agent_states.id = ? and data_types.id = data_type_id;";
         stmt = this.connection.prepareStatement(sql);
         stmt.setInt(1, id);
         ResultSet rs = stmt.executeQuery();
@@ -480,8 +478,8 @@ public class AgentTypeDAO {
     private List<PossibleContent> getPossibleStateContents(State state) throws SQLException {
         List<PossibleContent> possibleContents = new ArrayList();
         String sql = " SELECT id, possible_value, default_value "
-                + " FROM possible_interaction_state_contents\n"
-                + " WHERE interaction_state_id = ?;";
+                + " FROM possible_agent_state_contents\n"
+                + " WHERE agent_state_id = ?;";
         stmt = this.connection.prepareStatement(sql);
         stmt.setInt(1, state.getId());
         ResultSet rs = stmt.executeQuery();
@@ -544,11 +542,96 @@ public class AgentTypeDAO {
         return messages;
     }
 
-    private Interaction getInteraction(int id) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    private Interaction getInteraction(int id) throws SQLException {
+        Interaction interaction = null;
+        String sql = "SELECT agent_types.description as agent_type_description, interactions.description as interaction_desc, communicative_act_id, communicative_acts.description as act_desc,  \n"
+                + "              interaction_type_id, interaction_types.description as type_desc, direction_id, interaction_directions.description as direction_desc, "
+                + "              interaction_id, agent_communication_language_id, agent_communication_languages.description as language_description, agent_type_id\n"
+                + " FROM interactions, communicative_acts, interaction_types, interaction_directions, agent_communication_languages, agent_types \n"
+                + " WHERE interactions.id = ? AND communicative_act_id = communicative_acts.id AND interaction_types.id = interaction_type_id "
+                + " AND direction_id = interaction_directions.id AND agent_communication_languages.id = agent_communication_language_id AND agent_types.id = agent_type_id;";
+        stmt = this.connection.prepareStatement(sql);
+        stmt.setInt(1, id);
+        ResultSet rs = stmt.executeQuery();
+        if (rs.next()) {
+            interaction = new Interaction();
+            interaction.setId(id);
+            interaction.setDescription(rs.getString("interaction_desc"));
+            interaction.setCommunicativeAct(
+                    new CommunicativeAct(
+                            rs.getInt("communicative_act_id"),
+                            rs.getString("act_desc"),
+                            new AgentCommunicationLanguage(rs.getInt("agent_communication_language_id"), rs.getString("language_description"))));
+            interaction.setDirection(new Direction(rs.getInt("direction_id"), rs.getString("direction_desc")));
+            interaction.setAgentType(new AgentType(rs.getInt("agent_type_id"), rs.getString("agent_type_description")));
+            interaction.setInteractionType(new InteractionType(rs.getInt("interaction_type_id"), rs.getString("type_desc")));
+            if (rs.getInt("interaction_id") > 0) {
+                interaction.setPrimaryInteraction(this.getPrimaryInteraction(rs.getInt("interaction_id")));
+            }
+            interaction.setParameters(this.getInteractionParameters(interaction));
+        }
+        rs.close();
+        stmt.close();
+        return interaction;
     }
 
-    private List<Content> getInteractionParameterContents(AgentMessage message) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    private List<Content> getInteractionParameterContents(AgentMessage message) throws SQLException {
+        List<Content> contents = new ArrayList();
+        Content content = null;
+        String sql = " SELECT id, reading_value, reading_time, interaction_parameter_id "
+                + " FROM interaction_contents \n"
+                + " WHERE message_id = ?;";
+        stmt = this.connection.prepareStatement(sql);
+        stmt.setInt(1, message.getId());
+        ResultSet rs = stmt.executeQuery();
+        while (rs.next()) {
+            content = new Content();
+            content.setId(rs.getInt("id"));
+            if (rs.getDate("reading_time") != null) {
+                content.setTime(rs.getDate("reading_time"));
+            }
+            content.setParameter(this.getParameter(content));
+            content.setValue(this.parseContent(content.getParameter().getDataType(),rs.getObject("reading_value")));
+            content.setMessage(message);
+            contents.add(content);
+        }
+        rs.close();
+        stmt.close();
+        return contents;
+    }
+
+    private Parameter getParameter(Content content) throws SQLException {
+        Parameter parameter = null;
+        String sql = "SELECT interaction_parameters.id as interation_id, label, interaction_parameters.description as parameter_desc, \n"
+                + "                optional, superior_limit, inferior_limit, agent_state_id,\n"
+                + "                interaction_parameters.initial_value, data_type_id, data_types.initial_value as data_initial_value,\n"
+                + "                data_types.description as data_desc\n"
+                + "                FROM interaction_parameters, data_types, interaction_contents \n"
+                + "                WHERE interaction_contents.id = ? and data_types.id = data_type_id;";
+        stmt = this.connection.prepareStatement(sql);
+        stmt.setInt(1, content.getId());
+        ResultSet rs = stmt.executeQuery();
+        while (rs.next()) {
+            parameter = new Parameter();
+            parameter.setId(rs.getInt("interation_id"));
+            parameter.setDescription(rs.getString("parameter_desc"));
+            parameter.setLabel(rs.getString("label"));
+            parameter.setInferiorLimit(rs.getObject("inferior_limit"));
+            parameter.setSuperiorLimit(rs.getObject("superior_limit"));
+            parameter.setInitialValue(rs.getObject("initial_value"));
+            parameter.setOptional(rs.getBoolean("optional"));
+            if (rs.getInt("agent_state_id") > 0) {
+                parameter.setRelatedState(this.getInteractionState(rs.getInt("agent_state_id")));
+            }
+            DataType type = new DataType();
+            type.setId(rs.getInt("data_type_id"));
+            type.setDescription(rs.getString("data_desc"));
+            type.setInitialValue(rs.getObject("data_initial_value"));
+            parameter.setContent(content);
+            parameter.setDataType(type);
+        }
+        rs.close();
+        stmt.close();
+        return parameter;
     }
 }

@@ -51,6 +51,7 @@ public class Main {
         // Execução - inicia todos os serviços e threads em background. Intanciar serviço de recebimento de mensagens
         PushServiceReceiver teste = new SocketPushServiceReceiver(deviceManager.getCommunicationManager());
         //DeliveryMessagingService delivaryService = new DeliveryMessagingService(deviceManager.getCommunicationManager());
+        deviceManager.addSupportedInputCommunicationInterface(teste);
              
         // Atribuir o modelo de conhecimento do dispositivo que será descoberto pelo mecanismo de adaptação --- Falta fazer - Guilherme    
         deviceManager.setDeviceKnowledgeRepresentationModel(new File("deviceKnowledgeModel.xml"),"xmlFile");

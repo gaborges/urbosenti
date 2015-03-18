@@ -46,7 +46,7 @@ public interface OperatingSystemDiscovery {
     /**
      * Capacidade da Bateria
      */
-    public static final String BATERY_CAPACITY = "battery";
+    public static final String BATTERY_CAPACITY = "battery";
     /**
      * Realiza o processo de descoberta dos recursos do sistema operacional
      * @return HashMap<String,Object> contendo as chaves destacados pelas constantes dessa classe.

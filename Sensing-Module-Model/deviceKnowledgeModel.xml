@@ -660,12 +660,12 @@
                 <instances representativeClass="urbosenti.core.communication.CommunicationInterface">
                     <instance id="1" description="Wired - Cabeada">
                         <state stateId="1" initialValue="0"></state>
-                        <state stateId="2" initialValue="true"></state>
+                        <state stateId="2" initialValue="false"></state>
                         <state stateId="3" initialValue="0"></state>
                     </instance>
                     <instance id="2" description="Móvel via Wi-Fi">
                         <state stateId="1" initialValue="1"></state>
-                        <state stateId="2" initialValue="true"></state>
+                        <state stateId="2" initialValue="false"></state>
                     </instance>
                     <instance id="3" description="Móvel via rede de dados móveis">
                         <state stateId="1" initialValue="2"></state>
@@ -683,7 +683,7 @@
                 <state id="2" userCanChange="true" description="Habilitada?" instanceState="true">
                     <content dataType="7" initialValue="true"></content>
                 </state>
-                <state id="3" userCanChange="false" description="Timeout em ms">
+                <state id="3" userCanChange="false" description="Timeout em ms" instanceState="true">
                     <content dataType="4" initialValue="20000" inferiorLimit="1"></content>
                 </state>
                 <!-- events - Eventos estão embutidos nas funções -->

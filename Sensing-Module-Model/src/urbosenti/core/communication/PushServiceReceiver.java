@@ -7,6 +7,7 @@ package urbosenti.core.communication;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import urbosenti.core.device.model.Agent;
+import urbosenti.core.device.model.Instance;
 
 /**
  *
@@ -21,6 +22,8 @@ public abstract class PushServiceReceiver implements Runnable{
     public final CommunicationManager communicationManager;
     private Thread t;
     private final Boolean flag;
+    private String description;
+    private Instance instance;
         
     public PushServiceReceiver(CommunicationManager communicationManager) {
         this.communicationManager = communicationManager;
@@ -76,6 +79,22 @@ public abstract class PushServiceReceiver implements Runnable{
 
     public int getId() {
         return id;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public Instance getInstance() {
+        return instance;
+    }
+
+    public void setInstance(Instance instance) {
+        this.instance = instance;
     }
          
 }

@@ -17,7 +17,7 @@ public class MobileDataCommunicationInterface extends CommunicationInterface{
     
     public MobileDataCommunicationInterface() {
         super();
-        setId(1);
+        setId(3);
         setName("Wired Interface");
         setUsesMobileData(false);
         setStatus(CommunicationInterface.STATUS_UNAVAILABLE);

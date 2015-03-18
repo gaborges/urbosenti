@@ -6,6 +6,7 @@ package urbosenti.core.communication;
 
 import java.io.IOException;
 import java.util.Date;
+import urbosenti.core.device.model.Instance;
 
 /**
  *
@@ -17,9 +18,15 @@ public abstract class CommunicationInterface<Object> {
     public final static int STATUS_CONNECTED = 1;
     public final static int STATUS_UNAVAILABLE = 2;
     public final static int STATUS_AVAILABLE = 3;
+    // Tipos de interface
+    public final static int WIRED_INTERFACE = 1;
+    public final static int WIRELESS_INTERFACE = 2;
+    public final static int MOBILE_DATA_INTERFACE = 3;
+    public final static int DNT_INTERFACE = 4;
     // Suported Tecnologies
     // current tecnology
     private int id;
+    private Instance instance;
     private String name;
     private double mobileDataUse; // only for Mobile data Interface
     private double averageLatency;
@@ -166,6 +173,15 @@ public abstract class CommunicationInterface<Object> {
     public void setScore(int score) {
         this.score = score;
     }
+
+    public Instance getInstance() {
+        return instance;
+    }
+
+    public void setInstance(Instance instance) {
+        this.instance = instance;
+    }
+    
     /**
      * 
      * @return retorna true se foi suportada pelo sistema senão retorna false; OBS.: o Desenvolvedor deve definir é é possível ou não utilizá-la por implementação

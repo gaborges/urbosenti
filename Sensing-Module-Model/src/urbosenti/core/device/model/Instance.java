@@ -6,6 +6,7 @@ import java.util.List;
 public class Instance {
 
     private int id;
+    private int modelId;
     private String description;
     private String representativeClass;
     private List<State> states;
@@ -64,6 +65,14 @@ public class Instance {
 
     public void setEntity(Entity entity) {
         this.entity = entity;
+    }
+
+    public int getModelId() {
+        return modelId;
+    }
+
+    public void setModelId(int modelId) {
+        this.modelId = modelId;
     }
     
 }

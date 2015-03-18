@@ -9,6 +9,7 @@ public class Content {
     private Date time;
     private double score;
     private Instance  monitoredInstance;
+    private Parameter parameter;
     private AgentMessage message;
 
     public Content(int id, java.lang.Object value, Date time, double score) {
@@ -67,6 +68,40 @@ public class Content {
 
     public void setMessage(AgentMessage message) {
         this.message = message;
+    }
+
+    public Parameter getParameter() {
+        return parameter;
+    }
+
+    public void setParameter(Parameter parameter) {
+        this.parameter = parameter;
+    }
+    
+    public static Object parseContent(DataType dataType, Object value) {
+        switch (dataType.getId()) {
+            case 1://<dataType id="1" initialValue="0">byte</dataType>
+                return Byte.parseByte(value.toString());
+            case 2: // <dataType id="2" initialValue="0">short</dataType>
+                return Short.parseShort(value.toString());
+            case 3: // <dataType id="3" initialValue="0">int</dataType>
+                return Integer.parseInt(value.toString());
+            case 4: // <dataType id="4" initialValue="0">long</dataType>
+                return Long.parseLong(value.toString());
+            case 5: // <dataType id="5" initialValue="0.0">float</dataType>
+                return Float.parseFloat(value.toString());
+            case 6: // <dataType id="6" initialValue="0.0">double</dataType>
+                return Double.parseDouble(value.toString());
+            case 7: // <dataType id="7" initialValue="false">boolean</dataType>
+                return Boolean.parseBoolean(value.toString());
+            case 8: // <dataType id="8" initialValue="0">char</dataType>
+                return value.toString().charAt(0);
+            case 9: // <dataType id="9" initialValue="unknown">String</dataType>
+                return value.toString();
+            case 10: // <dataType id="10" initialValue="null">Object</dataType>
+                return value;
+        }
+        return null;
     }
     
 }

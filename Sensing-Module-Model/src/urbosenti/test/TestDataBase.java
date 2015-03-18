@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import urbosenti.Main;
+import urbosenti.core.communication.Message;
 import urbosenti.core.communication.PushServiceReceiver;
 import urbosenti.core.communication.interfaces.DTNCommunicationInterface;
 import urbosenti.core.communication.interfaces.MobileDataCommunicationInterface;
@@ -24,10 +25,13 @@ import urbosenti.core.data.DataManager;
 import urbosenti.core.device.DeviceManager;
 import urbosenti.core.device.model.ActionModel;
 import urbosenti.core.device.model.Agent;
+import urbosenti.core.device.model.AgentMessage;
 import urbosenti.core.device.model.Component;
 import urbosenti.core.device.model.Content;
+import urbosenti.core.device.model.Conversation;
 import urbosenti.core.device.model.Device;
 import urbosenti.core.device.model.Entity;
+import urbosenti.core.device.model.Interaction;
 import urbosenti.core.device.model.Service;
 import urbosenti.core.device.model.State;
 import urbosenti.core.events.Action;
@@ -78,24 +82,24 @@ public class TestDataBase {
             /**
              * **** Adição e consulta de conteúdo *****
              */
-//            List<State> entityStates = data.getStateDAO().getEntityStates(entity);
+//            List<State> entityStates = data.getEntityStateDAO().getEntityStates(entity);
 //            State state = entityStates.get(1);
 //            // testa inserção com conteúdo
 //            Content c = new Content();
 //            c.setTime(new Date());
 //            c.setValue("juca663");
 //            state.setContent(c);
-//            data.getStateDAO().insertContent(state);
+//            data.getEntityStateDAO().insertContent(state);
 //            // testa busca com conteúdo string
 //            // testa conteúdo double
 //            entity.setId(7);
-//            entityStates = data.getStateDAO().getEntityStates(entity);
+//            entityStates = data.getEntityStateDAO().getEntityStates(entity);
 //            state = entityStates.get(2);
 //            c = new Content();
 //            c.setTime(new Date());
 //            c.setValue(0.9);
 //            state.setContent(c);
-//            data.getStateDAO().insertContent(state);
+//            data.getEntityStateDAO().insertContent(state);
 //            // testa busca com conteúdo double
 //            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 //            System.out.println("TaxaDeUpload: "+((Double)state.getCurrentValue())+" Date: "+dateFormat.format(state.getContent().getTime()));
@@ -114,7 +118,7 @@ public class TestDataBase {
 //                        c.setTime(new Date());
 //                        c.setValue(true);
 //                        s.setContent(c);
-//                        data.getStateDAO().insertContent(s);
+//                        data.getEntityStateDAO().insertContent(s);
 //                    }
 //                }
 //            }
@@ -126,6 +130,7 @@ public class TestDataBase {
              * **** Retornar o modelo geral do dispositivo *****
              */
             Device device = data.getDeviceDAO().getDeviceModel(data);
+            
             for (Component c : device.getComponents()) {
                 for (Entity e : c.getEntities()) {
                     System.out.println("Entity: " + e.getDescription());
@@ -137,11 +142,25 @@ public class TestDataBase {
 //                        c.setTime(new Date());
 //                        c.setValue(true);
 //                        s.setContent(c);
-//                        data.getStateDAO().insertContent(s);
+//                        data.getEntityStateDAO().insertContent(s);
                         //}
                     }
                     for (ActionModel action : e.getActions()) {
                         System.out.println("Action: " + action.getId() + "," + action.getDescription());
+                    }
+                }
+            }
+            for(Service service : device.getServices()){
+                System.out.println("Service: "+service.getServiceType().getDescription());
+                for(State s : service.getAgent().getAgentType().getStates()){
+                    System.out.println("State: "+s.getId()+","+s.getDescription()+", content: "+s.getCurrentValue());
+                }
+                for(Interaction i : service.getAgent().getAgentType().getInteraction()){
+                    System.out.println("Interaction "+i.getId()+", "+i.getDescription());
+                }
+                for(Conversation c : service.getAgent().getConversations()){
+                    for(AgentMessage m : c.getMessages()){
+                        
                     }
                 }
             }

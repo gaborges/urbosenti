@@ -14,6 +14,7 @@ import java.util.Date;
 import java.util.List;
 import urbosenti.core.communication.CommunicationInterface;
 import urbosenti.core.communication.MessageWrapper;
+import urbosenti.core.communication.PushServiceReceiver;
 import static urbosenti.core.data.dao.DeviceDAO.COMPONENT_ID;
 import urbosenti.core.device.model.Component;
 import urbosenti.core.device.model.Entity;
@@ -26,7 +27,32 @@ import urbosenti.core.device.model.EntityType;
 public class CommunicationDAO {
     
     private Connection connection;
-    public final static int  COMPONENT_ID = 4;
+    public final static int COMPONENT_ID = 4;
+    public static final int ENTITY_ID_OF_REPORTS_STORAGE = 1;
+    public static final int ENTITY_ID_OF_RECONNECTION = 2;
+    public static final int ENTITY_ID_OF_UPLOAD_PERIODIC_REPORTS = 3;
+    public static final int ENTITY_ID_OF_SENDING_MESSAGES = 4;
+    public static final int ENTITY_ID_OF_MOBILE_DATA_USAGE = 5;
+    public static final int ENTITY_ID_OF_OUTPUT_COMMUNICATION_INTERFACES = 6;
+    public static final int ENTITY_ID_OF_INPUT_COMMUNICATION_INTERFACES = 7;
+    public static final int STATE_ID_OF_REPORTS_STORAGE_ABOUT_AMOUNT_OF_STORED_MESSAGES = 1;
+    public static final int STATE_ID_OF_REPORTS_STORAGE_ABOUT_AMOUNT_LIMIT_OF_STORED_MESSAGES = 2;
+    public static final int STATE_ID_OF_REPORTS_STORAGE_ABOUT_MESSAGE_EXPIRATION_TIME = 3;
+    public static final int STATE_ID_OF_REPORTS_STORAGE_POLICY = 4;
+    public static final int STATE_ID_OF_RECONNECTION_INTERVAL = 1;
+    public static final int STATE_ID_OF_RECONNECTION_METHOD = 2;
+    public static final int STATE_ID_OF_RECONNECTION_POLICY = 3;
+    public static final int STATE_ID_OF_UPLOAD_PERIODIC_REPORTS_ABOUT_AMOUNT_OF_MESSAGES_UPLOADED_BY_INTERVAL = 1;
+    public static final int STATE_ID_OF_UPLOAD_PERIODIC_REPORTS_UPLOAD_INTERVAL = 2;
+    public static final int STATE_ID_OF_UPLOAD_PERIODIC_REPORTS_FOR_UPLOAD_RATE = 3;
+    public static final int STATE_ID_OF_UPLOAD_PERIODIC_REPORTS_ABOUT_IS_EXECUTING = 4;
+    public static final int STATE_ID_OF_UPLOAD_PERIODIC_REPORTS_ABOUT_IS_DESCONNECTED = 5;
+    public static final int STATE_ID_OF_UPLOAD_PERIODIC_REPORTS_POLICY = 6;
+    public static final int STATE_ID_OF_OUTPUT_COMMUNICATION_INTERFACE_POSITION = 1;
+    public static final int STATE_ID_OF_OUTPUT_COMMUNICATION_INTERFACE_IS_ENABLED = 2;
+    public static final int STATE_ID_OF_OUTPUT_COMMUNICATION_INTERFACE_TIMEOUT = 3;
+    public static final int STATE_ID_OF_INPUT_COMMUNICATION_INTERFACE_EXECUTION_STATUS = 1;
+    
     public final static int  MOBILE_DATA_POLICY = 1;
     public final static int  MESSAGE_STORAGE_POLICY = 2;
     public final static int  RECONNECTION_POLICY = 3;
@@ -38,6 +64,7 @@ public class CommunicationDAO {
     private int reconnectionPolicy; // Política de reconexão
     private int uploadMessagingPolicy; // política de Upload periódico de Mensagens
     private PreparedStatement stmt;
+    private List<PushServiceReceiver> inputCommunicationInterfaces;
 
     public CommunicationDAO() {
         this.mobileDataPolicy = 1; // sem mobilidade - Default
@@ -153,7 +180,7 @@ public class CommunicationDAO {
         }
     }
     
-    public List<CommunicationInterface> getAvailableInterfaces() throws IOException{
+    public List<CommunicationInterface> getAvailableInterfaces(){
         /*
          * POde consultar no banco se há alguma existente, se existe instancia o objeto.
          */
@@ -222,6 +249,14 @@ public class CommunicationDAO {
         rs.close();
         stmt.close();
         return deviceComponent;
+    }
+
+    public void addAvailableInputCommunicationInterfaces(List<PushServiceReceiver> supportedInputCommunicationInterfaces) {
+        this.inputCommunicationInterfaces = supportedInputCommunicationInterfaces;
+    }
+    
+    public List<PushServiceReceiver> getInputCommunicationInterfaces() {
+        return inputCommunicationInterfaces;
     }
     
 }

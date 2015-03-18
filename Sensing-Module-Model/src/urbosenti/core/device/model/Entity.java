@@ -6,6 +6,7 @@ import java.util.List;
 public class Entity {
 
     private int id;
+    private int model_id;
     private String description;
     private EntityType EntityType;
     private Component component;
@@ -106,6 +107,14 @@ public class Entity {
 
     public void setComponent(Component component) {
         this.component = component;
+    }
+
+    public int getModelId() {
+        return model_id;
+    }
+
+    public void setModelId(int model_id) {
+        this.model_id = model_id;
     }
 
 }

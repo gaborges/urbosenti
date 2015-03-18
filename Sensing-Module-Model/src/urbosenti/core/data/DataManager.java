@@ -18,6 +18,7 @@ import java.util.logging.Logger;
 import javax.xml.parsers.ParserConfigurationException;
 import org.xml.sax.SAXException;
 import urbosenti.core.communication.CommunicationInterface;
+import urbosenti.core.communication.PushServiceReceiver;
 import urbosenti.core.data.dao.ActionDAO;
 import urbosenti.core.data.dao.AdaptationDAO;
 import urbosenti.core.data.dao.AgentAddressTypeDAO;
@@ -55,6 +56,7 @@ import urbosenti.core.events.AsynchronouslyManageableComponent;
 public class DataManager extends ComponentManager implements AsynchronouslyManageableComponent{
 
     private final List<CommunicationInterface> supportedCommunicationInterfaces;
+    private final List<PushServiceReceiver> supportedInputCommunicationInterfaces;
     private CommunicationDAO communicationDAO;
     private UserDAO userDAO;
     private Object knowledgeRepresentation;
@@ -89,6 +91,7 @@ public class DataManager extends ComponentManager implements AsynchronouslyManag
         super(deviceManager);
         this.supportedCommunicationInterfaces = new ArrayList<CommunicationInterface>();
         this.knowledgeRepresentation = null;
+        this.supportedInputCommunicationInterfaces = new ArrayList();
     }
     
     @Override
@@ -156,6 +159,8 @@ public class DataManager extends ComponentManager implements AsynchronouslyManag
                 Logger.getLogger(DataManager.class.getName()).log(Level.SEVERE, null, ex);
             } 
         }
+        // Carrega interfaces de comunicação de entrada
+        this.communicationDAO.addAvailableInputCommunicationInterfaces(supportedInputCommunicationInterfaces);
         // Verifica se o conhecimento foi adicionado
         if (this.knowledgeRepresentation == null){
             throw new Error("Knowledge representation do not specified!");
@@ -284,7 +289,7 @@ public class DataManager extends ComponentManager implements AsynchronouslyManag
         return entityDAO;
     }
 
-    public EntityStateDAO getStateDAO() {
+    public EntityStateDAO getEntityStateDAO() {
         return stateDAO;
     }
 
@@ -323,5 +328,9 @@ public class DataManager extends ComponentManager implements AsynchronouslyManag
     public ServiceTypeDAO getServiceTypeDAO() {
         return serviceTypeDAO;
     }
-    
+
+    public void addSupportedInputCommunicationInterface(PushServiceReceiver inputCommunicationInterface) {
+        this.supportedInputCommunicationInterfaces.add(inputCommunicationInterface);
+    }
+
 }
