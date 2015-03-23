@@ -12,8 +12,10 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import urbosenti.context.ContextManager;
 import urbosenti.core.communication.Message;
+import urbosenti.core.data.dao.AdaptationDAO;
 import urbosenti.core.device.ComponentManager;
 import urbosenti.core.device.DeviceManager;
+import urbosenti.core.device.model.FeedbackAnswer;
 import urbosenti.core.events.Action;
 import urbosenti.core.events.AsynchronouslyManageableComponent;
 import urbosenti.core.events.Event;
@@ -25,7 +27,7 @@ import urbosenti.user.UserManager;
  *
  * @author Guilherme
  */
-public class AdaptationManager extends ComponentManager implements Runnable, AsynchronouslyManageableComponent, SystemHandler {
+public class AdaptationManager extends ComponentManager implements Runnable, SystemHandler {
 
     /**
      *
@@ -40,16 +42,19 @@ public class AdaptationManager extends ComponentManager implements Runnable, Asy
     private boolean running;
     private Boolean flag;
     private Boolean monitor;
+    private DiscoveryAdapter discoveryAdapter;
+   // private AdaptationLoopControler adaptationLoopControler;
 
     public AdaptationManager(DeviceManager deviceManager) {
-        super(deviceManager);
+        super(deviceManager,AdaptationDAO.COMPONENT_ID);
         this.deviceManager = null;
         this.contextManager = null;
         this.userManager = null;
         this.running = true;
-        this.availableEvents = new LinkedList<Event>();
+        this.availableEvents = new LinkedList();
         this.flag = true;
         this.monitor = true;
+        this.discoveryAdapter = null;
     }
     
     public boolean discovery(DeviceManager deviceManager) {
@@ -137,6 +142,7 @@ public class AdaptationManager extends ComponentManager implements Runnable, Asy
     public void run() {
         /* At first, the adaptation manager discovers the environment to rum*/
         this.discovery(deviceManager, contextManager, userManager);
+        discoveryAdapter.discovery(deviceManager);
         /* It begin the monitoring process of events */
         try {
             monitoring();
@@ -184,12 +190,20 @@ public class AdaptationManager extends ComponentManager implements Runnable, Asy
     public void onCreate() {
         // Carregar dados e configurações que serão utilizados para execução em memória
         // Preparar configurações inicias para execução
+        if(this.discoveryAdapter == null){
+            this.discoveryAdapter = new UrboSentiDiscoveryAdapter();
+        }
         // Para tanto utilizar o DataManager para acesso aos dados.
         System.out.println("Activating: " + getClass());
     }
 
     @Override
-    public void applyAction(Action action) {
+    public FeedbackAnswer applyAction(Action action) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
+
+    public void setExternalDiscoveryAdapter(DiscoveryAdapter discoveryAdapter) {
+        this.discoveryAdapter = discoveryAdapter;
+    }
+    
 }

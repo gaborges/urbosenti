@@ -14,6 +14,7 @@ import urbosenti.core.device.model.Agent;
 public class Action {
     private int id;
     private String name;
+    private int sourceLayer;
     private Agent origin;
     private int targetObjectId;
     private  HashMap<String, Object>  parameters;

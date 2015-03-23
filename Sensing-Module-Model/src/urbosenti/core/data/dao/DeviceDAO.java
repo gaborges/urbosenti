@@ -16,6 +16,7 @@ import urbosenti.core.device.model.Device;
 import urbosenti.core.device.model.Entity;
 import urbosenti.core.device.model.EntityType;
 import urbosenti.core.device.model.Service;
+import urbosenti.util.DeveloperSettings;
 
 /**
  *
@@ -56,14 +57,16 @@ public class DeviceDAO {
     public static final int DEVICE_DB_ID = 1;
     private final Connection connection;
     private PreparedStatement stmt;
+    private final DataManager dataManager;
 
-    public DeviceDAO(Object context) {
+    public DeviceDAO(Object context, DataManager dataManager) {
+        this.dataManager = dataManager;
         this.connection = (Connection) context;
     }
 
     public void insert(Device device) throws SQLException {
-        String sql = "INSERT INTO devices (description) "
-                + "VALUES (?);";
+        String sql = "INSERT INTO devices (description, generalDefinitionsVersion, deviceVersion, agentModelVersion) "
+                + "VALUES (?,?,?,?);";
         stmt = this.connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
         stmt.setString(1, device.getDescription());
         stmt.setDouble(2, device.getDeviceVersion());
@@ -78,9 +81,11 @@ public class DeviceDAO {
             }
         }
         stmt.close();
-        System.out.println("INSERT INTO devices (id,description, generalDefinitionsVersion, deviceVersion, agentModelVersion) "
+        if (DeveloperSettings.SHOW_DAO_SQL) {
+            System.out.println("INSERT INTO devices (id,description, generalDefinitionsVersion, deviceVersion, agentModelVersion) "
                 + " VALUES ("+device.getId()+",'"+device.getDescription()+"',"+device.getDeviceVersion()+","+device.getGeneralDefinitionsVersion()+","+device.getAgentModelVersion()+");");
-        //System.out.println("INSERT INTO devices (id,description)  VALUES ("+device.getId()+",'"+device.getDescription()+"');");
+            //System.out.println("INSERT INTO devices (id,description)  VALUES ("+device.getId()+",'"+device.getDescription()+"');");
+        }
     }
 
     public int getCount() throws SQLException {
@@ -176,8 +181,8 @@ public class DeviceDAO {
         for(Component component :device.getComponents()){
             component.setEntities(dataManager.getEntityDAO().getComponentEntities(component));
             for(Entity entity : component.getEntities()){
-                entity.setActions(dataManager.getActionDAO().getEntityActions(entity));
-                entity.setEvents(dataManager.getEventDAO().getEntityEvents(entity));
+                entity.setActions(dataManager.getActionModelDAO().getEntityActions(entity));
+                entity.setEvents(dataManager.getEventModelDAO().getEntityEvents(entity));
                 entity.setInstaces(dataManager.getInstanceDAO().getEntityInstaces(entity));
                 entity.setStates(dataManager.getEntityStateDAO().getEntityStates(entity));
             }

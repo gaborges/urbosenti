@@ -56,15 +56,19 @@ public class InstanceDAO {
             }
         }
         stmt.close();
-        System.out.println("INSERT INTO instances (id,description,representative_class, entity_id, model_id) "
-                + " VALUES (" + instance.getId() + ",'" + instance.getDescription() + "','" + instance.getRepresentativeClass() + "'," 
-                + instance.getEntity().getId() +","+((instance.getModelId()>0)?instance.getModelId():null)+ ");");
+        if (DeveloperSettings.SHOW_DAO_SQL) {
+            System.out.println("INSERT INTO instances (id,description,representative_class, entity_id, model_id) "
+                    + " VALUES (" + instance.getId() + ",'" + instance.getDescription() + "','" + instance.getRepresentativeClass() + "',"
+                    + instance.getEntity().getId() + "," + ((instance.getModelId() > 0) ? instance.getModelId() : null) + ");");
+        }
     }
 
     public void insertState(State state, Instance instance) throws SQLException {
         String sql = "INSERT INTO instance_states (description,user_can_change,instance_id,data_type_id,superior_limit,inferior_limit,initial_value,state_model_id) "
                 + " VALUES (?,?,?,?,?,?,?,?);";
-        if(state.getModelId() < 1) state.setModelId(state.getId());
+        if (state.getModelId() < 1) {
+            state.setModelId(state.getId());
+        }
         this.stmt = this.connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
         this.stmt.setString(1, state.getDescription());
         this.stmt.setBoolean(2, state.isUserCanChange());
@@ -83,9 +87,11 @@ public class InstanceDAO {
             }
         }
         stmt.close();
-        System.out.println("INSERT INTO instance_states (description,user_can_change,instance_id,data_type_id,superior_limit,inferior_limit,initial_value,state_model_id) "
-                + " VALUES (" + state.getId() + ",'" + state.getDescription() + "'," + state.isUserCanChange() + "," + instance.getId()
-                + "," + state.getDataType().getId() + ",'" + state.getSuperiorLimit() + "','" + state.getInferiorLimit() + "','" + state.getInitialValue() + "',"+state.getModelId()+");");
+        if (DeveloperSettings.SHOW_DAO_SQL) {
+            System.out.println("INSERT INTO instance_states (description,user_can_change,instance_id,data_type_id,superior_limit,inferior_limit,initial_value,state_model_id) "
+                    + " VALUES (" + state.getId() + ",'" + state.getDescription() + "'," + state.isUserCanChange() + "," + instance.getId()
+                    + "," + state.getDataType().getId() + ",'" + state.getSuperiorLimit() + "','" + state.getInferiorLimit() + "','" + state.getInitialValue() + "'," + state.getModelId() + ");");
+        }
     }
 
     public void insertPossibleStateContents(State state, Instance instance) throws SQLException {
@@ -107,8 +113,10 @@ public class InstanceDAO {
                     }
                 }
                 statement.close();
-                System.out.println("INSERT INTO possible_action_contents (id,possible_value, default_value, instance_state_id) "
-                        + " VALUES (" + possibleContent.getId() + "," + possibleContent.getValue() + "," + possibleContent.isIsDefault() + "," + state.getId() + ");");
+                if (DeveloperSettings.SHOW_DAO_SQL) {
+                    System.out.println("INSERT INTO possible_action_contents (id,possible_value, default_value, instance_state_id) "
+                            + " VALUES (" + possibleContent.getId() + "," + possibleContent.getValue() + "," + possibleContent.isIsDefault() + "," + state.getId() + ");");
+                }
             }
         }
     }
@@ -126,37 +134,11 @@ public class InstanceDAO {
             // pegar o valor atual
             content.setId(rs.getInt("id"));
             content.setTime(rs.getObject("reading_time", Date.class));
-            content.setValue(parseContent(state.getDataType(), rs.getObject("reading_value")));
+            content.setValue(Content.parseContent(state.getDataType(), rs.getObject("reading_value")));
         }
         rs.close();
         stmt.close();
         return content;
-    }
-
-    private Object parseContent(DataType dataType, Object value) {
-        switch (dataType.getId()) {
-            case 1://<dataType id="1" initialValue="0">byte</dataType>
-                return Byte.parseByte(value.toString());
-            case 2: // <dataType id="2" initialValue="0">short</dataType>
-                return Short.parseShort(value.toString());
-            case 3: // <dataType id="3" initialValue="0">int</dataType>
-                return Integer.parseInt(value.toString());
-            case 4: // <dataType id="4" initialValue="0">long</dataType>
-                return Long.parseLong(value.toString());
-            case 5: // <dataType id="5" initialValue="0.0">float</dataType>
-                return Float.parseFloat(value.toString());
-            case 6: // <dataType id="6" initialValue="0.0">double</dataType>
-                return Double.parseDouble(value.toString());
-            case 7: // <dataType id="7" initialValue="false">boolean</dataType>
-                return Boolean.parseBoolean(value.toString());
-            case 8: // <dataType id="8" initialValue="0">char</dataType>
-                return value.toString();
-            case 9: // <dataType id="9" initialValue="unknown">String</dataType>
-                return value.toString();
-            case 10: // <dataType id="10" initialValue="null">Object</dataType>
-                return value;
-        }
-        return null;
     }
 
     public void insertContent(State state) throws SQLException {
@@ -295,7 +277,7 @@ public class InstanceDAO {
         stmt.close();
         return instance;
     }
-    
+
     public Instance getInstance(int modelId, int entityModelId) throws SQLException {
         Instance instance = null;
         String sql = "SELECT instances.description as instance_desc, representative_class, entity_id, entities.description as entity_desc, instances.model_id,\n"
@@ -327,5 +309,5 @@ public class InstanceDAO {
         stmt.close();
         return instance;
     }
-    
+
 }

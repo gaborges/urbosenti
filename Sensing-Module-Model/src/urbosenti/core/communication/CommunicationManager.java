@@ -7,6 +7,7 @@ package urbosenti.core.communication;
 import java.io.IOException;
 import java.io.StringReader;
 import java.net.SocketTimeoutException;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -30,6 +31,7 @@ import urbosenti.core.data.dao.CommunicationDAO;
 import urbosenti.core.device.model.Agent;
 import urbosenti.core.device.ComponentManager;
 import urbosenti.core.device.DeviceManager;
+import urbosenti.core.device.model.FeedbackAnswer;
 import urbosenti.core.events.Action;
 import urbosenti.core.events.ApplicationEvent;
 import urbosenti.core.events.AsynchronouslyManageableComponent;
@@ -40,7 +42,7 @@ import urbosenti.core.events.SystemEvent;
  *
  * @author Guilherme
  */
-public class CommunicationManager extends ComponentManager implements AsynchronouslyManageableComponent, Runnable {
+public class CommunicationManager extends ComponentManager implements Runnable {
 
     /**
      * int EVENT_INTERFACE_DISCONNECTION = 1; </ br>
@@ -212,10 +214,10 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
     private List<PushServiceReceiver> pushServiceReveivers;
 
     public CommunicationManager(DeviceManager deviceManager) {
-        super(deviceManager);
-        this.normalMessageQueue = new LinkedList<MessageWrapper>();
-        this.priorityMessageQueue = new LinkedList<MessageWrapper>();
-        this.pushServiceReveivers = new ArrayList<PushServiceReceiver>();
+        super(deviceManager, CommunicationDAO.COMPONENT_ID);
+        this.normalMessageQueue = new LinkedList();
+        this.priorityMessageQueue = new LinkedList();
+        this.pushServiceReveivers = new ArrayList();
     }
 
     // if do not setted then when the method onCreate was activated it creates automatically
@@ -225,48 +227,74 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
 
     @Override
     public void onCreate() {
-        // Carregar dados e configurações que serão utilizados para execução em memória
-        // Preparar configurações inicias para execução
-        // Para tanto utilizar o DataManager para acesso aos dados.
-        System.out.println("Activating: " + getClass());
-        this.communicationInterfaces = super.getDeviceManager().getDataManager().getCommunicationDAO().getAvailableInterfaces();
-        this.currentCommunicationInterface = this.communicationInterfaces.get(0);
-//        
+        try {
+            // Carregar dados e configurações que serão utilizados para execução em memória
+            // Preparar configurações inicias para execução
+            // Para tanto utilizar o DataManager para acesso aos dados.
+            System.out.println("Activating: " + getClass());
+            this.communicationInterfaces = super.getDeviceManager().getDataManager().getCommunicationDAO().getAvailableInterfaces();
+            this.currentCommunicationInterface = this.communicationInterfaces.get(0);
+//
 //        this.mobileDataPolicy = 1; // sem mobilidade - Default
 //        this.messagingPolicy = 1;  // Se não der certo avisa a origem da mensagem
 //        this.messageStoragePolicy = 2; // Política de armazenamento de mensagem - Padrão: Apagar todas que foram enviadas com sucesso e armazenar as que não foram enviadas. 
 //        this.reconnectionPolicy = 1;   // Política de reconexão: Padrão - Tentativa em intervalos fixos. Pode ser definido pela aplicação. O padrão é uma nova tentativa a cada 60 segundos
 //        this.uploadMessagingPolicy = 2; //  política de Upload periódico de Mensagens: Sempre que há um relato novo tenta fazer o upload, caso exista conexão, senão espera reconexão. Padrão.
-//        
-        this.mobileDataPolicy = super.getDeviceManager().getDataManager().getCommunicationDAO().getCurrentPreferentialPolicy(CommunicationDAO.MOBILE_DATA_POLICY); // sem mobilidade - Default
-        this.messageStoragePolicy = super.getDeviceManager().getDataManager().getCommunicationDAO().getCurrentPreferentialPolicy(CommunicationDAO.MESSAGE_STORAGE_POLICY); // Política de armazenamento de mensagem - Padrão: Apagar todas que foram enviadas com sucesso e armazenar as que não foram enviadas. 
-        this.reconnectionPolicy = super.getDeviceManager().getDataManager().getCommunicationDAO().getCurrentPreferentialPolicy(CommunicationDAO.RECONNECTION_POLICY);   // Política de reconexão: Padrão - Tentativa em intervalos fixos. Pode ser definido pela aplicação. O padrão é uma nova tentativa a cada 60 segundos
-        this.uploadMessagingPolicy = super.getDeviceManager().getDataManager().getCommunicationDAO().getCurrentPreferentialPolicy(CommunicationDAO.UPLOAD_MESSAGING_POLICY); //  política de Upload periódico de Mensagens: Sempre que há um relato novo tenta fazer o upload, caso exista conexão, senão espera reconexão. Padrão.
-
-        // Setar dinamica a política de mobile data police aqui.
-        // se há politica deve ser setado através das configurações:
-        this.mobileDataQuota = 1000;
-        this.usedMobileData = 0;
-        this.mobileDataPriorityQuota = 2000;
-        // Setar dinamicamente a politica de mensagens   
-
-        // testar se não foi setado os serviços de entraga e reconexão senão criar e iniciar
-        // Testar se os serviços foram iniciados e caso não, iniciá-los
-        //Contadores do escalonador da fila de reports
-        limitNormalMessage = 1;
-        limitPriorityMessage = 4;
-
-        // Intervalo para upload do serviço de upload em 15 segundos
-        this.uploadInterval = 15000;
-        this.uploadRate = 1.0;
-        this.reportsCountSentByUploadInterval = 0;
-        this.limitOfReportsSentByUploadInterval = 20;
-        // Intervalo para reconexão em 60 segundos
-        this.reconnectionAttemptInterval = 60000;
-        if (reconnectionService == null) {
-            this.reconnectionService = new ReconnectionService(this, communicationInterfaces);
-            this.reconnectionService.setReconnectionTime(reconnectionAttemptInterval);
-            this.reconnectionService.setReconnectionMethodOneByTime();
+//
+            this.mobileDataPolicy = super.getDeviceManager().getDataManager().getCommunicationDAO().getCurrentPreferentialPolicy(CommunicationDAO.MOBILE_DATA_POLICY); // sem mobilidade - Default
+            this.messageStoragePolicy = super.getDeviceManager().getDataManager().getCommunicationDAO().getCurrentPreferentialPolicy(CommunicationDAO.MESSAGE_STORAGE_POLICY); // Política de armazenamento de mensagem - Padrão: Apagar todas que foram enviadas com sucesso e armazenar as que não foram enviadas.
+            this.reconnectionPolicy = super.getDeviceManager().getDataManager().getCommunicationDAO().getCurrentPreferentialPolicy(CommunicationDAO.RECONNECTION_POLICY);   // Política de reconexão: Padrão - Tentativa em intervalos fixos. Pode ser definido pela aplicação. O padrão é uma nova tentativa a cada 60 segundos
+            this.uploadMessagingPolicy = super.getDeviceManager().getDataManager().getCommunicationDAO().getCurrentPreferentialPolicy(CommunicationDAO.UPLOAD_REPORTS_POLICY); //  política de Upload periódico de Mensagens: Sempre que há um relato novo tenta fazer o upload, caso exista conexão, senão espera reconexão. Padrão.
+            
+            // Setar dinamica a política de mobile data police aqui.
+            // se há politica deve ser setado através das configurações:
+            this.mobileDataQuota = 1000;
+//      implementar em um futuro distante os estados de dados móveis      
+//        this.mobileDataQuota = (Integer) super.getDeviceManager().getDataManager().getStateDAO()
+//                .getEntityState(CommunicationDAO.COMPONENT_ID, CommunicationDAO.ENTITY_ID_OF_MOBILE_DATA_USAGE, CommunicationDAO.STATE_ID_OF_MOBILE_DATA_USAGE_LIMIT).getCurrentValue();
+            this.usedMobileData = 0;
+            this.mobileDataPriorityQuota = 2000;
+            // Setar dinamicamente a politica de mensagens
+            
+            // testar se não foi setado os serviços de entraga e reconexão senão criar e iniciar
+            // Testar se os serviços foram iniciados e caso não, iniciá-los
+            //Contadores do escalonador da fila de reports
+            limitNormalMessage = 1;
+            limitPriorityMessage = 4;
+            
+            // Intervalo para upload do serviço de upload em 15 segundos (ou 100ms)
+            this.uploadInterval = 15000;
+            this.uploadInterval = Integer.parseInt(super.getDeviceManager().getDataManager().getStateDAO().getEntityState(
+                    CommunicationDAO.COMPONENT_ID, CommunicationDAO.ENTITY_ID_OF_UPLOAD_PERIODIC_REPORTS, 
+                    CommunicationDAO.STATE_ID_OF_UPLOAD_PERIODIC_REPORTS_UPLOAD_INTERVAL).getCurrentValue().toString());
+            this.uploadRate = 1.0;
+            this.uploadRate = Double.parseDouble(super.getDeviceManager().getDataManager().getStateDAO().getEntityState(
+                    CommunicationDAO.COMPONENT_ID, CommunicationDAO.ENTITY_ID_OF_UPLOAD_PERIODIC_REPORTS, 
+                    CommunicationDAO.STATE_ID_OF_UPLOAD_PERIODIC_REPORTS_FOR_UPLOAD_RATE).getCurrentValue().toString());
+            this.reportsCountSentByUploadInterval = 0;
+            this.limitOfReportsSentByUploadInterval = 20;
+            this.limitOfReportsSentByUploadInterval = Integer.parseInt(super.getDeviceManager().getDataManager().getStateDAO().getEntityState(
+                    CommunicationDAO.COMPONENT_ID, CommunicationDAO.ENTITY_ID_OF_UPLOAD_PERIODIC_REPORTS, 
+                    CommunicationDAO.STATE_ID_OF_UPLOAD_PERIODIC_REPORTS_ABOUT_AMOUNT_OF_MESSAGES_UPLOADED_BY_INTERVAL).getCurrentValue().toString());
+            // Intervalo para reconexão em 60 segundos
+            this.reconnectionAttemptInterval = 60000;
+            this.reconnectionAttemptInterval = Integer.parseInt(super.getDeviceManager().getDataManager().getStateDAO().getEntityState(
+                    CommunicationDAO.COMPONENT_ID, CommunicationDAO.ENTITY_ID_OF_RECONNECTION, 
+                    CommunicationDAO.STATE_ID_OF_RECONNECTION_INTERVAL).getCurrentValue().toString());
+            if (reconnectionService == null) {
+                this.reconnectionService = new ReconnectionService(this, communicationInterfaces);
+                this.reconnectionService.setReconnectionTime(reconnectionAttemptInterval);
+                if(Integer.parseInt(super.getDeviceManager().getDataManager().getStateDAO().getEntityState(
+                    CommunicationDAO.COMPONENT_ID, CommunicationDAO.ENTITY_ID_OF_RECONNECTION, 
+                    CommunicationDAO.STATE_ID_OF_RECONNECTION_METHOD).getCurrentValue().toString()) == 1){
+                    this.reconnectionService.setReconnectionMethodOneByTime();
+                } else {
+                    this.reconnectionService.setReconnectionMethodAllByOnce();
+                }
+            }
+        } catch (SQLException ex) {
+            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            throw new Error(ex);
         }
     }
 
@@ -312,10 +340,11 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
      * <li>21 - Desabilitar Interface - interface</li>
      * </ul>
      * @param action contém objeto ação.
+     * @return 
      * 
      */
     @Override
-    public synchronized void applyAction(Action action) {
+    public synchronized FeedbackAnswer applyAction(Action action) {
         Integer policy, genericInteger;
         Double genericDouble;
         Agent agent;
@@ -358,7 +387,7 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
                 // Parâmetro
                 genericInteger = (Integer) action.getParameters().get("interval");
                 // verifica se a política é a estática e se a origem não é o sistema, pois nesse caso somente a aplicação e usuários podem alterar.
-                if(reconnectionPolicy == 1 && !action.getOrigin().getLayer().equals(Agent.LAYER_SYSTEM)){
+                if(reconnectionPolicy == 1 && action.getOrigin().getLayer() != Agent.LAYER_SYSTEM){
                     // Atribuir o valor
                     this.reconnectionService.setReconnectionTime(genericInteger);
                     this.reconnectionAttemptInterval = genericInteger;
@@ -369,7 +398,7 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
                 genericInteger = (Integer) action.getParameters().get("method");
                 agent = (Agent) action.getParameters().get("origin");
                 // verifica se a política é a estática e se a origem não é o sistema, pois nesse caso somente a aplicação e usuários podem alterar.
-                if(reconnectionPolicy == 1 && !action.getOrigin().getLayer().equals(Agent.LAYER_SYSTEM)){
+                if(reconnectionPolicy == 1 && action.getOrigin().getLayer() != Agent.LAYER_SYSTEM){
                     // Verificar o valor
                     if(genericInteger == 1){
                         reconnectionService.setReconnectionMethodOneByTime();
@@ -381,7 +410,7 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
                 break;
             case 7: // Alterar política
                 // Parâmetro
-                if(reconnectionPolicy == 1 && !action.getOrigin().getLayer().equals(Agent.LAYER_SYSTEM)){
+                if(reconnectionPolicy == 1 && action.getOrigin().getLayer() != Agent.LAYER_SYSTEM){
                     // atribuir
                     this.reconnectionPolicy = (Integer) action.getParameters().get("policy");
                 }
@@ -504,6 +533,7 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
                 }
                 break;
         }
+        return null;
     }
 
     /**
@@ -524,7 +554,7 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
          */
         if (message.getSender() == null) {
             message.setSender(new Agent());
-            message.getSender().setLayer("application");
+            message.getSender().setLayer(Agent.LAYER_APPLICATION);
             message.getSender().setUid(getDeviceManager().getUID());
             message.getSender().setDescription("Sensing Module");
         }
@@ -590,7 +620,7 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
          */
         if (message.getSender() == null) {
             message.setSender(new Agent());
-            message.getSender().setLayer("application");
+            message.getSender().setLayer(Agent.LAYER_APPLICATION);
             message.getSender().setUid(getDeviceManager().getUID());
             message.getSender().setDescription("Sensing Module");
         }
@@ -656,7 +686,7 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
          */
         if (message.getSender() == null) {
             message.setSender(new Agent());
-            message.getSender().setLayer("application");
+            message.getSender().setLayer(Agent.LAYER_APPLICATION);
             message.getSender().setUid(getDeviceManager().getUID());
             message.getSender().setDescription("Sensing Module");
         }
@@ -724,7 +754,7 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
         // cria envelope
         if (message.getSender() == null) {
             message.setSender(new Agent());
-            message.getSender().setLayer("application");
+            message.getSender().setLayer(Agent.LAYER_APPLICATION);
             message.getSender().setUid(getDeviceManager().getUID());
             message.getSender().setDescription("Sensing Module");
         }
@@ -764,10 +794,10 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
             if (((Element) header.getElementsByTagName("origin").item(0)).getElementsByTagName("address").getLength() > 0) {
                 msg.getSender().setServiceAddress(((Element) header.getElementsByTagName("origin").item(0)).getElementsByTagName("address").item(0).getTextContent());
             }
-            msg.getSender().setLayer(((Element) header.getElementsByTagName("origin").item(0)).getElementsByTagName("layer").item(0).getTextContent());
+            msg.getSender().setLayer(Integer.parseInt(((Element) header.getElementsByTagName("origin").item(0)).getElementsByTagName("layer").item(0).getTextContent()));
             msg.getTarget().setUid(((Element) header.getElementsByTagName("target").item(0)).getElementsByTagName("uid").item(0).getTextContent());
             msg.getTarget().setServiceAddress(((Element) header.getElementsByTagName("target").item(0)).getElementsByTagName("address").item(0).getTextContent());
-            msg.getTarget().setLayer(((Element) header.getElementsByTagName("target").item(0)).getElementsByTagName("layer").item(0).getTextContent());
+            msg.getTarget().setLayer(Integer.parseInt(((Element) header.getElementsByTagName("target").item(0)).getElementsByTagName("layer").item(0).getTextContent()));
             msg.setContentType(header.getElementsByTagName("contentType").item(0).getTextContent());
             msg.setSubject(header.getElementsByTagName("subject").item(0).getTextContent());
             if (header.getElementsByTagName("anonymousUpload").getLength() > 0) {
@@ -1210,7 +1240,7 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
                 event.setValue(values);
 
                 // Se foi enviado para aplicação avisa também a aplicação
-                if (mw.getMessage().getSender().getLayer().equals(Agent.LAYER_APPLICATION)) {
+                if (mw.getMessage().getSender().getLayer() == Agent.LAYER_APPLICATION) {
                     // cria o evento de Aplicação
                     event = new ApplicationEvent(this);// Event: new Message
                     event.setId(3);
@@ -1228,9 +1258,9 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
                 msg = (Message) parameters[1];
 
                 if (msg != null) {
-                    if (msg.getTarget().getLayer().equals(Agent.LAYER_SYSTEM)) { // if the target is the system
+                    if (msg.getTarget().getLayer() == Agent.LAYER_SYSTEM) { // if the target is the system
                         event = new SystemEvent(this);
-                    } else if (msg.getTarget().getLayer().equals(Agent.LAYER_APPLICATION)) { // if the target is the application
+                    } else if (msg.getTarget().getLayer() == Agent.LAYER_APPLICATION) { // if the target is the application
                         event = new ApplicationEvent(this);
                     }
 
@@ -1284,7 +1314,7 @@ public class CommunicationManager extends ComponentManager implements Asynchrono
                 values.put("target", agent);
 
                 // Event: new Message
-                if (mw.getMessage().getSender().getLayer().equals(Agent.LAYER_SYSTEM)) {
+                if (mw.getMessage().getSender().getLayer() == Agent.LAYER_SYSTEM) {
                     event = new SystemEvent(this);
                 } else {
                     event = new ApplicationEvent(this);

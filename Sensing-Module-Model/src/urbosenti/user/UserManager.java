@@ -4,10 +4,17 @@
  */
 package urbosenti.user;
 
+import java.sql.SQLException;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import urbosenti.core.data.dao.UserDAO;
 import urbosenti.core.device.ComponentManager;
 import urbosenti.core.device.DeviceManager;
+import urbosenti.core.device.model.ActionModel;
+import urbosenti.core.device.model.Component;
+import urbosenti.core.device.model.FeedbackAnswer;
 import urbosenti.core.events.Action;
 import urbosenti.core.events.ApplicationEvent;
 import urbosenti.core.events.AsynchronouslyManageableComponent;
@@ -17,7 +24,7 @@ import urbosenti.core.events.Event;
  *
  * @author Guilherme
  */
-public class UserManager extends ComponentManager implements AsynchronouslyManageableComponent {
+public class UserManager extends ComponentManager {
 
     /**
      * int EVENT_USER_ADDED = 1;
@@ -94,7 +101,7 @@ public class UserManager extends ComponentManager implements AsynchronouslyManag
     private static User loggedUser;
 
     public UserManager(DeviceManager deviceManager) {
-        super(deviceManager);
+        super(deviceManager,UserDAO.COMPONENT_ID);
     }
 
     @Override
@@ -112,11 +119,13 @@ public class UserManager extends ComponentManager implements AsynchronouslyManag
      * </ul>
      *
      * @param action contém objeto ação.
+     * @return 
      *
      */
     @Override
-    public void applyAction(Action action) {
+    public FeedbackAnswer applyAction(Action action) {
         // não tem ações ainda
+        return null;
     }
 
     /**
@@ -612,20 +621,53 @@ public class UserManager extends ComponentManager implements AsynchronouslyManag
     /**
      * Método utilizado para trocar configurações do sistema. Não implementado
      * ainda pois necessita da parte da representação do conhecimento. Além de
-     * definir se será feito de maneira dinâmica ou não. Possivelmente haverá 
+     * definir se será feito de maneira dinâmica ou não. Possivelmente haverá
      * validações em tempo real baseado nas características do conhecimento.
      *
      * @param user
      * @param componentManager
-     * @param objectId
+     * @param entityId
      * @param stateId
      * @param newValue
      * @return
      */
-    public boolean updateSystemPreference(User user, ComponentManager componentManager, int objectId, int stateId, Object newValue) {
-        throw new UnsupportedOperationException("Not supported yet."); 
+    public boolean updateSystemPreference(User user, ComponentManager componentManager, int entityId, int stateId, Object newValue) {
+        return this.updateSystemPreference(user, componentManager.getComponentId(), entityId, stateId, newValue);
+    }
+
+    /**
+     * Método utilizado para trocar configurações do sistema. Não implementado
+     * ainda pois necessita da parte da representação do conhecimento. Além de
+     * definir se será feito de maneira dinâmica ou não. Possivelmente haverá
+     * validações em tempo real baseado nas características do conhecimento.
+     *
+     * @param user
+     * @param componentId
+     * @param entityId
+     * @param stateId
+     * @param newValue
+     * @return
+     */
+    public boolean updateSystemPreference(User user, int componentId, int entityId, int stateId, Object newValue) {
+        // verifica o componente
+        // busca a ação que pode ser executada para alterar este estado
+        ActionModel a = super.getDeviceManager().getDataManager().getUserDAO().getActionStateModel(componentId, entityId, stateId);
+        // Cria uma ação de distema e aplica a ação
+        HashMap<String, Object> hashMap = new HashMap();
+        a.getParameters()
+        Action action = new Action();
+        action.setId(a.getModelId());
+        
+        //action.set
+        for(ComponentManager componentManager : super.getDeviceManager().getComponentManagers()){
+            if(componentManager.getComponentId() == componentId){
+                componentManager.applyAction(action);
+                break;
+            }
+        }
+        
+        throw new UnsupportedOperationException("Not supported yet.");
         //return false;
     }
-    
-    
+
 }

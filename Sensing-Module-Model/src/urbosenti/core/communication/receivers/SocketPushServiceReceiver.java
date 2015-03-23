@@ -41,12 +41,12 @@ public class SocketPushServiceReceiver extends PushServiceReceiver{
 "			<uid>11XYZ</uid>\n" +
 "			<name>Backend Module</name>\n" +
 "			<address>192.168.0.1</address>\n" +
-"			<layer>system</layer>\n" +
+"			<layer>2</layer>\n" +
 "               </origin>\n" +
 "               <target>\n" +
 "			<uid>22XYZ</uid>\n" +
 "                       <address>192.168.0.2</address>\n" +
-" 			<layer>system</layer>\n" +
+" 			<layer>2</layer>\n" +
 "               </target>\n" +
 "               <subject>social interaction</subject>\n" +
 "               <contentType>text/xml</contentType>\n" +

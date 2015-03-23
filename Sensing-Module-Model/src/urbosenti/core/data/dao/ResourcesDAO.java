@@ -9,6 +9,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import urbosenti.core.data.DataManager;
 import urbosenti.core.device.model.Component;
 import urbosenti.core.device.model.Entity;
 import urbosenti.core.device.model.EntityType;
@@ -21,8 +22,10 @@ public class ResourcesDAO {
     public final static int  COMPONENT_ID = 8;
     private final Connection connection;
     private PreparedStatement stmt;
+    private final DataManager dataManager;
 
-    public ResourcesDAO(Connection connection) {
+    public ResourcesDAO(Connection connection, DataManager dataManager) {
+        this.dataManager = dataManager;
         this.connection = connection;
     }
     

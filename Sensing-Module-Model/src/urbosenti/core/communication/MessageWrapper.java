@@ -140,7 +140,7 @@ public class MessageWrapper {
             // origin
             uid.setTextContent(message.getSender().getUid());
             name.setTextContent(message.getSender().getDescription());
-            layer.setTextContent(message.getSender().getLayer());
+            layer.setTextContent(String.valueOf(message.getSender().getLayer()));
             origin.appendChild(uid);
             origin.appendChild(name);
             origin.appendChild(layer);
@@ -151,7 +151,7 @@ public class MessageWrapper {
             name = doc.createElement("name");
             uid.setTextContent(message.getTarget().getUid());
             name.setTextContent(message.getTarget().getDescription());
-            layer.setTextContent(message.getTarget().getLayer());
+            layer.setTextContent(String.valueOf(message.getTarget().getLayer()));
             address.setTextContent(message.getTarget().getAddress());
             target.appendChild(uid);
             target.appendChild(name);

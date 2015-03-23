@@ -4,20 +4,20 @@
  */
 package urbosenti.resources;
 
+import urbosenti.core.data.dao.ResourcesDAO;
 import urbosenti.core.device.ComponentManager;
 import urbosenti.core.device.DeviceManager;
+import urbosenti.core.device.model.FeedbackAnswer;
 import urbosenti.core.events.Action;
-import urbosenti.core.events.AsynchronouslyManageableComponent;
-import urbosenti.core.events.EventManager;
 
 /**
  *
  * @author Guilherme
  */
-public class ResourceManager extends ComponentManager implements AsynchronouslyManageableComponent{
+public class ResourceManager extends ComponentManager {
 
     public ResourceManager(DeviceManager deviceManager) {
-        super(deviceManager);
+        super(deviceManager,ResourcesDAO.COMPONENT_ID);
     }
 
     @Override
@@ -29,7 +29,7 @@ public class ResourceManager extends ComponentManager implements AsynchronouslyM
     }
 
     @Override
-    public void applyAction(Action action) {
+    public FeedbackAnswer applyAction(Action action) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
     

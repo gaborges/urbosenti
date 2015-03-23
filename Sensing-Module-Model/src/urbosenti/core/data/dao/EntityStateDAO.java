@@ -242,7 +242,7 @@ public class EntityStateDAO {
             // pegar o valor atual
             content.setId(rs.getInt("id"));
             content.setTime(rs.getObject("reading_time", Date.class));
-            content.setValue(parseContent(state.getDataType(), (rs.getObject("reading_value"))));
+            content.setValue(Content.parseContent(state.getDataType(), (rs.getObject("reading_value"))));
             if (rs.getInt("monitored_user_instance_id") > 0) {
                 Instance i = new Instance();
                 i.setId(rs.getInt("monitored_user_instance_id"));
@@ -253,33 +253,7 @@ public class EntityStateDAO {
         stmt.close();
         return content;
     }
-
-    private Object parseContent(DataType dataType, Object value) {
-        switch (dataType.getId()) {
-            case 1://<dataType id="1" initialValue="0">byte</dataType>
-                return Byte.parseByte(value.toString());
-            case 2: // <dataType id="2" initialValue="0">short</dataType>
-                return Short.parseShort(value.toString());
-            case 3: // <dataType id="3" initialValue="0">int</dataType>
-                return Integer.parseInt(value.toString());
-            case 4: // <dataType id="4" initialValue="0">long</dataType>
-                return Long.parseLong(value.toString());
-            case 5: // <dataType id="5" initialValue="0.0">float</dataType>
-                return Float.parseFloat(value.toString());
-            case 6: // <dataType id="6" initialValue="0.0">double</dataType>
-                return Double.parseDouble(value.toString());
-            case 7: // <dataType id="7" initialValue="false">boolean</dataType>
-                return Boolean.parseBoolean(value.toString());
-            case 8: // <dataType id="8" initialValue="0">char</dataType>
-                return value.toString();
-            case 9: // <dataType id="9" initialValue="unknown">String</dataType>
-                return value.toString();
-            case 10: // <dataType id="10" initialValue="null">Object</dataType>
-                return value;
-        }
-        return null;
-    }
-
+    
     public void insertContent(State state) throws SQLException {
         String sql = "INSERT INTO entity_state_contents (reading_value,reading_time,monitored_user_instance_id,entity_state_id) "
                 + " VALUES (?,?,?,?);";
@@ -352,12 +326,12 @@ public class EntityStateDAO {
                 + "                entity_states.initial_value, data_type_id, data_types.initial_value as data_initial_value,\n"
                 + "                data_types.description as data_desc\n"
                 + "              FROM entities, entity_states, data_types\n"
-                + "              WHERE entity_states.model_id = 2  AND entities.model_id = 2 AND component_id = 1 "
+                + "              WHERE entity_states.model_id = ?  AND entities.model_id = ? AND component_id = ? "
                 + "               AND data_types.id = data_type_id AND entity_id = entities.id;";
         stmt = this.connection.prepareStatement(sql);
-        stmt.setInt(1, componentId);
+        stmt.setInt(1, stateModelId);
         stmt.setInt(2, entityModelId);
-        stmt.setInt(3, stateModelId);
+        stmt.setInt(3, componentId);
         ResultSet rs = stmt.executeQuery();
         while (rs.next()) {
             state = new State();

@@ -4,8 +4,10 @@
  */
 package urbosenti.localization;
 
+import urbosenti.core.data.dao.LocationDAO;
 import urbosenti.core.device.ComponentManager;
 import urbosenti.core.device.DeviceManager;
+import urbosenti.core.device.model.FeedbackAnswer;
 import urbosenti.core.events.Action;
 import urbosenti.core.events.AsynchronouslyManageableComponent;
 import urbosenti.core.events.EventManager;
@@ -14,10 +16,10 @@ import urbosenti.core.events.EventManager;
  *
  * @author Guilherme
  */
-public class LocalizationManager extends ComponentManager implements AsynchronouslyManageableComponent{
+public class LocalizationManager extends ComponentManager {
 
     public LocalizationManager(DeviceManager deviceManager) {
-        super(deviceManager);
+        super(deviceManager, LocationDAO.COMPONENT_ID);
     }
 
     @Override
@@ -29,7 +31,7 @@ public class LocalizationManager extends ComponentManager implements Asynchronou
     }
 
     @Override
-    public void applyAction(Action action) {
+    public FeedbackAnswer applyAction(Action action) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
     

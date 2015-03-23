@@ -53,7 +53,7 @@ public class EntityDAO {
     public List<Entity> getComponentEntities(Component component) throws SQLException {
         List<Entity> entities = new ArrayList();
         Entity entity = null;
-        String sql = "SELECT entities.id as entity_id, entity_type_id, model_id "
+        String sql = "SELECT entities.id as entity_id, entity_type_id, model_id, "
                 + " entities.description as entity_desc, entity_types.description as type_desc\n"
                 + " FROM entities, entity_types\n"
                 + " WHERE component_id = ? and entity_type_id = entity_types.id;";
@@ -81,8 +81,8 @@ public class EntityDAO {
                 + " FROM entities, entity_types\n"
                 + " WHERE model_id = ? AND component_id = ? AND entity_type_id = entity_types.id;";
         stmt = this.connection.prepareStatement(sql);
-        stmt.setInt(1, componentId);
-        stmt.setInt(2, entityModelId);
+        stmt.setInt(1, entityModelId);
+        stmt.setInt(2, componentId);
         ResultSet rs = stmt.executeQuery();
         if(rs.next()){
             entity = new Entity();

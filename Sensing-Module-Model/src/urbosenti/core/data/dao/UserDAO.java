@@ -11,9 +11,14 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import urbosenti.core.data.DataManager;
+import urbosenti.core.device.model.ActionModel;
 import urbosenti.core.device.model.Component;
 import urbosenti.core.device.model.Entity;
 import urbosenti.core.device.model.EntityType;
+import urbosenti.core.device.model.State;
 import urbosenti.user.User;
 
 /**
@@ -23,11 +28,22 @@ import urbosenti.user.User;
 public class UserDAO {
 
     public static final int COMPONENT_ID = 6; 
+    public static final int ENTITY_ID_OF_USER_MANAGEMENT = 1;
+    public static final int STATE_ID_OF_USER_MANAGEMENT_USER_POSITION = 1;
+    public static final int STATE_ID_OF_USER_MANAGEMENT_USER_LOGIN = 2;
+    public static final int STATE_ID_OF_USER_MANAGEMENT_USER_PASSWORD = 3;
+    public static final int STATE_ID_OF_USER_MANAGEMENT_USER_PRIVACY_TERM = 4;
+    public static final int STATE_ID_OF_USER_MANAGEMENT_SYSTEM_DATA_SHARING_PERMISSION_BY_USER = 5;
+    public static final int STATE_ID_OF_USER_MANAGEMENT_ANONYMOUS_UPLOAD = 6;
+    public static final int STATE_ID_OF_USER_MANAGEMENT_USER_BEING_MONITORED = 7;
+            
     private final List<User> users;
     private final Connection connection;
     private PreparedStatement stmt;
+    private final DataManager dataManager;
 
-    public UserDAO(Object context) {
+    public UserDAO(Object context, DataManager dataManager) {
+        this.dataManager = dataManager;
         this.users = new ArrayList();
         this.connection = (Connection) context;
     }
@@ -220,5 +236,18 @@ public class UserDAO {
         rs.close();
         stmt.close();
         return deviceComponent;
+    }
+
+    public ActionModel getActionStateModel(int componentId, int entityId, int stateId) {
+        try {
+            // primeiro pega o state ID
+            State entityState = this.dataManager.getEntityStateDAO().getEntityState(componentId, entityId, stateId);
+            // depois pega a ação
+            return this.dataManager.getActionModelDAO().getActionState(entityState);
+            throw new UnsupportedOperationException("Not supported yet.");
+        } catch (SQLException ex) {
+            Logger.getLogger(UserDAO.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return null;
     }
 }

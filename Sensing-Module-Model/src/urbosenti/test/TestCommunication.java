@@ -11,6 +11,7 @@ import java.util.logging.Logger;
 import urbosenti.core.communication.Message;
 import urbosenti.core.device.model.Agent;
 import urbosenti.core.device.DeviceManager;
+import urbosenti.core.device.model.Service;
 
 /**
  *
@@ -37,16 +38,19 @@ public class TestCommunication {
     }
     
     public void testaEnvioMensagemSemRetorno(){
+        Service service = new Service();
+        service.setServiceUID("666");
+        service.setApplicationUID("333");
+        service.setAddress("http://localhost:8090/Test2Server/webresources/generic");
         // Envio normal de mensagem sem retorno
         Agent target = new Agent();
-        target.setServiceAddress("http://localhost:8090/Test2Server/webresources/generic");
-        target.setUid("666");
-        target.setLayer("application");
+        target.setRelativeAddress("/");
+        target.setLayer(Agent.LAYER_APPLICATION);
+        target.setService(service);
         target.setDescription("Backend Module");
         
         Agent origin = new Agent();
-        origin.setUid("1232456789");
-        origin.setLayer("application");
+        origin.setLayer(Agent.LAYER_SYSTEM);
         origin.setDescription("Sensing Module");
         
         Message m = new Message();
@@ -68,14 +72,12 @@ public class TestCommunication {
     
     public void testaEnvioMensagemComRetorno(){
         Agent target = new Agent();
-        target.setServiceAddress("http://localhost:8090/Test2Server/webresources/generic/return");
-        target.setUid("666");
-        target.setLayer("application");
+        target.setServiceAddress("http://localhost:8090/Test2Server/webresources/generic");
+        target.setLayer(Agent.LAYER_APPLICATION);
         target.setDescription("Backend Module");
         
         Agent origin = new Agent();
-        origin.setUid("1232456789");
-        origin.setLayer("application");
+        origin.setLayer(Agent.LAYER_APPLICATION);
         origin.setDescription("Sensing Module");
         
         Message m = new Message();
@@ -97,15 +99,19 @@ public class TestCommunication {
     }
     
     public void testaUploadServer(){
+        
+        Service service = new Service();
+        service.setServiceUID("666");
+        service.setApplicationUID("333");
+        service.setAddress("http://localhost:8090/Test2Server/webresources/generic");
         Agent target = new Agent();
-        target.setServiceAddress("http://localhost:8090/Test2Server/webresources/generic");
-        target.setUid("666");
-        target.setLayer("application");
+        target.setService(service);
+        target.setLayer(Agent.LAYER_APPLICATION);
         target.setDescription("Backend Module");
         
         Agent origin = new Agent();
-        origin.setUid("1232456789");
-        origin.setLayer("application");
+        target.setService(service);
+        origin.setLayer(Agent.LAYER_APPLICATION);
         origin.setDescription("Sensing Module");
         
         Message m = new Message();

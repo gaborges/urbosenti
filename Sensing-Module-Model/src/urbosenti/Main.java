@@ -15,8 +15,8 @@ import urbosenti.core.communication.interfaces.WirelessCommunicationInterface;
 import urbosenti.core.communication.receivers.SocketPushServiceReceiver;
 import urbosenti.core.device.model.Agent;
 import urbosenti.core.device.DeviceManager;
-import urbosenti.core.device.model.Service;
 import urbosenti.test.ConcreteApplicationHandler;
+import urbosenti.test.DesktopOperationalSystemDiscovery;
 import urbosenti.test.TestCommunication;
 
 /**
@@ -44,7 +44,6 @@ public class Main {
         deviceManager.addSupportedCommunicationInterface(new MobileDataCommunicationInterface()); // não implementado
         deviceManager.addSupportedCommunicationInterface(new DTNCommunicationInterface()); // não implementado
                 
-        deviceManager.setUID("uid:123456789asdf");
         // Adiciona o AplicationHandler da aplicação para tratamento de eventos da aplicação
         ConcreteApplicationHandler handler = new ConcreteApplicationHandler(deviceManager);
         deviceManager.getEventManager().subscribe(handler);
@@ -52,24 +51,14 @@ public class Main {
         PushServiceReceiver teste = new SocketPushServiceReceiver(deviceManager.getCommunicationManager());
         //DeliveryMessagingService delivaryService = new DeliveryMessagingService(deviceManager.getCommunicationManager());
         deviceManager.addSupportedInputCommunicationInterface(teste);
-             
+         
+        deviceManager.setOSDiscovery(new DesktopOperationalSystemDiscovery());    
         // Atribuir o modelo de conhecimento do dispositivo que será descoberto pelo mecanismo de adaptação --- Falta fazer - Guilherme    
         deviceManager.setDeviceKnowledgeRepresentationModel(new File("deviceKnowledgeModel.xml"),"xmlFile");
         // deviceManager.validateDeviceKnowledgeRepresentationModel();
         // deviceManager.setAgentKnowledgeRepresentationModel(Object o,String dataType);
         // deviceManager.validateAgentKnowledgeRepresentationModel();
-        
-        // Servidor ainda não criado - pegar direto do banco de dados ou a mão
-        Agent backendServer = new Agent();
-        Service service = new Service();
-        backendServer.setService(service);
-        backendServer.setServiceAddress("http://ubicomp.ufgs.br/UrboSenti/webresources/backend"); // Endereço fictício
-        backendServer.setDescription("Backend Application Service");
-        backendServer.setUid(""); // Colocar um UID no backend e atribuir aqui
-        
-        // Adicionar o servidor da aplicação como servidor para upload
-        deviceManager.getCommunicationManager().addUploadServer(backendServer);
-        
+                
         // Timer feito pela aplicação pode ser adicionado usando esse método:
         // deviceManager.getEventManager().setExternalEventTimer(new AndroidEventTimerFactory("AndroidEventTimer"));
         
@@ -77,9 +66,8 @@ public class Main {
 
         // Processo de Descoberta, executa todos os onCreate's de todos os Componentes habilidatos do módudo de sensoriamento
         deviceManager.onCreate();
-        
+      
         /***** Processo de inicialização dos serviços *****/
-        
         deviceManager.getAdaptationManager().start(); 
                
         // Inicia o serviço de upload -- Testar em breve
@@ -91,7 +79,24 @@ public class Main {
         
         Thread t = new Thread(deviceManager.getAdaptationManager());
         t.start();
-                
+        
+        deviceManager.getAdaptationManager().stop();
+        
+        /***** Registro do nó de sensoriamento móvel no servidor de aplicação - falta fazer a função e o servidor *****/
+        
+        // Servidor ainda não criado - pegar direto do banco de dados ou a mão
+        Agent backendServer = deviceManager.getRemoteServices().get(0).getAgent();
+        
+        // Registrar no Servidor Backend
+        deviceManager.registerSensingModule(backendServer);
+        
+        // Adicionar o servidor da aplicação como servidor para upload
+        deviceManager.getCommunicationManager().addUploadServer(backendServer);
+        
+        /***** Inicio das funções e aplicação de sensoriamento *****/
+        // Aplicação de sensoriamento blablabla
+        
+        
         // Testes
         TestCommunication tc = new TestCommunication(deviceManager);
         tc.test1();
@@ -100,15 +105,6 @@ public class Main {
         } catch (InterruptedException ex) {
             Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
         }
-        deviceManager.getAdaptationManager().stop();
-        
-        /***** Registro do nó de sensoriamento móvel no servidor de aplicação - falta fazer a função e o servidor *****/
-        
-        // Registrar no Servidor Backend
-        deviceManager.registerSensingModule(backendServer);
-        
-        /***** Inicio das funções e aplicação de sensoriamento *****/
-        // Aplicação de sensoriamento blablabla
     }
       
     

@@ -27,12 +27,12 @@ import urbosenti.util.DeveloperSettings;
  *
  * @author Guilherme
  */
-public class ActionDAO {
+public class ActionModelDAO {
 
     private final Connection connection;
     private PreparedStatement stmt;
 
-    public ActionDAO(Object context) {
+    public ActionModelDAO(Object context) {
         this.connection = (Connection) context;
     }
 
@@ -165,38 +165,12 @@ public class ActionDAO {
             // pegar o valor atual
             content.setId(rs.getInt("id"));
             content.setTime(rs.getObject("reading_time", Date.class));
-            content.setValue(parseContent(parameter.getDataType(), rs.getObject("reading_value")));
+            content.setValue(Content.parseContent(parameter.getDataType(), rs.getObject("reading_value")));
             content.setScore(rs.getDouble("score"));
         }
         rs.close();
         stmt.close();
         return content;
-    }
-
-    private Object parseContent(DataType dataType, Object value) {
-        switch (dataType.getId()) {
-            case 1://<dataType id="1" initialValue="0">byte</dataType>
-                return Byte.parseByte(value.toString());
-            case 2: // <dataType id="2" initialValue="0">short</dataType>
-                return Short.parseShort(value.toString());
-            case 3: // <dataType id="3" initialValue="0">int</dataType>
-                return Integer.parseInt(value.toString());
-            case 4: // <dataType id="4" initialValue="0">long</dataType>
-                return Long.parseLong(value.toString());
-            case 5: // <dataType id="5" initialValue="0.0">float</dataType>
-                return Float.parseFloat(value.toString());
-            case 6: // <dataType id="6" initialValue="0.0">double</dataType>
-                return Double.parseDouble(value.toString());
-            case 7: // <dataType id="7" initialValue="false">boolean</dataType>
-                return Boolean.parseBoolean(value.toString());
-            case 8: // <dataType id="8" initialValue="0">char</dataType>
-                return value.toString();
-            case 9: // <dataType id="9" initialValue="unknown">String</dataType>
-                return value.toString();
-            case 10: // <dataType id="10" initialValue="null">Object</dataType>
-                return value;
-        }
-        return null;
     }
 
     public void insertContent(Parameter parameter) throws SQLException {

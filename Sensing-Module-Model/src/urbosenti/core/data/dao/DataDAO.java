@@ -18,13 +18,13 @@ import urbosenti.core.device.model.EntityType;
  *
  * @author Guilherme
  */
-public class LocationDAO {
-    public final static int  COMPONENT_ID = 8;
+public class DataDAO {
+    public final static int  COMPONENT_ID = 3;
     private final Connection connection;
     private PreparedStatement stmt;
     private final DataManager dataManager;
 
-    public LocationDAO(Connection connection, DataManager dataManager) {
+    public DataDAO(Connection connection, DataManager dataManager) {
         this.dataManager = dataManager;
         this.connection = connection;
     }

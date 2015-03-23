@@ -93,7 +93,7 @@ public class Content {
             case 6: // <dataType id="6" initialValue="0.0">double</dataType>
                 return Double.parseDouble(value.toString());
             case 7: // <dataType id="7" initialValue="false">boolean</dataType>
-                return Boolean.parseBoolean(value.toString());
+                return (value.toString().toLowerCase().equals("true") || value.toString().equals("1"));
             case 8: // <dataType id="8" initialValue="0">char</dataType>
                 return value.toString().charAt(0);
             case 9: // <dataType id="9" initialValue="unknown">String</dataType>

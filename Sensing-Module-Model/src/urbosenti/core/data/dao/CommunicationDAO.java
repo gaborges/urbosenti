@@ -15,10 +15,12 @@ import java.util.List;
 import urbosenti.core.communication.CommunicationInterface;
 import urbosenti.core.communication.MessageWrapper;
 import urbosenti.core.communication.PushServiceReceiver;
-import static urbosenti.core.data.dao.DeviceDAO.COMPONENT_ID;
+import urbosenti.core.data.DataManager;
 import urbosenti.core.device.model.Component;
+import urbosenti.core.device.model.Content;
 import urbosenti.core.device.model.Entity;
 import urbosenti.core.device.model.EntityType;
+import urbosenti.core.device.model.State;
 
 /**
  *
@@ -56,7 +58,7 @@ public class CommunicationDAO {
     public final static int  MOBILE_DATA_POLICY = 1;
     public final static int  MESSAGE_STORAGE_POLICY = 2;
     public final static int  RECONNECTION_POLICY = 3;
-    public final static int  UPLOAD_MESSAGING_POLICY = 4;
+    public final static int  UPLOAD_REPORTS_POLICY = 4;
     
     // Variáveis temporárias        
     private int mobileDataPolicy;  // Política de uso de dados móveis
@@ -65,20 +67,22 @@ public class CommunicationDAO {
     private int uploadMessagingPolicy; // política de Upload periódico de Mensagens
     private PreparedStatement stmt;
     private List<PushServiceReceiver> inputCommunicationInterfaces;
+    private DataManager dataManager;
 
     public CommunicationDAO() {
         this.mobileDataPolicy = 1; // sem mobilidade - Default
         this.messageStoragePolicy = 2; // Política de armazenamento de mensagem - Padrão: Apagar todas que foram enviadas com sucesso e armazenar as que não foram enviadas. 
         this.reconnectionPolicy = 1;   // Política de reconexão: Padrão - Tentativa em intervalos fixos. Pode ser definido pela aplicação. O padrão é uma nova tentativa a cada 60 segundos
         this.uploadMessagingPolicy = 2; //  política de Upload periódico de Mensagens: Sempre que há um relato novo tenta fazer o upload, caso exista conexão, senão espera reconexão. Padrão.
-        this.availableCommunicationInterfaces = new ArrayList<CommunicationInterface>();
+        this.availableCommunicationInterfaces = new ArrayList();
         countIdMessages = 0;
-        storedMessages = new ArrayList<MessageWrapper>();
+        storedMessages = new ArrayList();
     }
     
-    public CommunicationDAO(Object context) {
+    public CommunicationDAO(Object context, DataManager dataManager) {
         this();
         this.connection = (Connection) context;
+        this.dataManager = dataManager;
     }
     
     private final List<CommunicationInterface> availableCommunicationInterfaces;
@@ -148,34 +152,60 @@ public class CommunicationDAO {
         }
     }
     
-    public int getCurrentPreferentialPolicy (int policyId){
+    public int getCurrentPreferentialPolicy (int policyId) throws SQLException{
         switch(policyId){
             case MOBILE_DATA_POLICY:
+                //return Integer.parseInt(this.dataManager.getEntityStateDAO().getEntityState(COMPONENT_ID, ENTITY_ID_OF_MOBILE_DATA_USAGE, )); - não implementado ainda
                 return mobileDataPolicy;
             case MESSAGE_STORAGE_POLICY:
-                return messageStoragePolicy;
+                return Integer.parseInt(this.dataManager.getEntityStateDAO().getEntityState(COMPONENT_ID, ENTITY_ID_OF_REPORTS_STORAGE,STATE_ID_OF_REPORTS_STORAGE_POLICY).getCurrentValue().toString());
+                //return messageStoragePolicy;
             case RECONNECTION_POLICY:
-                return reconnectionPolicy;
-            case UPLOAD_MESSAGING_POLICY:
-                return uploadMessagingPolicy;
+                return Integer.parseInt(this.dataManager.getEntityStateDAO().getEntityState(COMPONENT_ID, ENTITY_ID_OF_RECONNECTION,STATE_ID_OF_RECONNECTION_POLICY).getCurrentValue().toString());
+                //return reconnectionPolicy;
+            case UPLOAD_REPORTS_POLICY:
+                return Integer.parseInt(this.dataManager.getEntityStateDAO().getEntityState(COMPONENT_ID, ENTITY_ID_OF_UPLOAD_PERIODIC_REPORTS,STATE_ID_OF_UPLOAD_PERIODIC_REPORTS_POLICY).getCurrentValue().toString());
+                //return uploadMessagingPolicy;
         }
         return 0;
     }
     
     // POde ter um evento associado para reconfiguração
-    public void updatePreferentialPolicy(int policyId, int newValue){
+    public void updatePreferentialPolicy(int policyId, int newValue) throws SQLException{
+        State state;
+        Content content;
         switch(policyId){
             case MOBILE_DATA_POLICY:
                 mobileDataPolicy = newValue;
+                //state = this.dataManager.getEntityStateDAO().getEntityState(policyId, policyId, newValue) // Não implementado
+                //this.dataManager.getEntityStateDAO().insertContent(null);
                 break;
             case MESSAGE_STORAGE_POLICY:
                 messageStoragePolicy = newValue;
+                state = this.dataManager.getEntityStateDAO().getEntityState(COMPONENT_ID, ENTITY_ID_OF_REPORTS_STORAGE,STATE_ID_OF_REPORTS_STORAGE_POLICY);
+                content = new Content();
+                content.setValue(newValue);
+                content.setTime(new Date());
+                state.setContent(content);
+                this.dataManager.getEntityStateDAO().insertContent(state);
                 break;
             case RECONNECTION_POLICY:
                 reconnectionPolicy = newValue;
+                state = this.dataManager.getEntityStateDAO().getEntityState(COMPONENT_ID, ENTITY_ID_OF_RECONNECTION,STATE_ID_OF_RECONNECTION_POLICY);
+                content = new Content();
+                content.setValue(newValue);
+                content.setTime(new Date());
+                state.setContent(content);
+                this.dataManager.getEntityStateDAO().insertContent(state);
                 break;
-            case UPLOAD_MESSAGING_POLICY:
+            case UPLOAD_REPORTS_POLICY:
                 uploadMessagingPolicy = newValue;
+                state = this.dataManager.getEntityStateDAO().getEntityState(COMPONENT_ID, ENTITY_ID_OF_UPLOAD_PERIODIC_REPORTS,STATE_ID_OF_UPLOAD_PERIODIC_REPORTS_POLICY);
+                content = new Content();
+                content.setValue(newValue);
+                content.setTime(new Date());
+                state.setContent(content);
+                this.dataManager.getEntityStateDAO().insertContent(state);
                 break;
         }
     }

@@ -84,10 +84,59 @@ public class ServiceDAO {
         stmt.close();
         return services;
     }
+    
+    public List<Service> getDeviceServices() throws SQLException {
+        List<Service> services = new ArrayList();
+        Service service = null;
+        String sql = "SELECT services.id as service_id, services.description as service_description, service_uid, application_uid, address, "
+                + " service_type_id, service_types.description as type_description\n"
+                + " FROM services, service_types\n"
+                + " WHERE service_types.id = service_type_id ;";
+        stmt = this.connection.prepareStatement(sql);
+        ResultSet rs = stmt.executeQuery();
+        while (rs.next()) {
+            service = new Service();
+            service.setId(rs.getInt("service_id"));
+            service.setDescription(rs.getString("service_description"));
+            service.setAddress(rs.getString("address"));
+            service.setServiceUID(rs.getString("service_uid"));
+            service.setApplicationUID((rs.getString("application_uid").length() <= 6)? "" : rs.getString("application_uid"));
+            service.setServiceType(new ServiceType(rs.getInt("service_type_id"), rs.getString("type_description")));
+            service.setAgent(this.getServiceAgent(service));
+            services.add(service);
+        }
+        rs.close();
+        stmt.close();
+        return services;
+    }
+    
+    public Service getService(int id) throws SQLException {
+        Service service = null;
+        String sql = "SELECT services.id as service_id, services.description as service_description, service_uid, application_uid, address, "
+                + " service_type_id, service_types.description as type_description\n"
+                + " FROM services, service_types\n"
+                + " WHERE services.id = ? AND service_types.id = service_type_id ;";
+        stmt = this.connection.prepareStatement(sql);
+        stmt.setInt(1, id);
+        ResultSet rs = stmt.executeQuery();
+        if (rs.next()) {
+            service = new Service();
+            service.setId(rs.getInt("service_id"));
+            service.setDescription(rs.getString("service_description"));
+            service.setAddress(rs.getString("address"));
+            service.setServiceUID(rs.getString("service_uid"));
+            service.setApplicationUID((rs.getString("application_uid").length() <= 6)? "" : rs.getString("application_uid"));
+            service.setServiceType(new ServiceType(rs.getInt("service_type_id"), rs.getString("type_description")));
+            service.setAgent(this.getServiceAgent(service));
+        }
+        rs.close();
+        stmt.close();
+        return service;
+    }
 
     private Agent getServiceAgent(Service service) throws SQLException {
         Agent agent = null;
-        String sql = "SELECT agents.id as agent_id,address, agent_type_id, description\n"
+        String sql = "SELECT agents.id as agent_id,address, agent_type_id, description, layer \n"
                 + " FROM agents, agent_types\n"
                 + " WHERE service_id = ? AND agent_types.id = agent_type_id ;";
         stmt = this.connection.prepareStatement(sql);
@@ -99,7 +148,7 @@ public class ServiceDAO {
             agent.setDescription(rs.getString("description"));
             agent.setRelativeAddress(rs.getString("address"));
             agent.setAgentType(new AgentType(rs.getInt("agent_type_id"), rs.getString("description")));
-            agent.setLayer(Agent.LAYER_SYSTEM);
+            agent.setLayer(rs.getInt("layer"));
             agent.setService(service);
         }
         rs.close();

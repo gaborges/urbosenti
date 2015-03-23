@@ -66,7 +66,7 @@
             <serviceUID>d428f2f7-ae09-4ecf-b57a-b3eaf2362d38</serviceUID> <!-- dinâmicamente na descoberta -->
             <applicationUID>????</applicationUID> <!-- Idealmente dinâmico e deve ser maior que 6 caracteres -->
             <address>http://ubicomp.ufgs.br/UrboSenti/webresources/backend</address>
-            <agent type="1" address="/" addressType="2"></agent>
+            <agent layer="2" type="1" address="/" addressType="2"></agent>
         </service>
     </generalDefinitions>
     <device description="Device's Internal Representation" version="1.0">
@@ -366,12 +366,12 @@
                 </event>
                 <!-- actions -->
                 <action id="1"  description="Remover relato da fila de upload e do banco de dados">
-                    <parameter id="1" optional="false" dataType="3" label="reportId" state="2">
+                    <parameter id="1" optional="false" dataType="3" label="reportId" state="1">
                         <description>Id do Relato</description>
                     </parameter>
                 </action>
                 <action id="2"  description="Alterar limite de relatos armazenados">
-                    <parameter id="1" optional="false" dataType="3" label="limit" state="3">
+                    <parameter id="1" optional="false" dataType="3" label="limit" state="2">
                         <description>Nova quantidade limite</description>
                     </parameter>
                 </action>
@@ -392,7 +392,7 @@
             <entity type="1" description="Reconexão" >
                 <!-- states -->
                 <state id="1" userCanChange="false" description="Intervalo de reconexão em ms">
-                    <content dataType="4" inferiorLimit="1"></content>
+                    <content dataType="4" inferiorLimit="1" initialValue="20000"></content>
                 </state>
                 <state id="2" userCanChange="false" description="Método de reconexão">
                     <content dataType="3" inferiorLimit="1" superiorLimit="2" initialValue="1">
@@ -448,14 +448,10 @@
                     <content dataType="3" inferiorLimit="1" initialValue="10"></content>
                 </state>
                 <state id="2" userCanChange="true" description="Intervalo entre uploads (em milissegundos)">
-                    <content dataType="4" inferiorLimit="1" initialValue="100">
-                        <value>1</value>
-                        <value>2</value>
-                    </content>
+                    <content dataType="4" inferiorLimit="1" initialValue="100"></content>
                 </state>
                 <state id="3" userCanChange="false" description="Taxa de upload (inicial 100%)">
-                    <content dataType="6" inferiorLimit="0.0" superiorLimit="1.0" initialValue="1.0">
-                    </content>
+                    <content dataType="6" inferiorLimit="0.0" superiorLimit="1.0" initialValue="1.0"></content>
                 </state>
                 <state id="4" userCanChange="false" description="Executando?">
                     <content dataType="7" initialValue="false"></content>
@@ -805,7 +801,7 @@
             <entity type="1" description="Gerenciamento do Usuário">
                 <!-- intances - Usuarios estaticos e iniciais podem ser adicionados aqui, contudo devem ter ids únicos entre todas as instâncias do sistema -->
                 <!-- status -->
-                <state id="1" userCanChange="true" description="Ordem da interface" instanceState="true">
+                <state id="1" userCanChange="true" description="Ordem do usuário" instanceState="true">
                     <content dataType="3" inferiorLimit="0"></content>
                 </state>
                 <state id="2" userCanChange="true" description="Login do usuário" instanceState="true">

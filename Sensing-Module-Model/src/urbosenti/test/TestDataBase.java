@@ -53,20 +53,16 @@ public class TestDataBase {
 
         // Adicionar as interfaces de comunicação suportadas --- Inicialmente manual. Após adicionar um processo automático
         deviceManager.addSupportedCommunicationInterface(new WiredCommunicationInterface());
-
-        deviceManager.setUID("uid:123456789asdf");
+        deviceManager.setOSDiscovery(new DesktopOperationalSystemDiscovery());
         // Adiciona o AplicationHandler da aplicação para tratamento de eventos da aplicação
         ConcreteApplicationHandler handler = new ConcreteApplicationHandler(deviceManager);
         deviceManager.getEventManager().subscribe(handler);
         // Execução - inicia todos os serviços e threads em background. Intanciar serviço de recebimento de mensagens
         PushServiceReceiver teste = new SocketPushServiceReceiver(deviceManager.getCommunicationManager());
         //DeliveryMessagingService delivaryService = new DeliveryMessagingService(deviceManager.getCommunicationManager());
-
+        deviceManager.addSupportedInputCommunicationInterface(teste);
         // Atribuir o modelo de conhecimento do dispositivo que será descoberto pelo mecanismo de adaptação --- Falta fazer - Guilherme    
         deviceManager.setDeviceKnowledgeRepresentationModel(new File("deviceKnowledgeModel.xml"), "xmlFile");
-        // deviceManager.validateDeviceKnowledgeRepresentationModel();
-        // deviceManager.setAgentKnowledgeRepresentationModel(Object o,String dataType);
-        // deviceManager.validateAgentKnowledgeRepresentationModel();
 
         /**
          * *** Processo de descoberta das configurações adicionadas ****
@@ -78,6 +74,7 @@ public class TestDataBase {
 
         Entity entity = new Entity();
         entity.setId(1);
+        if(true) return;
         try {
             /**
              * **** Adição e consulta de conteúdo *****
@@ -125,7 +122,7 @@ public class TestDataBase {
 //        } catch (SQLException ex) {
 //            Logger.getLogger(TestDataBase.class.getName()).log(Level.SEVERE, null, ex);
 //        }
-
+            
             /**
              * **** Retornar o modelo geral do dispositivo *****
              */

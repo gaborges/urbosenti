@@ -19,7 +19,7 @@ import javax.xml.parsers.ParserConfigurationException;
 import org.xml.sax.SAXException;
 import urbosenti.core.communication.CommunicationInterface;
 import urbosenti.core.communication.PushServiceReceiver;
-import urbosenti.core.data.dao.ActionDAO;
+import urbosenti.core.data.dao.ActionModelDAO;
 import urbosenti.core.data.dao.AdaptationDAO;
 import urbosenti.core.data.dao.AgentAddressTypeDAO;
 import urbosenti.core.data.dao.AgentCommunicationLanguageDAO;
@@ -29,23 +29,26 @@ import urbosenti.core.data.dao.CommunicativeActDAO;
 import urbosenti.core.data.dao.ComponentDAO;
 import urbosenti.core.data.dao.ConcernsDAO;
 import urbosenti.core.data.dao.ContextDAO;
+import urbosenti.core.data.dao.DataDAO;
 import urbosenti.core.data.dao.DataTypeDAO;
 import urbosenti.core.data.dao.DeviceDAO;
 import urbosenti.core.data.dao.EntityDAO;
 import urbosenti.core.data.dao.EntityTypeDAO;
-import urbosenti.core.data.dao.EventDAO;
+import urbosenti.core.data.dao.EventModelDAO;
 import urbosenti.core.data.dao.ImplementationTypeDAO;
 import urbosenti.core.data.dao.InstanceDAO;
 import urbosenti.core.data.dao.InteractionDirectionDAO;
 import urbosenti.core.data.dao.InteractionTypeDAO;
 import urbosenti.core.data.dao.ServiceDAO;
 import urbosenti.core.data.dao.EntityStateDAO;
+import urbosenti.core.data.dao.EventDAO;
 import urbosenti.core.data.dao.LocationDAO;
 import urbosenti.core.data.dao.ResourcesDAO;
 import urbosenti.core.data.dao.ServiceTypeDAO;
 import urbosenti.core.data.dao.TargetOriginDAO;
 import urbosenti.core.device.ComponentManager;
 import urbosenti.core.device.DeviceManager;
+import urbosenti.core.device.model.FeedbackAnswer;
 import urbosenti.core.events.Action;
 import urbosenti.core.events.AsynchronouslyManageableComponent;
 
@@ -53,11 +56,12 @@ import urbosenti.core.events.AsynchronouslyManageableComponent;
  *
  * @author Guilherme
  */
-public class DataManager extends ComponentManager implements AsynchronouslyManageableComponent{
+public class DataManager extends ComponentManager {
 
     private final List<CommunicationInterface> supportedCommunicationInterfaces;
     private final List<PushServiceReceiver> supportedInputCommunicationInterfaces;
     private CommunicationDAO communicationDAO;
+    private EventDAO eventDAO;
     private UserDAO userDAO;
     private Object knowledgeRepresentation;
     private String knowledgeDataType;
@@ -77,8 +81,8 @@ public class DataManager extends ComponentManager implements AsynchronouslyManag
     private ComponentDAO componentDAO;
     private EntityDAO entityDAO;
     private EntityStateDAO stateDAO;
-    private EventDAO eventDAO;
-    private ActionDAO actionDAO;
+    private EventModelDAO eventModelDAO;
+    private ActionModelDAO actionModelDAO;
     private InstanceDAO instanceDAO;
     private AdaptationDAO adaptationDAO;
     private LocationDAO locationDAO;
@@ -86,9 +90,10 @@ public class DataManager extends ComponentManager implements AsynchronouslyManag
     private ResourcesDAO resourcesDAO;
     private ConcernsDAO concernsDAO;
     private ServiceTypeDAO serviceTypeDAO;
+    private DataDAO dataDAO;
     
     public DataManager(DeviceManager deviceManager) {
-        super(deviceManager);
+        super(deviceManager,DataDAO.COMPONENT_ID);
         this.supportedCommunicationInterfaces = new ArrayList<CommunicationInterface>();
         this.knowledgeRepresentation = null;
         this.supportedInputCommunicationInterfaces = new ArrayList();
@@ -116,13 +121,18 @@ public class DataManager extends ComponentManager implements AsynchronouslyManag
             Logger.getLogger(DataManager.class.getName()).log(Level.SEVERE, null, ex);
             throw new Error("Error during the database creation!");
         }
-        // instancia todos os DAO;
-        communicationDAO = new CommunicationDAO(connection);
-        userDAO = new UserDAO(connection);
-        adaptationDAO = new AdaptationDAO(connection);
-        contextDAO = new ContextDAO(connection);
-        locationDAO = new LocationDAO(connection);
-        concernsDAO = new ConcernsDAO(connection);
+        // Cria uma instância para cada DAO;
+        // DAO dos componentes
+        deviceDAO = new DeviceDAO(connection,this);
+        communicationDAO = new CommunicationDAO(connection,this);
+        userDAO = new UserDAO(connection,this);
+        adaptationDAO = new AdaptationDAO(connection,this);
+        contextDAO = new ContextDAO(connection,this);
+        locationDAO = new LocationDAO(connection,this);
+        concernsDAO = new ConcernsDAO(connection,this);
+        dataDAO = new DataDAO(connection,this);
+        eventDAO = new EventDAO(connection,this);
+        resourcesDAO = new ResourcesDAO(connection,this);
         // General Definition DAOs
         this.agentTypeDAO = new AgentTypeDAO(connection);
         this.serviceTypeDAO = new ServiceTypeDAO(connection);
@@ -135,15 +145,14 @@ public class DataManager extends ComponentManager implements AsynchronouslyManag
         this.interactionDirectionDAO = new InteractionDirectionDAO(connection);
         this.targetOriginDAO = new TargetOriginDAO(connection);
         this.agentAddressTypeDAO = new AgentAddressTypeDAO(connection);
-        this.deviceDAO = new DeviceDAO(connection);
         this.serviceDAO = new ServiceDAO(connection);
         this.agentDAO = new AgentDAO(connection);
         // Device DAO
         this.componentDAO = new ComponentDAO(connection);
         this.entityDAO = new EntityDAO(connection);
         this.stateDAO = new EntityStateDAO(connection);
-        this.eventDAO = new EventDAO(connection);
-        this.actionDAO = new ActionDAO(connection);
+        this.eventModelDAO = new EventModelDAO(connection);
+        this.actionModelDAO = new ActionModelDAO(connection);
         this.instanceDAO = new InstanceDAO(connection);
         // Carrega interfaces de comunicação disponíveis (testa disponibilidade antes de executar - lookback)
         for(CommunicationInterface ci : supportedCommunicationInterfaces){
@@ -161,9 +170,14 @@ public class DataManager extends ComponentManager implements AsynchronouslyManag
         }
         // Carrega interfaces de comunicação de entrada
         this.communicationDAO.addAvailableInputCommunicationInterfaces(supportedInputCommunicationInterfaces);
-        // Verifica se o conhecimento foi adicionado
+        // Verifica se o conhecimento foi adicionado, se não foi busca o padrão
         if (this.knowledgeRepresentation == null){
-            throw new Error("Knowledge representation do not specified!");
+            this.knowledgeRepresentation = new File("deviceKnowledgeModel.xml");
+            this.knowledgeDataType = "xmlFile";
+            // caso o arquivo são exista então 
+            if(!((File)this.knowledgeRepresentation).exists()){
+                throw new Error("Knowledge representation was not specified or not exists!");
+            }
         }
         // Carregar dados e configurações que serão utilizados para execução em memória
         if (this.knowledgeDataType.equals("xmlFile")) {
@@ -216,7 +230,7 @@ public class DataManager extends ComponentManager implements AsynchronouslyManag
     }
 
     @Override
-    public void applyAction(Action action) {
+    public FeedbackAnswer applyAction(Action action) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
     
@@ -293,12 +307,12 @@ public class DataManager extends ComponentManager implements AsynchronouslyManag
         return stateDAO;
     }
 
-    public EventDAO getEventDAO() {
-        return eventDAO;
+    public EventModelDAO getEventModelDAO() {
+        return eventModelDAO;
     }
 
-    public ActionDAO getActionDAO() {
-        return actionDAO;
+    public ActionModelDAO getActionModelDAO() {
+        return actionModelDAO;
     }
 
     public InstanceDAO getInstanceDAO() {
@@ -327,6 +341,14 @@ public class DataManager extends ComponentManager implements AsynchronouslyManag
 
     public ServiceTypeDAO getServiceTypeDAO() {
         return serviceTypeDAO;
+    }
+
+    public EventDAO getEventDAO() {
+        return eventDAO;
+    }
+
+    public EntityStateDAO getStateDAO() {
+        return stateDAO;
     }
 
     public void addSupportedInputCommunicationInterface(PushServiceReceiver inputCommunicationInterface) {

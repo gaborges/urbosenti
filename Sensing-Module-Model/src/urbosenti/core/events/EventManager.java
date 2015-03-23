@@ -9,6 +9,9 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import urbosenti.adaptation.AdaptationManager;
+import urbosenti.core.device.ComponentManager;
+import urbosenti.core.device.DeviceManager;
+import urbosenti.core.device.model.FeedbackAnswer;
 import urbosenti.core.events.timer.EventTimer;
 import urbosenti.core.events.timer.EventTimerFactory;
 import urbosenti.core.events.timer.TriggerRequest;
@@ -18,7 +21,7 @@ import urbosenti.core.events.timer.UrboSentiEventTimerFactory;
  *
  * @author Guilherme
  */
-public class EventManager implements AsynchronouslyManageableComponent {
+public class EventManager extends ComponentManager {
 
     /**
      * int EVENT_TIME_TRIGGER_ACHIEVED = 1;
@@ -32,6 +35,7 @@ public class EventManager implements AsynchronouslyManageableComponent {
     public static final int METHOD_ONLY_INTERVAL = 1;
     public static final int METHOD_ONLY_DATE = 2;
     public static final int METHOD_DATE_PLUS_REPEATED_INTERVALS = 3;
+    public static final long DEFAULT_SYNCHRONOUS_EVENT_TIMEOUT = 20000;
 
     //private Timer timer;
     private final List<EventTimer> eventTimerWorkers;
@@ -41,18 +45,24 @@ public class EventManager implements AsynchronouslyManageableComponent {
     // Fábrica responsável por criar os objetos
     private EventTimerFactory eventTimerFactory;
 
-    public EventManager(AdaptationManager systemHandler) {
-        this();
+    public EventManager(DeviceManager deviceManager, AdaptationManager systemHandler) {
+        this(deviceManager);
         this.systemHandler = systemHandler;
         this.enableSystemHandler = true;
+    }
+
+    public EventManager(DeviceManager deviceManager) {
+        super(deviceManager, urbosenti.core.data.dao.EventDAO.COMPONENT_ID);
+        this.systemHandler = null;
+        this.enableSystemHandler = false;
+        this.applicationHandlers = new ArrayList();
+        this.eventTimerWorkers = new ArrayList();
         this.eventTimerFactory = new UrboSentiEventTimerFactory();
     }
 
-    public EventManager() {
-        this.systemHandler = null;
-        this.enableSystemHandler = false;
-        this.applicationHandlers = new ArrayList<ApplicationHandler>();
-        this.eventTimerWorkers = new ArrayList<EventTimer>();
+    @Override
+    public void onCreate() {
+        System.out.println("Activating: " + getClass());
     }
 
     public void newEvent(Event event) {
@@ -66,6 +76,7 @@ public class EventManager implements AsynchronouslyManageableComponent {
             /* if is a system event foward to the SystemHandler*/
             case Event.SYSTEM_EVENT:
                 if (systemHandler != null && enableSystemHandler) { /* if the SystemHandler is inactive the message is sent to the Application Handler*/
+
                     systemHandler.newEvent(event);
                 } else {
                     for (ApplicationHandler ah : applicationHandlers) {
@@ -76,10 +87,32 @@ public class EventManager implements AsynchronouslyManageableComponent {
         }
     }
 
+    /**
+     * Retorna uma ação para o evento síncrono.
+     *
+     * @param event
+     * @return Retorna uma ação, se retornal null então o tempo foi expirado.
+     * Utiliza o tempo padrão de 20s para limite da resposta;
+     */
+    public Action newSynchronousEvent(Event event) {
+        return this.newSynchronousEvent(event, DEFAULT_SYNCHRONOUS_EVENT_TIMEOUT);
+    }
+
+    /**
+     * Retorna uma ação para o evento síncrono.
+     *
+     * @param event
+     * @param timeout
+     * @return Retorna uma ação, se retornal null então o tempo foi expirado.
+     */
+    public Action newSynchronousEvent(Event event, long timeout) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
     public void setSystemHandler(AdaptationManager systemHandler) {
         this.systemHandler = systemHandler;
     }
-        
+
     public void enableSystemHandler() {
         this.enableSystemHandler = true;
     }
@@ -102,11 +135,13 @@ public class EventManager implements AsynchronouslyManageableComponent {
      * <li>1 - Adicionar um gatilho temporal de evento</li>
      * <li>2 - Cancelar gatilho</li>
      * </ul>
+     *
      * @param action contém objeto ação.
-     * 
+     * @return
+     *
      */
     @Override
-    public synchronized void applyAction(Action action) {
+    public synchronized FeedbackAnswer applyAction(Action action) {
         TriggerRequest tr;
         switch (action.getId()) {
             case 1: // 1 - Adicionar um gatilho de tempo
@@ -153,8 +188,9 @@ public class EventManager implements AsynchronouslyManageableComponent {
 //                else System.out.println("Não Achou :'(");
                 break;
         }
+        return null;
     }
-    
+
     /**
      * Nesta função os eventos gerados pelo gatilho de tempo, diferentemente dos
      * demais componentes, são enviados diretamente para quem realizou a
@@ -163,6 +199,7 @@ public class EventManager implements AsynchronouslyManageableComponent {
      * <ul>
      * <li>EventManager.EVENT_TIME_TRIGGER_ACHIEVED - Evento agendado</li>
      * </ul>
+     *
      * @param eventId identificador do evento citado acima
      * @param params Parâmetros oriundo dos objetos do componente <br><br>
      * @see #EVENT_TIME_TRIGGER_ACHIEVED
@@ -213,9 +250,10 @@ public class EventManager implements AsynchronouslyManageableComponent {
 
     /**
      *
-     * @param externalEventTimerFactory contem a Fábrica que foi desenvolvida para o sistema operacional nativo
+     * @param externalEventTimerFactory contem a Fábrica que foi desenvolvida
+     * para o sistema operacional nativo
      */
-    public void setExternalEventTimer(EventTimerFactory externalEventTimerFactory){
-          this.eventTimerFactory = externalEventTimerFactory;
+    public void setExternalEventTimer(EventTimerFactory externalEventTimerFactory) {
+        this.eventTimerFactory = externalEventTimerFactory;
     }
 }

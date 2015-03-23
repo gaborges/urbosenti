@@ -43,6 +43,24 @@ public class AgentTypeDAO {
         this.connection = (Connection) context;
     }
 
+    public AgentType get(int id) throws SQLException {
+        AgentType agentType = null;
+        String sql = "SELECT id, description "
+                + "FROM agent_types\n"
+                + "WHERE id = ?;";
+        stmt = this.connection.prepareStatement(sql);
+        stmt.setInt(1, id);
+        ResultSet rs = stmt.executeQuery();
+        if (rs.next()) {
+            agentType = new AgentType();
+            agentType.setId(rs.getInt("id"));
+            agentType.setDescription(rs.getString("description"));
+        }
+        rs.close();
+        stmt.close();
+        return agentType;
+    }
+
     public void insert(AgentType type) throws SQLException {
         String sql = "INSERT INTO agent_types (id, description) "
                 + "VALUES (?,?);";
@@ -189,7 +207,7 @@ public class AgentTypeDAO {
             // pegar o valor atual
             content.setId(rs.getInt("id"));
             content.setTime(rs.getObject("reading_time", Date.class));
-            content.setValue(parseContent(state.getDataType(), rs.getObject("reading_value")));
+            content.setValue(Content.parseContent(state.getDataType(), rs.getObject("reading_value")));
         }
         rs.close();
         stmt.close();
@@ -234,7 +252,7 @@ public class AgentTypeDAO {
             // pegar o valor atual
             content.setId(rs.getInt("content_id"));
             content.setTime(rs.getObject("reading_time", Date.class));
-            content.setValue(parseContent(parameter.getDataType(), rs.getObject("reading_value")));
+            content.setValue(Content.parseContent(parameter.getDataType(), rs.getObject("reading_value")));
             content.setScore(rs.getDouble("score"));
             content.setMessage(new AgentMessage());
             content.getMessage().setId(rs.getInt("message_id"));
@@ -243,32 +261,6 @@ public class AgentTypeDAO {
         rs.close();
         stmt.close();
         return content;
-    }
-
-    private Object parseContent(DataType dataType, Object value) {
-        switch (dataType.getId()) {
-            case 1://<dataType id="1" initialValue="0">byte</dataType>
-                return Byte.parseByte(value.toString());
-            case 2: // <dataType id="2" initialValue="0">short</dataType>
-                return Short.parseShort(value.toString());
-            case 3: // <dataType id="3" initialValue="0">int</dataType>
-                return Integer.parseInt(value.toString());
-            case 4: // <dataType id="4" initialValue="0">long</dataType>
-                return Long.parseLong(value.toString());
-            case 5: // <dataType id="5" initialValue="0.0">float</dataType>
-                return Float.parseFloat(value.toString());
-            case 6: // <dataType id="6" initialValue="0.0">double</dataType>
-                return Double.parseDouble(value.toString());
-            case 7: // <dataType id="7" initialValue="false">boolean</dataType>
-                return Boolean.parseBoolean(value.toString());
-            case 8: // <dataType id="8" initialValue="0">char</dataType>
-                return value.toString();
-            case 9: // <dataType id="9" initialValue="unknown">String</dataType>
-                return value.toString();
-            case 10: // <dataType id="10" initialValue="null">Object</dataType>
-                return value;
-        }
-        return null;
     }
 
     public void insertContent(Parameter parameter) throws SQLException {
@@ -591,7 +583,7 @@ public class AgentTypeDAO {
                 content.setTime(rs.getDate("reading_time"));
             }
             content.setParameter(this.getParameter(content));
-            content.setValue(this.parseContent(content.getParameter().getDataType(),rs.getObject("reading_value")));
+            content.setValue(Content.parseContent(content.getParameter().getDataType(), rs.getObject("reading_value")));
             content.setMessage(message);
             contents.add(content);
         }

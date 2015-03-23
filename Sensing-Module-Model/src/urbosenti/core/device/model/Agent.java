@@ -12,11 +12,11 @@ import java.util.List;
  */
 public class Agent {
 
-    public static final String LAYER_SYSTEM = "system";
-    public static final String LAYER_APPLICATION = "application";
+    public static final int LAYER_SYSTEM = 2;
+    public static final int LAYER_APPLICATION = 1;
 
     private String uid;
-    private String layer;
+    private int layer;
     private String description;
     private int id;
     private String address;
@@ -26,12 +26,15 @@ public class Agent {
     private AddressAgentType addressType;
     private String serviceAddress;
     private Service service;
+
+    public Agent() {
+        layer = LAYER_APPLICATION;
+    }
     
-    /** Remover métodos em breve, pois o UID está no serviço */
     public String getUid() {
         return uid;
     }
-    /** Remover métodos em breve, pois o UID está no serviço */
+
     public void setUid(String uid) {
         this.uid = uid;
     }
@@ -40,7 +43,7 @@ public class Agent {
      * @return Retorna a camada do agente: Agent.LAYER_SYSTEM = "system";
      * Agent.LAYER_APPLICATION = "application";
      */
-    public String getLayer() {
+    public int getLayer() {
         return layer;
     }
 
@@ -49,7 +52,7 @@ public class Agent {
      * @param layer pode conter os valores: Agent.LAYER_SYSTEM = "system";
      * Agent.LAYER_APPLICATION = "application";
      */
-    public void setLayer(String layer) {
+    public void setLayer(int layer) {
         this.layer = layer;
     }
     

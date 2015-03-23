@@ -5,6 +5,8 @@ import java.util.List;
 
 public class AgentType {
 
+    public static final int NO_RELATED_AGENT = 0;
+    public static final int BACKEND_SYSTEM_SERVICE = 1;
     private int id;
     private String description;
     private List<Interaction> interaction;

@@ -27,12 +27,13 @@ public class AgentDAO {
     }
 
     public void insert(Agent agent) throws SQLException {
-        String sql = "INSERT INTO agents ( address, agent_type_id, service_id) "
-                + "VALUES (?,?,?);";
+        String sql = "INSERT INTO agents ( address, agent_type_id, service_id, layer) "
+                + "VALUES (?,?,?,?);";
         stmt = this.connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
         stmt.setString(1, agent.getRelativeAddress());
         stmt.setInt(2, agent.getAgentType().getId());
         stmt.setInt(3, agent.getService().getId());
+        stmt.setInt(4, agent.getLayer());
         stmt.execute();
         try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
             if (generatedKeys.next()) {
@@ -43,8 +44,8 @@ public class AgentDAO {
         }
         stmt.close();
         if (DeveloperSettings.SHOW_DAO_SQL) {
-            System.out.println("INSERT INTO agents (id, address, agent_type_id, service_id)  "
-                    + " VALUES (" + agent.getId() + ",'" + agent.getAddress() + "'," + agent.getAgentType().getId() + "," + agent.getService().getId() + ");");
+            System.out.println("INSERT INTO agents (id, address, agent_type_id, service_id, layer)  "
+                    + " VALUES (" + agent.getId() + ",'" + agent.getAddress() + "'," + agent.getAgentType().getId() + "," + agent.getService().getId() +","+ agent.getLayer() +");");
         }
     }
 
