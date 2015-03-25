@@ -75,6 +75,10 @@ public class EventModelDAO {
                 statement.setString(1, parameter.getDescription());
                 statement.setBoolean(2, parameter.isOptional());
                 statement.setString(3, parameter.getLabel());
+                //  trata o tipo de dado do estado
+                parameter.setSuperiorLimit(Content.parseContent(parameter.getDataType(), parameter.getSuperiorLimit()));
+                parameter.setInferiorLimit(Content.parseContent(parameter.getDataType(), parameter.getInferiorLimit()));
+                parameter.setInitialValue(Content.parseContent(parameter.getDataType(), parameter.getInitialValue()));
                 statement.setObject(4, parameter.getSuperiorLimit());
                 statement.setObject(5, parameter.getInferiorLimit());
                 statement.setObject(6, parameter.getInitialValue());
@@ -113,7 +117,7 @@ public class EventModelDAO {
         if (parameter.getPossibleContents() != null) {
             for (PossibleContent possibleContent : parameter.getPossibleContents()) {
                 statement = this.connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
-                statement.setObject(1, possibleContent.getValue());
+                statement.setObject(1, Content.parseContent(parameter.getDataType(),possibleContent.getValue()));
                 statement.setBoolean(2, possibleContent.isIsDefault());
                 statement.setInt(3, parameter.getId());
                 statement.execute();
@@ -127,7 +131,7 @@ public class EventModelDAO {
                 statement.close();
                 if (DeveloperSettings.SHOW_DAO_SQL) {
                     System.out.println("INSERT INTO possible_event_contents (id,possible_value, default_value, event_parameter_id) "
-                            + " VALUES (" + possibleContent.getId() + "," + possibleContent.getValue() + "," + possibleContent.isIsDefault() + "," + parameter.getId() + ");");
+                            + " VALUES (" + possibleContent.getId() + "," + Content.parseContent(parameter.getDataType(),possibleContent.getValue()) + "," + possibleContent.isIsDefault() + "," + parameter.getId() + ");");
                 }
             }
         }
@@ -175,7 +179,7 @@ public class EventModelDAO {
         String sql = "INSERT INTO event_contents (reading_value,reading_time,event_parameter_id) "
                 + " VALUES (?,?,?);";
         this.stmt = this.connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
-        this.stmt.setObject(1, parameter.getContent().getValue());
+        this.stmt.setObject(1, Content.parseContent(parameter.getDataType(),parameter.getContent().getValue()));
         this.stmt.setObject(2, parameter.getContent().getTime());
         this.stmt.setInt(3, parameter.getId());
         this.stmt.execute();
@@ -189,7 +193,7 @@ public class EventModelDAO {
         stmt.close();
         if (DeveloperSettings.SHOW_DAO_SQL) {
             System.out.println("INSERT INTO event_contents (id,reading_value,reading_time,event_parameter_id) "
-                    + " VALUES (" + parameter.getContent().getId() + ",'" + parameter.getContent().getValue() + "',"
+                    + " VALUES (" + parameter.getContent().getId() + ",'" + Content.parseContent(parameter.getDataType(),parameter.getContent().getValue()) + "',"
                     + ",'" + parameter.getContent().getTime().getTime() + "'," + "," + parameter.getId() + ");");
         }
     }
@@ -259,19 +263,19 @@ public class EventModelDAO {
             parameter.setId(rs.getInt("parameter_id"));
             parameter.setLabel(rs.getString("parameter_label"));
             parameter.setDescription(rs.getString("parameter_desc"));
-            parameter.setInferiorLimit(rs.getObject("inferior_limit"));
-            parameter.setSuperiorLimit(rs.getObject("superior_limit"));
-            parameter.setInitialValue(rs.getObject("initial_value"));
-            parameter.setOptional(rs.getBoolean("optional"));
-            if(rs.getInt("entity_state_id") > 0){
-                EntityStateDAO dao = new EntityStateDAO(connection);
-                parameter.setRelatedState(dao.getState(rs.getInt("entity_state_id")));
-            }
             DataType type = new DataType();
             type.setId(rs.getInt("data_type_id"));
             type.setDescription(rs.getString("data_desc"));
             type.setInitialValue(rs.getObject("data_initial_value"));
             parameter.setDataType(type);
+            parameter.setInferiorLimit(Content.parseContent(type, rs.getObject("inferior_limit")));
+            parameter.setSuperiorLimit(Content.parseContent(type,rs.getObject("superior_limit")));
+            parameter.setInitialValue(Content.parseContent(type,rs.getObject("initial_value")));
+            parameter.setOptional(rs.getBoolean("optional"));
+            if(rs.getInt("entity_state_id") > 0){
+                EntityStateDAO dao = new EntityStateDAO(connection);
+                parameter.setRelatedState(dao.getState(rs.getInt("entity_state_id")));
+            }
             // pegar o valor atual
             Content c = this.getCurrentContentValue(parameter);
             if (c != null) { // se c for nulo deve usar os valores iniciais, senão adiciona o conteúdo no estado

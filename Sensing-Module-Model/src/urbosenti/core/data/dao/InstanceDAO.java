@@ -69,6 +69,10 @@ public class InstanceDAO {
         if (state.getModelId() < 1) {
             state.setModelId(state.getId());
         }
+        // trata o tipo de dado do estado
+        state.setSuperiorLimit(Content.parseContent(state.getDataType(), state.getSuperiorLimit()));
+        state.setInferiorLimit(Content.parseContent(state.getDataType(), state.getInferiorLimit()));
+        state.setInitialValue(Content.parseContent(state.getDataType(), state.getInitialValue()));
         this.stmt = this.connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
         this.stmt.setString(1, state.getDescription());
         this.stmt.setBoolean(2, state.isUserCanChange());
@@ -101,7 +105,7 @@ public class InstanceDAO {
         if (state.getPossibleContents() != null) {
             for (PossibleContent possibleContent : state.getPossibleContents()) {
                 statement = this.connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
-                statement.setObject(1, possibleContent.getValue());
+                statement.setObject(1, Content.parseContent(state.getDataType(),possibleContent.getValue()));
                 statement.setBoolean(2, possibleContent.isIsDefault());
                 statement.setInt(3, state.getId());
                 statement.execute();
@@ -115,7 +119,7 @@ public class InstanceDAO {
                 statement.close();
                 if (DeveloperSettings.SHOW_DAO_SQL) {
                     System.out.println("INSERT INTO possible_action_contents (id,possible_value, default_value, instance_state_id) "
-                            + " VALUES (" + possibleContent.getId() + "," + possibleContent.getValue() + "," + possibleContent.isIsDefault() + "," + state.getId() + ");");
+                            + " VALUES (" + possibleContent.getId() + "," + Content.parseContent(state.getDataType(),possibleContent.getValue()) + "," + possibleContent.isIsDefault() + "," + state.getId() + ");");
                 }
             }
         }
@@ -145,7 +149,7 @@ public class InstanceDAO {
         String sql = "INSERT INTO instance_state_contents (reading_value,reading_time,instance_state_id) "
                 + " VALUES (?,?,?);";
         this.stmt = this.connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
-        this.stmt.setObject(1, state.getContent().getValue());
+        this.stmt.setObject(1, Content.parseContent(state.getDataType(), state.getContent().getValue()));
         this.stmt.setObject(2, state.getContent().getTime());
         this.stmt.setInt(3, state.getId());
         this.stmt.execute();
@@ -159,7 +163,7 @@ public class InstanceDAO {
         stmt.close();
         if (DeveloperSettings.SHOW_DAO_SQL) {
             System.out.println("INSERT INTO instance_state_contents (id,reading_value,reading_time,instance_state_id) "
-                    + " VALUES (" + state.getContent().getId() + ",'" + state.getContent().getValue() + "',"
+                    + " VALUES (" + state.getContent().getId() + ",'" + Content.parseContent(state.getDataType(), state.getContent().getValue()) + "',"
                     + ",'" + state.getContent().getTime().getTime() + "'," + "," + state.getId() + ");");
         }
     }
@@ -204,17 +208,18 @@ public class InstanceDAO {
             state = new State();
             state.setId(rs.getInt("state_id"));
             state.setDescription(rs.getString("state_desc"));
-            state.setInferiorLimit(rs.getObject("inferior_limit"));
-            state.setSuperiorLimit(rs.getObject("superior_limit"));
-            state.setInitialValue(rs.getObject("initial_value"));
-            state.setStateInstance(true);
-            state.setUserCanChange(rs.getBoolean("user_can_change"));
-            state.setModelId(rs.getInt("state_model_id"));
             DataType type = new DataType();
             type.setId(rs.getInt("data_type_id"));
             type.setDescription(rs.getString("data_desc"));
-            type.setInitialValue(rs.getObject("data_initial_value"));
+            type.setInitialValue(Content.parseContent(type,rs.getObject("data_initial_value")));
             state.setDataType(type);
+            state.setInferiorLimit(Content.parseContent(type, rs.getObject("inferior_limit")));
+            state.setSuperiorLimit(Content.parseContent(type,rs.getObject("superior_limit")));
+            state.setInitialValue(Content.parseContent(type,rs.getObject("initial_value")));
+            state.setStateInstance(true);
+            state.setUserCanChange(rs.getBoolean("user_can_change"));
+            state.setModelId(rs.getInt("state_model_id"));
+            
             state.setPossibleContent(this.getPossibleStateContents(state));
             // pegar o valor atual
             Content c = this.getCurrentContentValue(state);
@@ -240,7 +245,7 @@ public class InstanceDAO {
             possibleContents.add(
                     new PossibleContent(
                             rs.getInt("id"),
-                            rs.getString("possible_value"),
+                            Content.parseContent(state.getDataType(),rs.getString("possible_value")),
                             rs.getBoolean("default_value")));
         }
         rs.close();
@@ -278,20 +283,74 @@ public class InstanceDAO {
         return instance;
     }
 
-    public Instance getInstance(int modelId, int entityModelId) throws SQLException {
+    public Instance getInstance(int modelId, int entityModelId, int componentId) throws SQLException {
         Instance instance = null;
         String sql = "SELECT instances.description as instance_desc, representative_class, entity_id, entities.description as entity_desc, instances.model_id,\n"
-                + " entity_type_id, entity_types.description as type_desc, component_id, components.description as comp_desc, code_class\n"
+                + " entity_type_id, entity_types.description as type_desc, component_id, components.description as comp_desc, code_class, instance_id\n"
                 + " FROM instances, entities,entity_types, components \n"
-                + " WHERE instances.model_id = ? AND entities.model_id = ? AND entities.id = entity_id AND entity_types.id = entity_type_id AND components.id = component_id"
+                + " WHERE instances.model_id = ? AND entities.model_id = ? AND entities.id = entity_id AND entity_types.id = entity_type_id AND components.id = component_id AND component_id = ?"
                 + " ORDER BY instances.model_id;";
         stmt = this.connection.prepareStatement(sql);
         stmt.setInt(1, modelId);
         stmt.setInt(2, entityModelId);
+        stmt.setInt(3, componentId);
         ResultSet rs = stmt.executeQuery();
         while (rs.next()) {
             instance = new Instance();
-            instance.setId(modelId);
+            instance.setId(rs.getInt("instance_id"));
+            instance.setDescription(rs.getString("instance_desc"));
+            instance.setRepresentativeClass(rs.getString("representative_class"));
+            instance.setEntity(new Entity());
+            instance.setModelId(rs.getInt("model_id"));
+            instance.getEntity().setId(rs.getInt("entity_id"));
+            instance.getEntity().setDescription(rs.getString("entity_desc"));
+            instance.getEntity().setModelId(entityModelId);
+            instance.getEntity().setEntityType(
+                    new EntityType(rs.getInt("entity_type_id"), rs.getString("type_desc")));
+            instance.getEntity().setComponent(
+                    new Component(rs.getInt("component_id"), rs.getString("comp_desc"), rs.getString("code_class")));
+            instance.setStates(this.getInstanceStates(instance));
+        }
+        rs.close();
+        stmt.close();
+        return instance;
+    }
+
+    int getEntityInstanceCount(Entity entity) throws SQLException {
+        int count = 0;
+        String sql = "SELECT count(*) FROM instances WHERE entity_id = ?;";
+        stmt = this.connection.prepareStatement(sql);
+        stmt.execute();
+        try (ResultSet res = stmt.getResultSet()) {
+            if (res.next()) {
+                count = res.getInt(1);
+            } else {
+                throw new SQLException("Creating user failed, no ID obtained.");
+            }
+        }
+        stmt.close();
+        return count;
+    }
+
+    Instance getInstanceByStateContent(Object contentValue, int stateModelId, int entityModelId, int componentId) throws SQLException {
+        Instance instance = null;
+        String sql = "SELECT instances.description as instance_desc, representative_class, instances.entity_id, entities.description as entity_desc, code_class, "
+                + " instances.model_id, instance_id, entity_type_id, entity_types.description as type_desc, component_id, components.description as comp_desc "
+                + "                 FROM instances, entities,entity_types, components , instance_states, instance_state_contents "
+                + "                 WHERE state_model_id = ? AND entities.model_id = ? AND component_id = ? AND reading_value = ? "
+                + "                  AND entities.id = instances.entity_id AND entity_types.id = entity_type_id "
+                + "                  AND components.id = component_id AND instance_states.id = instance_state_id "
+                + "                  AND instance_id = instances.id "
+                + "                 ORDER BY instance_state_contents.id DESC LIMIT 1;";
+        stmt = this.connection.prepareStatement(sql);
+        stmt.setInt(1, stateModelId);
+        stmt.setInt(2, entityModelId);
+        stmt.setInt(3, componentId);
+        stmt.setObject(4, contentValue);
+        ResultSet rs = stmt.executeQuery();
+        if (rs.next()) {
+            instance = new Instance();
+            instance.setId(rs.getInt("instance_id"));
             instance.setDescription(rs.getString("instance_desc"));
             instance.setRepresentativeClass(rs.getString("representative_class"));
             instance.setEntity(new Entity());

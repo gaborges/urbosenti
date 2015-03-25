@@ -99,7 +99,7 @@ public class AgentTypeDAO {
         if (state.getPossibleContents() != null) {
             for (PossibleContent possibleContent : state.getPossibleContents()) {
                 statement = this.connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
-                statement.setObject(1, possibleContent.getValue());
+                statement.setObject(1, Content.parseContent(state.getDataType(),possibleContent.getValue()));
                 statement.setBoolean(2, possibleContent.isIsDefault());
                 statement.setInt(3, state.getId());
                 statement.execute();
@@ -112,7 +112,7 @@ public class AgentTypeDAO {
                 }
                 statement.close();
                 System.out.println("INSERT INTO possible_agent_state_contents (id,possible_value, default_value, agent_state_id) "
-                        + " VALUES (" + possibleContent.getId() + "," + possibleContent.getValue() + "," + possibleContent.isIsDefault() + "," + state.getId() + ");");
+                        + " VALUES (" + possibleContent.getId() + "," + Content.parseContent(state.getDataType(),possibleContent.getValue()) + "," + possibleContent.isIsDefault() + "," + state.getId() + ");");
             }
         }
     }
@@ -121,6 +121,10 @@ public class AgentTypeDAO {
         String sql = "INSERT INTO agent_states (id,description,agent_type_id,data_type_id,superior_limit,inferior_limit,initial_value) "
                 + " VALUES (?,?,?,?,?,?,?);";
         this.stmt = this.connection.prepareStatement(sql);
+        // trata o tipo de dado do estado
+        state.setSuperiorLimit(Content.parseContent(state.getDataType(), state.getSuperiorLimit()));
+        state.setInferiorLimit(Content.parseContent(state.getDataType(), state.getInferiorLimit()));
+        state.setInitialValue(Content.parseContent(state.getDataType(), state.getInitialValue()));
         this.stmt.setInt(1, state.getId());
         this.stmt.setString(2, state.getDescription());
         this.stmt.setInt(3, state.getAgentType().getId());
@@ -141,6 +145,10 @@ public class AgentTypeDAO {
         PreparedStatement statement;
         if (interaction.getParameters() != null) {
             for (Parameter parameter : interaction.getParameters()) {
+                // trata o tipo de dado do estado
+                parameter.setSuperiorLimit(Content.parseContent(parameter.getDataType(), parameter.getSuperiorLimit()));
+                parameter.setInferiorLimit(Content.parseContent(parameter.getDataType(), parameter.getInferiorLimit()));
+                parameter.setInitialValue(Content.parseContent(parameter.getDataType(), parameter.getInitialValue()));
                 statement = this.connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
                 statement.setString(1, parameter.getDescription());
                 statement.setBoolean(2, parameter.isOptional());
@@ -176,7 +184,7 @@ public class AgentTypeDAO {
         if (parameter.getPossibleContents() != null) {
             for (PossibleContent possibleContent : parameter.getPossibleContents()) {
                 statement = this.connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
-                statement.setObject(1, possibleContent.getValue());
+                statement.setObject(1,Content.parseContent(parameter.getDataType(),possibleContent.getValue()));
                 statement.setBoolean(2, possibleContent.isIsDefault());
                 statement.setInt(3, parameter.getId());
                 statement.execute();
@@ -189,7 +197,7 @@ public class AgentTypeDAO {
                 }
                 statement.close();
                 System.out.println("INSERT INTO possible_interaction_contents (id,possible_value, default_value, interaction_parameter_id) "
-                        + " VALUES (" + possibleContent.getId() + "," + possibleContent.getValue() + "," + possibleContent.isIsDefault() + "," + parameter.getId() + ");");
+                        + " VALUES (" + possibleContent.getId() + "," + Content.parseContent(parameter.getDataType(),possibleContent.getValue()) + "," + possibleContent.isIsDefault() + "," + parameter.getId() + ");");
             }
         }
     }
@@ -218,7 +226,7 @@ public class AgentTypeDAO {
         String sql = "INSERT INTO agent_state_contents (reading_value,reading_time,agent_state_id) "
                 + " VALUES (?,?,?);";
         this.stmt = this.connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
-        this.stmt.setObject(1, state.getContent().getValue());
+        this.stmt.setObject(1, Content.parseContent(state.getDataType(), state.getContent().getValue()));
         this.stmt.setObject(2, state.getContent().getTime());
         this.stmt.setInt(3, state.getId());
         this.stmt.execute();
@@ -232,7 +240,7 @@ public class AgentTypeDAO {
         stmt.close();
         if (DeveloperSettings.SHOW_DAO_SQL) {
             System.out.println("INSERT INTO agent_state_contents (id,reading_value,reading_time,agent_state_id) "
-                    + " VALUES (" + state.getContent().getId() + ",'" + state.getContent().getValue() + "',"
+                    + " VALUES (" + state.getContent().getId() + ",'" + Content.parseContent(state.getDataType(), state.getContent().getValue()) + "',"
                     + ",'" + state.getContent().getTime().getTime() + "'," + "," + state.getId() + ");");
         }
     }
@@ -267,7 +275,7 @@ public class AgentTypeDAO {
         String sql = "INSERT INTO interaction_contents (reading_value,reading_time,interaction_parameter_id,message_id) "
                 + " VALUES (?,?,?,?);";
         this.stmt = this.connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
-        this.stmt.setObject(1, parameter.getContent().getValue());
+        this.stmt.setObject(1, Content.parseContent(parameter.getDataType(), parameter.getContent().getValue()));
         this.stmt.setObject(2, parameter.getContent().getTime());
         this.stmt.setInt(3, parameter.getId());
         this.stmt.setInt(4, parameter.getContent().getMessage().getId());
@@ -282,7 +290,7 @@ public class AgentTypeDAO {
         stmt.close();
         if (DeveloperSettings.SHOW_DAO_SQL) {
             System.out.println("INSERT INTO interaction_contents (id,reading_value,reading_time,interaction_parameter_id,message_id) "
-                    + " VALUES (" + parameter.getContent().getId() + ",'" + parameter.getContent().getValue() + "',"
+                    + " VALUES (" + parameter.getContent().getId() + ",'" + Content.parseContent(parameter.getDataType(), parameter.getContent().getValue()) + "',"
                     + ",'" + parameter.getContent().getTime().getTime() + "'," + "," + parameter.getId() + "," + parameter.getContent().getMessage().getId() + ");");
         }
     }
@@ -338,15 +346,16 @@ public class AgentTypeDAO {
             state = new State();
             state.setId(rs.getInt("state_id"));
             state.setDescription(rs.getString("state_desc"));
-            state.setInferiorLimit(rs.getObject("inferior_limit"));
-            state.setSuperiorLimit(rs.getObject("superior_limit"));
-            state.setInitialValue(rs.getObject("initial_value"));
-            state.setUserCanChange(false);
             DataType type = new DataType();
             type.setId(rs.getInt("data_type_id"));
             type.setDescription(rs.getString("data_desc"));
-            type.setInitialValue(rs.getObject("data_initial_value"));
+            type.setInitialValue(Content.parseContent(state.getDataType(),rs.getObject("data_initial_value")));
             state.setDataType(type);
+            state.setInferiorLimit(Content.parseContent(type,rs.getObject("inferior_limit")));
+            state.setSuperiorLimit(Content.parseContent(type,rs.getObject("superior_limit")));
+            state.setInitialValue(Content.parseContent(type,rs.getObject("initial_value")));
+            state.setUserCanChange(false);
+            
             state.setPossibleContent(this.getPossibleStateContents(state));
             // pegar o valor atual
             Content c = this.getCurrentContentValue(state);
@@ -407,18 +416,19 @@ public class AgentTypeDAO {
             parameter.setId(rs.getInt("interation_id"));
             parameter.setDescription(rs.getString("parameter_desc"));
             parameter.setLabel(rs.getString("label"));
-            parameter.setInferiorLimit(rs.getObject("inferior_limit"));
-            parameter.setSuperiorLimit(rs.getObject("superior_limit"));
-            parameter.setInitialValue(rs.getObject("initial_value"));
-            parameter.setOptional(rs.getBoolean("optional"));
-            if (rs.getInt("agent_state_id") > 0) {
-                parameter.setRelatedState(this.getInteractionState(rs.getInt("agent_state_id")));
-            }
             DataType type = new DataType();
             type.setId(rs.getInt("data_type_id"));
             type.setDescription(rs.getString("data_desc"));
             type.setInitialValue(rs.getObject("data_initial_value"));
             parameter.setDataType(type);
+            parameter.setInferiorLimit(Content.parseContent(type, rs.getObject("inferior_limit")));
+            parameter.setSuperiorLimit(Content.parseContent(type,rs.getObject("superior_limit")));
+            parameter.setInitialValue(Content.parseContent(type,rs.getObject("initial_value")));
+            parameter.setOptional(rs.getBoolean("optional"));
+            if (rs.getInt("agent_state_id") > 0) {
+                parameter.setRelatedState(this.getInteractionState(rs.getInt("agent_state_id")));
+            }
+            
             // pegar o valor atual
             Content c = this.getCurrentContentValue(parameter);
             if (c != null) { // se c for nulo deve usar os valores iniciais, senão adiciona o conteúdo no estado
@@ -446,15 +456,15 @@ public class AgentTypeDAO {
             state = new State();
             state.setId(rs.getInt("state_id"));
             state.setDescription(rs.getString("state_desc"));
-            state.setInferiorLimit(rs.getObject("inferior_limit"));
-            state.setSuperiorLimit(rs.getObject("superior_limit"));
-            state.setInitialValue(rs.getObject("initial_value"));
-            state.setUserCanChange(false);
             DataType type = new DataType();
             type.setId(rs.getInt("data_type_id"));
             type.setDescription(rs.getString("data_desc"));
             type.setInitialValue(rs.getObject("data_initial_value"));
             state.setDataType(type);
+            state.setInferiorLimit(Content.parseContent(type,rs.getObject("inferior_limit")));
+            state.setSuperiorLimit(Content.parseContent(type,rs.getObject("superior_limit")));
+            state.setInitialValue(Content.parseContent(type,rs.getObject("initial_value")));
+            state.setUserCanChange(false);
             state.setPossibleContent(this.getPossibleStateContents(state));
             // pegar o valor atual
             Content c = this.getCurrentContentValue(state);
@@ -479,7 +489,7 @@ public class AgentTypeDAO {
             possibleContents.add(
                     new PossibleContent(
                             rs.getInt("id"),
-                            rs.getString("possible_value"),
+                            Content.parseContent(state.getDataType(), rs.getString("possible_value")),
                             rs.getBoolean("default_value")));
         }
         rs.close();
@@ -583,7 +593,7 @@ public class AgentTypeDAO {
                 content.setTime(rs.getDate("reading_time"));
             }
             content.setParameter(this.getParameter(content));
-            content.setValue(Content.parseContent(content.getParameter().getDataType(), rs.getObject("reading_value")));
+            content.setValue(rs.getObject("reading_value"));
             content.setMessage(message);
             contents.add(content);
         }
@@ -608,17 +618,17 @@ public class AgentTypeDAO {
             parameter.setId(rs.getInt("interation_id"));
             parameter.setDescription(rs.getString("parameter_desc"));
             parameter.setLabel(rs.getString("label"));
-            parameter.setInferiorLimit(rs.getObject("inferior_limit"));
-            parameter.setSuperiorLimit(rs.getObject("superior_limit"));
-            parameter.setInitialValue(rs.getObject("initial_value"));
-            parameter.setOptional(rs.getBoolean("optional"));
-            if (rs.getInt("agent_state_id") > 0) {
-                parameter.setRelatedState(this.getInteractionState(rs.getInt("agent_state_id")));
-            }
             DataType type = new DataType();
             type.setId(rs.getInt("data_type_id"));
             type.setDescription(rs.getString("data_desc"));
             type.setInitialValue(rs.getObject("data_initial_value"));
+            parameter.setInferiorLimit(Content.parseContent(type, rs.getObject("inferior_limit")));
+            parameter.setSuperiorLimit(Content.parseContent(type, rs.getObject("superior_limit")));
+            parameter.setInitialValue(Content.parseContent(type, rs.getObject("initial_value")));
+            parameter.setOptional(rs.getBoolean("optional"));
+            if (rs.getInt("agent_state_id") > 0) {
+                parameter.setRelatedState(this.getInteractionState(rs.getInt("agent_state_id")));
+            }
             parameter.setContent(content);
             parameter.setDataType(type);
         }

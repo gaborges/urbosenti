@@ -8,7 +8,7 @@ public class Content {
     private java.lang.Object value;
     private Date time;
     private double score;
-    private Instance  monitoredInstance;
+    private Instance monitoredInstance;
     private Parameter parameter;
     private AgentMessage message;
 
@@ -17,6 +17,16 @@ public class Content {
         this.value = value;
         this.time = time;
         this.score = score;
+    }
+
+    public Content(Object value, Date time) {
+        this.value = value;
+        this.time = time;
+    }
+
+    public Content(Object value) {
+        this.value = value;
+        this.time = new Date();
     }
 
     public Content() {
@@ -77,8 +87,11 @@ public class Content {
     public void setParameter(Parameter parameter) {
         this.parameter = parameter;
     }
-    
+
     public static Object parseContent(DataType dataType, Object value) {
+        if (value == null) {
+            return null;
+        }
         switch (dataType.getId()) {
             case 1://<dataType id="1" initialValue="0">byte</dataType>
                 return Byte.parseByte(value.toString());
@@ -103,5 +116,5 @@ public class Content {
         }
         return null;
     }
-    
+
 }

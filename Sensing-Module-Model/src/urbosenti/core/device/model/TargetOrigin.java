@@ -2,6 +2,9 @@ package urbosenti.core.device.model;
 
 public class TargetOrigin {
 
+    public static final int APPLICATION_LAYER = 1;
+    public static final int SYSTEM_LAYER = 2;
+    
     private int id;
     private String description;
 

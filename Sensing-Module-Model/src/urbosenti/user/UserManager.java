@@ -15,6 +15,8 @@ import urbosenti.core.device.DeviceManager;
 import urbosenti.core.device.model.ActionModel;
 import urbosenti.core.device.model.Component;
 import urbosenti.core.device.model.FeedbackAnswer;
+import urbosenti.core.device.model.Parameter;
+import urbosenti.core.device.model.TargetOrigin;
 import urbosenti.core.events.Action;
 import urbosenti.core.events.ApplicationEvent;
 import urbosenti.core.events.AsynchronouslyManageableComponent;
@@ -401,7 +403,7 @@ public class UserManager extends ComponentManager {
         // checa se ambos são os mesmos e executa a ação
         if (user.getId() == loggedUser.getId()) {
             // Atualiza
-            getDeviceManager().getDataManager().getUserDAO().update(user);
+            getDeviceManager().getDataManager().getUserDAO().updatePassword(user);
             loggedUser = getDeviceManager().getDataManager().getUserDAO().get(loggedUser.getId());
             // Gera o evento
             this.newInternalEvent(UserManager.EVENT_USER_UPDATED, user);
@@ -651,23 +653,33 @@ public class UserManager extends ComponentManager {
     public boolean updateSystemPreference(User user, int componentId, int entityId, int stateId, Object newValue) {
         // verifica o componente
         // busca a ação que pode ser executada para alterar este estado
-        ActionModel a = super.getDeviceManager().getDataManager().getUserDAO().getActionStateModel(componentId, entityId, stateId);
-        // Cria uma ação de distema e aplica a ação
-        HashMap<String, Object> hashMap = new HashMap();
-        a.getParameters()
-        Action action = new Action();
-        action.setId(a.getModelId());
-        
-        //action.set
-        for(ComponentManager componentManager : super.getDeviceManager().getComponentManagers()){
-            if(componentManager.getComponentId() == componentId){
-                componentManager.applyAction(action);
-                break;
+        ActionModel actionModel = super.getDeviceManager().getDataManager().getUserDAO().getActionStateModel(componentId, entityId, stateId);
+        if(actionModel != null){
+            // Parâmetros
+            HashMap<String, Object> hashMap = new HashMap();
+            for(Parameter p : actionModel.getParameters()){
+                hashMap.put(p.getLabel(), newValue);
             }
-        }
-        
-        throw new UnsupportedOperationException("Not supported yet.");
-        //return false;
+            // Cria a ação
+            Action action = new Action();
+            action.setId(actionModel.getModelId());
+            action.setParameters(hashMap);
+            action.setName(actionModel.getDescription());
+            action.setOrigin(TargetOrigin.APPLICATION_LAYER);
+            action.setUser(user);
+            action.setTargetEntityId(entityId);
+            // A ação ao componente que deve receber a ação
+            for(ComponentManager componentManager : super.getDeviceManager().getComponentManagers()){
+                if(componentManager.getComponentId() == componentId){
+                    componentManager.applyAction(action);
+                    // Gerar evento da mudança de configuração do sistema
+                    this.newInternalEvent(EVENT_USER_CHANGED_SYSTEM_CONFIGURATION, componentId,entityId,stateId,newValue);
+                    break;
+                }
+            }
+            return true;
+        }        
+        return false;
     }
 
 }

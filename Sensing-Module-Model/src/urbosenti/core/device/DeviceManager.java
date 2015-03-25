@@ -4,8 +4,6 @@
  */
 package urbosenti.core.device;
 
-import java.io.File;
-import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import urbosenti.core.device.model.Agent;
@@ -23,7 +21,6 @@ import urbosenti.core.communication.PushServiceReceiver;
 import urbosenti.core.data.DataManager;
 import urbosenti.core.data.dao.CommunicationDAO;
 import urbosenti.core.data.dao.DeviceDAO;
-import urbosenti.core.data.dao.EventDAO;
 import urbosenti.core.device.model.AgentType;
 import urbosenti.core.device.model.Content;
 import urbosenti.core.device.model.Device;
@@ -34,7 +31,6 @@ import urbosenti.core.device.model.Service;
 import urbosenti.core.device.model.State;
 import urbosenti.core.events.Action;
 import urbosenti.core.events.ApplicationEvent;
-import urbosenti.core.events.AsynchronouslyManageableComponent;
 import urbosenti.core.events.Event;
 import urbosenti.core.events.EventManager;
 import urbosenti.core.events.SystemEvent;
@@ -701,7 +697,8 @@ public class DeviceManager extends ComponentManager implements BaseComponentMana
             content.setTime(new Date());
             content.setValue(true);
             // verifica se o ID de cada uma dessas instâncias existe, se existe relaciona as duas senão cria uma nova instância.
-            Instance instance = this.dataManager.getInstanceDAO().getInstance(ci.getId(), CommunicationDAO.ENTITY_ID_OF_OUTPUT_COMMUNICATION_INTERFACES);
+            Instance instance = this.dataManager.getInstanceDAO().getInstance(
+                    ci.getId(), CommunicationDAO.ENTITY_ID_OF_OUTPUT_COMMUNICATION_INTERFACES,CommunicationDAO.COMPONENT_ID);
             if (instance != null) {
                 ci.setInstance(instance);
                 for (State s : instance.getStates()) {
@@ -754,7 +751,8 @@ public class DeviceManager extends ComponentManager implements BaseComponentMana
             content.setTime(new Date());
             content.setValue(true);
             // verifica se o ID de cada uma dessas instâncias existe, se existe relaciona as duas senão cria uma nova instância.
-            Instance instance = this.dataManager.getInstanceDAO().getInstance(psr.getId(), CommunicationDAO.ENTITY_ID_OF_INPUT_COMMUNICATION_INTERFACES);
+            Instance instance = this.dataManager.getInstanceDAO().getInstance(
+                    psr.getId(), CommunicationDAO.ENTITY_ID_OF_INPUT_COMMUNICATION_INTERFACES,CommunicationDAO.COMPONENT_ID);
             if (instance != null) {
                 psr.setInstance(instance);
             } else { // cria uma nova instância se ela não estiver cadastrada

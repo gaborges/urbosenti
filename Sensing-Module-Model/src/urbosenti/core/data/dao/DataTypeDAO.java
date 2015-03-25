@@ -8,6 +8,7 @@ package urbosenti.core.data.dao;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import urbosenti.core.device.model.Content;
 import urbosenti.core.device.model.DataType;
 import urbosenti.util.DeveloperSettings;
 
@@ -30,12 +31,12 @@ public class DataTypeDAO {
         this.stmt = this.connection.prepareStatement(sql);
         this.stmt.setInt(1, type.getId());
         this.stmt.setString(2, type.getDescription());
-        this.stmt.setObject(3, type.getInitialValue());
+        this.stmt.setObject(3, Content.parseContent(type,type.getInitialValue()));
         this.stmt.execute();
         this.stmt.close();
         if (DeveloperSettings.SHOW_DAO_SQL) {
             System.out.println("INSERT INTO data_types (id, description,initial_value) "
-                    + " VALUES (" + type.getId() + ",'" + type.getDescription() + "'," + type.getInitialValue().toString() + ");");
+                    + " VALUES (" + type.getId() + ",'" + type.getDescription() + "'," + Content.parseContent(type,type.getInitialValue()) + ");");
         }
     }
 

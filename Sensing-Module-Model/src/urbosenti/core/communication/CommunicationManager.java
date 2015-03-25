@@ -32,6 +32,7 @@ import urbosenti.core.device.model.Agent;
 import urbosenti.core.device.ComponentManager;
 import urbosenti.core.device.DeviceManager;
 import urbosenti.core.device.model.FeedbackAnswer;
+import urbosenti.core.device.model.TargetOrigin;
 import urbosenti.core.events.Action;
 import urbosenti.core.events.ApplicationEvent;
 import urbosenti.core.events.AsynchronouslyManageableComponent;
@@ -387,7 +388,7 @@ public class CommunicationManager extends ComponentManager implements Runnable {
                 // Parâmetro
                 genericInteger = (Integer) action.getParameters().get("interval");
                 // verifica se a política é a estática e se a origem não é o sistema, pois nesse caso somente a aplicação e usuários podem alterar.
-                if(reconnectionPolicy == 1 && action.getOrigin().getLayer() != Agent.LAYER_SYSTEM){
+                if(reconnectionPolicy == 1 && action.getOrigin() != Agent.LAYER_SYSTEM){
                     // Atribuir o valor
                     this.reconnectionService.setReconnectionTime(genericInteger);
                     this.reconnectionAttemptInterval = genericInteger;
@@ -398,7 +399,7 @@ public class CommunicationManager extends ComponentManager implements Runnable {
                 genericInteger = (Integer) action.getParameters().get("method");
                 agent = (Agent) action.getParameters().get("origin");
                 // verifica se a política é a estática e se a origem não é o sistema, pois nesse caso somente a aplicação e usuários podem alterar.
-                if(reconnectionPolicy == 1 && action.getOrigin().getLayer() != Agent.LAYER_SYSTEM){
+                if(reconnectionPolicy == 1 && action.getOrigin() != Agent.LAYER_SYSTEM){
                     // Verificar o valor
                     if(genericInteger == 1){
                         reconnectionService.setReconnectionMethodOneByTime();
@@ -410,7 +411,7 @@ public class CommunicationManager extends ComponentManager implements Runnable {
                 break;
             case 7: // Alterar política
                 // Parâmetro
-                if(reconnectionPolicy == 1 && action.getOrigin().getLayer() != Agent.LAYER_SYSTEM){
+                if(reconnectionPolicy == 1 && action.getOrigin() != Agent.LAYER_SYSTEM){
                     // atribuir
                     this.reconnectionPolicy = (Integer) action.getParameters().get("policy");
                 }

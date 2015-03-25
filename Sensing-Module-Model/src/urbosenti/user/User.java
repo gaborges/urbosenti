@@ -6,6 +6,7 @@
 package urbosenti.user;
 
 import java.util.List;
+import urbosenti.core.device.model.Instance;
 
 /**
  *
@@ -34,6 +35,8 @@ public class User {
     private Boolean acceptedDataSharing;
     private Boolean optedByAnonymousUpload;
     private Boolean isBeingMonitored;
+    private int userPosition;
+    private Instance instance;
     private List<UserPreference> userPreferences;
 
     public int getId() {
@@ -99,4 +102,21 @@ public class User {
     public void setIsBeingMonitored(Boolean isBeingMonitored) {
         this.isBeingMonitored = isBeingMonitored;
     }
+
+    public Instance getInstance() {
+        return instance;
+    }
+
+    public void setInstance(Instance instance) {
+        this.instance = instance;
+    }
+
+    public int getUserPosition() {
+        return userPosition;
+    }
+
+    public void setUserPosition(int userPosition) {
+        this.userPosition = userPosition;
+    }
+    
 }

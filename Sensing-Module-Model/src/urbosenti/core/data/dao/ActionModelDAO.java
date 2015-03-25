@@ -95,6 +95,10 @@ public class ActionModelDAO {
             statement.setString(1, parameter.getDescription());
             statement.setBoolean(2, parameter.isOptional());
             statement.setString(3, parameter.getLabel());
+            // trata o tipo de dado do estado
+            parameter.setSuperiorLimit(Content.parseContent(parameter.getDataType(), parameter.getSuperiorLimit()));
+            parameter.setInferiorLimit(Content.parseContent(parameter.getDataType(), parameter.getInferiorLimit()));
+            parameter.setInitialValue(Content.parseContent(parameter.getDataType(), parameter.getInitialValue()));
             statement.setObject(4, parameter.getSuperiorLimit());
             statement.setObject(5, parameter.getInferiorLimit());
             statement.setObject(6, parameter.getInitialValue());
@@ -132,7 +136,7 @@ public class ActionModelDAO {
         if (parameter.getPossibleContents() != null) {
             for (PossibleContent possibleContent : parameter.getPossibleContents()) {
                 statement = this.connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
-                statement.setObject(1, possibleContent.getValue());
+                statement.setObject(1, Content.parseContent(parameter.getDataType(),possibleContent.getValue()));
                 statement.setBoolean(2, possibleContent.isIsDefault());
                 statement.setInt(3, parameter.getId());
                 statement.execute();
@@ -146,7 +150,7 @@ public class ActionModelDAO {
                 statement.close();
                 if (DeveloperSettings.SHOW_DAO_SQL) {
                     System.out.println("INSERT INTO possible_action_contents (id,possible_value, default_value, event_parameter_id) "
-                            + " VALUES (" + possibleContent.getId() + "," + possibleContent.getValue() + "," + possibleContent.isIsDefault() + "," + parameter.getId() + ");");
+                            + " VALUES (" + possibleContent.getId() + "," + Content.parseContent(parameter.getDataType(),possibleContent.getValue()) + "," + possibleContent.isIsDefault() + "," + parameter.getId() + ");");
                 }
             }
         }
@@ -221,6 +225,31 @@ public class ActionModelDAO {
         stmt.close();
         return actions;
     }
+    
+    ActionModel getAction(int id) throws SQLException {
+        ActionModel action = null;
+        String sql = "SELECT actions.id, actions.model_id, actions.description, has_feedback, entities.description as entity_description, entity_id "
+                + "FROM actions, entities "
+                + "WHERE actions.id = ? AND entity_id = entities.id;";
+        stmt = this.connection.prepareStatement(sql);
+        stmt.setInt(1, id);
+        ResultSet rs = stmt.executeQuery();
+        while (rs.next()) {
+            action = new ActionModel();
+            action.setId(rs.getInt("id"));
+            action.setDescription(rs.getString("description"));
+            action.setHasFeedback(rs.getBoolean("has_feedback"));
+            action.setModelId(rs.getInt("model_id"));
+            action.setEntity(new Entity());
+            action.getEntity().setDescription(rs.getString("entity_description"));
+            action.getEntity().setId(rs.getInt("entity_id"));
+            action.setFeedbackAnswers(this.getActionFeedbackAnswers(action));
+            action.setParameters(this.getActionParameters(action));
+        }
+        rs.close();
+        stmt.close();
+        return action;
+    }
 
     private List<FeedbackAnswer> getActionFeedbackAnswers(ActionModel action) throws SQLException {
         List<FeedbackAnswer> answers = new ArrayList();
@@ -259,28 +288,90 @@ public class ActionModelDAO {
             parameter.setId(rs.getInt("parameter_id"));
             parameter.setDescription(rs.getString("parameter_desc"));
             parameter.setLabel(rs.getString("label"));
-            parameter.setInferiorLimit(rs.getObject("inferior_limit"));
-            parameter.setSuperiorLimit(rs.getObject("superior_limit"));
-            parameter.setInitialValue(rs.getObject("initial_value"));
-            parameter.setOptional(rs.getBoolean("optional"));
-            if(rs.getInt("entity_state_id") > 0){
-                EntityStateDAO dao = new EntityStateDAO(connection);
-                parameter.setRelatedState(dao.getState(rs.getInt("entity_state_id")));
-            }
             DataType type = new DataType();
             type.setId(rs.getInt("data_type_id"));
             type.setDescription(rs.getString("data_desc"));
             type.setInitialValue(rs.getObject("data_initial_value"));
             parameter.setDataType(type);
+            // trata o tipo de dado do estado
+            parameter.setSuperiorLimit(Content.parseContent(parameter.getDataType(), parameter.getSuperiorLimit()));
+            parameter.setInferiorLimit(Content.parseContent(parameter.getDataType(), parameter.getInferiorLimit()));
+            parameter.setInitialValue(Content.parseContent(parameter.getDataType(), parameter.getInitialValue()));
+            parameter.setInferiorLimit(rs.getObject("inferior_limit"));
+            parameter.setSuperiorLimit(rs.getObject("superior_limit"));
+            parameter.setInitialValue(rs.getObject("initial_value"));
+            parameter.setOptional(rs.getBoolean("optional"));
+            if (rs.getInt("entity_state_id") > 0) {
+                EntityStateDAO dao = new EntityStateDAO(connection);
+                parameter.setRelatedState(dao.getState(rs.getInt("entity_state_id")));
+            }
             // pegar o valor atual
             Content c = this.getCurrentContentValue(parameter);
             if (c != null) { // se c for nulo deve usar os valores iniciais, senão adiciona o conteúdo no estado
                 parameter.setContent(c);
             }
+            parameter.setPossibleContents(this.getPossibleContents(parameter));
             parameters.add(parameter);
         }
         rs.close();
         stmt.close();
         return parameters;
+    }
+
+    ActionModel getActionState(State entityState) throws SQLException {
+        ActionModel action = null;
+        String sql = "SELECT action_id, actions.model_id as action_model_id, actions.description as action_desc, has_feedback, entity_id, "
+                + " action_parameters.id as parameter_id, action_parameters.description as parameter_desc, label, optional, superior_limit, "
+                + " inferior_limit, action_parameters.initial_value, data_type_id, data_types.description as data_type_desc, "
+                + " data_types.initial_value as type_initial_value "
+                + " FROM actions, action_parameters, data_types "
+                + " WHERE entity_state_id = ?  AND action_id = actions.id AND data_type_id = data_types.id; ";
+        stmt = this.connection.prepareStatement(sql);
+        stmt.setInt(1, entityState.getId());
+        ResultSet rs = stmt.executeQuery();
+        if (rs.next()) {
+            action = new ActionModel();
+            action.setId(rs.getInt("action_id"));
+            action.setDescription(rs.getString("action_desc"));
+            action.setHasFeedback(rs.getBoolean("has_feedback"));
+            action.setModelId(rs.getInt("action_model_id"));
+            action.setEntity(new Entity());
+            action.getEntity().setId(rs.getInt("entity_id"));
+            action.setFeedbackAnswers(this.getActionFeedbackAnswers(action));
+            action.getParameters().add(new Parameter(rs.getString("label"), new DataType(rs.getInt("data_type_id"), rs.getString("data_type_desc"))));
+            action.getParameters().get(0).setId(rs.getInt("parameter_id"));
+            action.getParameters().get(0).setInitialValue(
+                    Content.parseContent(action.getParameters().get(0).getDataType(), rs.getObject("initial_value")));
+            action.getParameters().get(0).setContent(getCurrentContentValue(action.getParameters().get(0)));
+            action.getParameters().get(0).setRelatedState(entityState);
+            action.getParameters().get(0).setSuperiorLimit(
+                    Content.parseContent(action.getParameters().get(0).getDataType(), rs.getObject("superior_limit")));
+            action.getParameters().get(0).setInferiorLimit(
+                    Content.parseContent(action.getParameters().get(0).getDataType(), rs.getObject("inferior_limit")));
+            action.getParameters().get(0).setPossibleContents(this.getPossibleContents(action.getParameters().get(0)));
+        }
+        rs.close();
+        stmt.close();
+        return action;
+    }
+
+    private List<PossibleContent> getPossibleContents(Parameter parameter) throws SQLException {
+        List<PossibleContent> possibleContents = new ArrayList();
+        String sql = " SELECT id, possible_value, default_value "
+                + " FROM possible_action_contents\n"
+                + " WHERE action_parameter_id = ?;";
+        stmt = this.connection.prepareStatement(sql);
+        stmt.setInt(1, parameter.getId());
+        ResultSet rs = stmt.executeQuery();
+        while (rs.next()) {
+            possibleContents.add(
+                    new PossibleContent(
+                            rs.getInt("id"),
+                            Content.parseContent(parameter.getDataType(),rs.getString("possible_value")),
+                            rs.getBoolean("default_value")));
+        }
+        rs.close();
+        stmt.close();
+        return possibleContents;
     }
 }
