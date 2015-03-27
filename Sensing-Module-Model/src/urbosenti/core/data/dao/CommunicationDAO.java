@@ -4,7 +4,6 @@
  */
 package urbosenti.core.data.dao;
 
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -21,6 +20,7 @@ import urbosenti.core.device.model.Content;
 import urbosenti.core.device.model.Entity;
 import urbosenti.core.device.model.EntityType;
 import urbosenti.core.device.model.State;
+import urbosenti.user.User;
 
 /**
  *
@@ -287,6 +287,10 @@ public class CommunicationDAO {
     
     public List<PushServiceReceiver> getInputCommunicationInterfaces() {
         return inputCommunicationInterfaces;
+    }
+
+    void deleteUserReports(User user) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
     
 }

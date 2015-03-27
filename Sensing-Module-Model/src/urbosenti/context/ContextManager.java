@@ -9,7 +9,6 @@ import urbosenti.core.device.ComponentManager;
 import urbosenti.core.device.DeviceManager;
 import urbosenti.core.device.model.FeedbackAnswer;
 import urbosenti.core.events.Action;
-import urbosenti.core.events.AsynchronouslyManageableComponent;
 import urbosenti.core.events.EventManager;
 
 /**

@@ -6,7 +6,6 @@ package urbosenti.core.communication;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import urbosenti.core.device.model.Agent;
 import urbosenti.core.device.model.Instance;
 
 /**
@@ -15,9 +14,9 @@ import urbosenti.core.device.model.Instance;
  */
 public abstract class PushServiceReceiver implements Runnable{
     
-    public static final int STATUS_LISTENING = 1;
-    public static final int STATUS_STOPPED = 0;
-    private int status;
+    public static final boolean STATUS_LISTENING = true;
+    public static final boolean STATUS_STOPPED = false;
+    private boolean status;
     private int id;
     public final CommunicationManager communicationManager;
     private Thread t;
@@ -65,11 +64,11 @@ public abstract class PushServiceReceiver implements Runnable{
         }
     }
 
-    public int getStatus() {
+    public boolean getStatus() {
         return status;
     }
 
-    public void setStatus(int status) {
+    public void setStatus(boolean status) {
         this.status = status;
     }
 

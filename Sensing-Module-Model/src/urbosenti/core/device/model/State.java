@@ -32,6 +32,7 @@ public class State {
         this.description = "";
         this.superiorLimit = null;
         this.inferiorLimit = null;
+        this.initialValue = null;
         this.possibleContents = new ArrayList();
     }
 

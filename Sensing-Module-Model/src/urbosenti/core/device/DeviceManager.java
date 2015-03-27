@@ -42,7 +42,7 @@ import urbosenti.user.UserManager;
  *
  * @author Guilherme
  */
-public class DeviceManager extends ComponentManager implements BaseComponentManager {
+public final class DeviceManager extends ComponentManager implements BaseComponentManager {
 
     /**
      * int EVENT_DEVICE_REGISTRATION_SUCCESSFUL = 1;

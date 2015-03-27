@@ -7,19 +7,15 @@ package urbosenti.user;
 import java.sql.SQLException;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import urbosenti.core.data.dao.UserDAO;
 import urbosenti.core.device.ComponentManager;
 import urbosenti.core.device.DeviceManager;
 import urbosenti.core.device.model.ActionModel;
-import urbosenti.core.device.model.Component;
 import urbosenti.core.device.model.FeedbackAnswer;
 import urbosenti.core.device.model.Parameter;
 import urbosenti.core.device.model.TargetOrigin;
 import urbosenti.core.events.Action;
 import urbosenti.core.events.ApplicationEvent;
-import urbosenti.core.events.AsynchronouslyManageableComponent;
 import urbosenti.core.events.Event;
 
 /**
@@ -103,7 +99,7 @@ public class UserManager extends ComponentManager {
     private static User loggedUser;
 
     public UserManager(DeviceManager deviceManager) {
-        super(deviceManager,UserDAO.COMPONENT_ID);
+        super(deviceManager, UserDAO.COMPONENT_ID);
     }
 
     @Override
@@ -121,7 +117,7 @@ public class UserManager extends ComponentManager {
      * </ul>
      *
      * @param action contém objeto ação.
-     * @return 
+     * @return
      *
      */
     @Override
@@ -328,7 +324,7 @@ public class UserManager extends ComponentManager {
         }
     }
 
-    public User login(String userName, String password) {
+    public User login(String userName, String password) throws SQLException {
         for (User user : getDeviceManager().getDataManager().getUserDAO().getUsers()) {
             // Checa se o usuário existe
             if (user.getLogin().equals(userName) && user.getPassword().equals(password)) {
@@ -362,7 +358,7 @@ public class UserManager extends ComponentManager {
      * @param hasChoseAnonymousUpload
      * @return
      */
-    public boolean insertUser(String userName, String password, Boolean hasAccepptedThePrivacyTerm, Boolean hasAccepptedShareData, Boolean hasChoseAnonymousUpload) {
+    public boolean insertUser(String userName, String password, Boolean hasAccepptedThePrivacyTerm, Boolean hasAccepptedShareData, Boolean hasChoseAnonymousUpload) throws SQLException {
         // Verifica se o nome do usuário e a senha são válidos
         if (!this.checkUsernameValidity(userName) || !this.checkPasswordValidity(password)) {
             return false;
@@ -395,7 +391,7 @@ public class UserManager extends ComponentManager {
      * @param user
      * @return
      */
-    public boolean updateUser(User user) {
+    public boolean updateUser(User user) throws SQLException {
         // checa se usuário está logado
         if (loggedUser == null) {
             return false;
@@ -420,7 +416,7 @@ public class UserManager extends ComponentManager {
      * @param password
      * @return
      */
-    public boolean deleteUser(String userName, String password) {
+    public boolean deleteUser(String userName, String password) throws SQLException {
         // verifica se o usuário existe
         User user = getDeviceManager().getDataManager().getUserDAO().get(password, password);
         if (user == null) {
@@ -431,8 +427,8 @@ public class UserManager extends ComponentManager {
                 return false;
             }
             // Se o usuário existe remove ele 
-            getDeviceManager().getDataManager().getUserDAO().delete(user);
-            // Gera o evento
+            getDeviceManager().getDataManager().getUserDAO().deleteAllUserInformation(user);
+            // Gera o evento -- evento exclui as outras informações associadas
             this.newInternalEvent(UserManager.EVENT_USER_DELETED, user);
             // Checa se ele está logado e realiza o logout
             if (loggedUser.getId() == user.getId()) {
@@ -448,8 +444,9 @@ public class UserManager extends ComponentManager {
      *
      * @param userName
      * @return true se passar pelas validações
+     * @throws java.sql.SQLException
      */
-    public boolean checkUsernameValidity(String userName) {
+    public boolean checkUsernameValidity(String userName) throws SQLException {
         // verifica se não está vaziu o nome ou se tem menos que 4 caracteres
         if (userName.length() < 4) {
             return false;
@@ -472,12 +469,7 @@ public class UserManager extends ComponentManager {
      */
     public boolean checkPasswordValidity(String password) {
         // verifica se não está vaziu o nome ou se tem menos que 4 caracteres
-        if (password.length() < 4) {
-            return false;
-        } else // retorna veradeiro se passou por todas as validações
-        {
-            return true;
-        }
+        return password.length() >= 4; // retorna veradeiro se passou por todas as validações
     }
 
     /**
@@ -486,13 +478,16 @@ public class UserManager extends ComponentManager {
      * @param user
      * @return
      */
-    private boolean userIsBeingMonitored(User user) {
+    private boolean userIsBeingMonitored(User user) throws SQLException {
         // Verifica se este usuário é o que está senso monitorado
-        if (user.getId() == getDeviceManager().getDataManager().getUserDAO().getMonitoredUser().getId()) {
-            return true;
-        } else {
+        // busca todas as informações sobre o usuário
+        User returnedUser = getDeviceManager().getDataManager().getUserDAO().getMonitoredUser();
+        // se retornar nulo nenhum usuário está sendo monitorado
+        if (returnedUser == null) {
             return false;
         }
+        // verifica se o usuário existe
+        return returnedUser.getId() == user.getId();
     }
 
     /**
@@ -502,20 +497,19 @@ public class UserManager extends ComponentManager {
      * @return retorna true se o usuário existir e retorna false caso não
      * exista.
      */
-    public boolean setMonitoredUser() {
+    public boolean setMonitoredUser() throws SQLException {
         // busca todas as informações sobre o usuário
         User user = loggedUser;
         // verifica se o usuário existe
         if (user != null) {
-            // atualiza esse usuário como sendo monitorado
+            // atualiza esse usuário como sendo monitorado e remove do anterior
             getDeviceManager().getDataManager().getUserDAO().setMonitoredUser(user);
             // gera o evento
             this.newInternalEvent(UserManager.EVENT_USER_CHOSEN_TO_BE_MONITORED, user);
             // retorna o resultado do método
             return true;
-        } else {
-            return false;
         }
+        return false;
     }
 
     /**
@@ -526,8 +520,9 @@ public class UserManager extends ComponentManager {
      * @param password
      * @return retorna true se o usuário existir e retorna false caso não
      * exista.
+     * @throws java.sql.SQLException
      */
-    public boolean setMonitoredUser(String userName, String password) {
+    public boolean setMonitoredUser(String userName, String password) throws SQLException {
         // busca todas as informações sobre o usuário
         User user = getDeviceManager().getDataManager().getUserDAO().get(userName, password);
         // verifica se o usuário existe
@@ -550,8 +545,9 @@ public class UserManager extends ComponentManager {
      * @param user
      * @return retorna true se o usuário existir e retorna false caso não
      * exista.
+     * @throws java.sql.SQLException
      */
-    public boolean setMonitoredUser(User user) {
+    public boolean setMonitoredUser(User user) throws SQLException {
         // busca todas as informações sobre o usuário
         User returnedUser = getDeviceManager().getDataManager().getUserDAO().get(user.getId());
         // verifica se o usuário existe
@@ -573,8 +569,9 @@ public class UserManager extends ComponentManager {
      * @param user
      * @param newValue
      * @return
+     * @throws java.sql.SQLException
      */
-    public boolean updateUserPrivacyTerm(User user, boolean newValue) {
+    public boolean updateUserPrivacyTerm(User user, boolean newValue) throws SQLException {
         user = getDeviceManager().getDataManager().getUserDAO().updatePrivacyConfiguration(User.STATE_PRIVACY_TERM, user, newValue);
         if (user != null) {
             this.newInternalEvent(UserManager.EVENT_USER_CHANGED_PRIVACY_CONFIGURATION, User.STATE_PRIVACY_TERM, newValue);
@@ -591,8 +588,9 @@ public class UserManager extends ComponentManager {
      * @param user
      * @param newValue
      * @return
+     * @throws java.sql.SQLException
      */
-    public boolean updateUserDataSharing(User user, boolean newValue) {
+    public boolean updateUserDataSharing(User user, boolean newValue) throws SQLException {
         user = getDeviceManager().getDataManager().getUserDAO().updatePrivacyConfiguration(User.STATE_PRIVACY_DATA_SHARING, user, newValue);
         if (user != null) {
             this.newInternalEvent(UserManager.EVENT_USER_CHANGED_PRIVACY_CONFIGURATION, User.STATE_PRIVACY_DATA_SHARING, newValue);
@@ -609,8 +607,9 @@ public class UserManager extends ComponentManager {
      * @param user
      * @param newValue
      * @return
+     * @throws java.sql.SQLException
      */
-    public boolean updateUserAnonymousUpload(User user, boolean newValue) {
+    public boolean updateUserAnonymousUpload(User user, boolean newValue) throws SQLException {
         user = getDeviceManager().getDataManager().getUserDAO().updatePrivacyConfiguration(User.STATE_PRIVACY_ANONYMOUS_UPLOAD, user, newValue);
         if (user != null) {
             this.newInternalEvent(UserManager.EVENT_USER_CHANGED_PRIVACY_CONFIGURATION, User.STATE_PRIVACY_ANONYMOUS_UPLOAD, newValue);
@@ -654,10 +653,10 @@ public class UserManager extends ComponentManager {
         // verifica o componente
         // busca a ação que pode ser executada para alterar este estado
         ActionModel actionModel = super.getDeviceManager().getDataManager().getUserDAO().getActionStateModel(componentId, entityId, stateId);
-        if(actionModel != null){
+        if (actionModel != null) {
             // Parâmetros
             HashMap<String, Object> hashMap = new HashMap();
-            for(Parameter p : actionModel.getParameters()){
+            for (Parameter p : actionModel.getParameters()) {
                 hashMap.put(p.getLabel(), newValue);
             }
             // Cria a ação
@@ -669,17 +668,17 @@ public class UserManager extends ComponentManager {
             action.setUser(user);
             action.setTargetEntityId(entityId);
             // A ação ao componente que deve receber a ação
-            for(ComponentManager componentManager : super.getDeviceManager().getComponentManagers()){
-                if(componentManager.getComponentId() == componentId){
+            for (ComponentManager componentManager : super.getDeviceManager().getComponentManagers()) {
+                if (componentManager.getComponentId() == componentId) {
                     componentManager.applyAction(action);
                     // Gerar evento da mudança de configuração do sistema
-                    this.newInternalEvent(EVENT_USER_CHANGED_SYSTEM_CONFIGURATION, componentId,entityId,stateId,newValue);
+                    this.newInternalEvent(EVENT_USER_CHANGED_SYSTEM_CONFIGURATION, componentId, entityId, stateId, newValue);
                     break;
                 }
             }
             return true;
-        }        
+        }
         return false;
     }
-
+    
 }

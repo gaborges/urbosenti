@@ -23,6 +23,7 @@ import urbosenti.core.device.model.EntityType;
 import urbosenti.core.device.model.Instance;
 import urbosenti.core.device.model.State;
 import urbosenti.user.User;
+import urbosenti.user.UserPreference;
 
 /**
  *
@@ -40,14 +41,12 @@ public class UserDAO {
     public static final int STATE_ID_OF_USER_MANAGEMENT_ANONYMOUS_UPLOAD = 6;
     public static final int STATE_ID_OF_USER_MANAGEMENT_USER_BEING_MONITORED = 7;
 
-    private final List<User> users;
     private final Connection connection;
     private PreparedStatement stmt;
     private final DataManager dataManager;
 
     public UserDAO(Object context, DataManager dataManager) {
         this.dataManager = dataManager;
-        this.users = new ArrayList();
         this.connection = (Connection) context;
     }
 
@@ -82,23 +81,9 @@ public class UserDAO {
                 this.dataManager.getInstanceDAO().insertState(s, instance);
                 this.dataManager.getInstanceDAO().insertPossibleStateContents(s, instance);
             }
+            // adiciona a instância, ao fazer isso internamente esse método preenche os novos valores
             user.setInstance(instance);
-            user.setId(instance.getId());
-//            // verifica um ID disponível
-//            if (users.size() > 0) {
-//                int greaterId = 0;
-//                for (User u : users) {
-//                    if (greaterId < u.getId()) {
-//                        greaterId = u.getId();
-//                    }
-//                }
-//                user.setId(greaterId + 1);
-//            } else {
-//                user.setId(1);
-//            }
-//            // Insere as configuração de preferência padrão para o usuário no banco
-//            // atribui as preferências no objeto do usuário
-//            users.add(user);
+            user.setUserPreferences(this.getUserPreferences(instance));
         } catch (SQLException ex) {
             Logger.getLogger(UserDAO.class.getName()).log(Level.SEVERE, null, ex);
             throw new Error(ex);
@@ -118,20 +103,13 @@ public class UserDAO {
                 throw new Error("Instância do usuário não foi especificada!");
             }
             // busca o estado a partir da instância
-            State state = this.getStateFromUserInstance(STATE_ID_OF_USER_MANAGEMENT_USER_PASSWORD, user.getInstance());
+            State state = UserDAO.getStateFromUserInstance(STATE_ID_OF_USER_MANAGEMENT_USER_PASSWORD, user.getInstance());
             // verifica se o password não modificou
             if (state.getCurrentValue().toString().equals(user.getPassword())) {
                 return;
             }
             state.setContent(new Content(user.getPassword()));
             this.dataManager.getInstanceDAO().insertContent(state);
-//            for (int i = 0; i < users.size(); i++) {
-//                if (users.get(i).getId() == user.getId()
-//                        && users.get(i).getLogin().equals(user.getLogin())) {
-//                    users.set(i, user);
-//                    break;
-//                }
-//            }
         } catch (SQLException ex) {
             Logger.getLogger(UserDAO.class.getName()).log(Level.SEVERE, null, ex);
             throw new Error(ex);
@@ -139,19 +117,36 @@ public class UserDAO {
     }
 
     /**
-     * Deleta o usuário indicado pelo id e o login incluso no objeto passado por
+     * Deleta o usuário indicado pelo id incluso no objeto passado por
+     * parâmetro e todos os dados associados a ele.
+     *
+     * @param user
+     * @throws java.sql.SQLException
+     */
+    public void deleteAllUserInformation(User user) throws SQLException {
+        // exclui os conteúdos monitorados nos estados da entidade
+        this.dataManager.getStateDAO().deleteUserContents(user.getInstance());
+        // exclui os conteúdos monitorados nos estados das instâncias
+        this.dataManager.getInstanceDAO().deleteUserInstanceContents(user.getInstance());
+        // exclui as mensagens associadas
+        this.dataManager.getCommunicationDAO().deleteUserReports(user);
+        // exclui demais dados da instância de usuário
+        this.delete(user);
+    }
+    
+    /**
+     * Deleta somente o usuário indicado pelo id incluso no objeto passado por
      * parâmetro.
      *
      * @param user
      */
-    public void delete(User user) {
-        for (int i = 0; i < users.size(); i++) {
-            if (users.get(i).getId() == user.getId()
-                    && users.get(i).getLogin().equals(user.getLogin())) {
-                users.remove(i);
-                break;
-            }
-        }
+    public void delete(User user) throws SQLException {
+        // exclui esclui o modelo de estado da instância
+        this.dataManager.getInstanceDAO().deleteInstanceStateContents(user.getInstance());
+        // exclui o modelo de estado da instância
+        this.dataManager.getInstanceDAO().deleteInstanceStates(user.getInstance());
+        // exclui a instância
+        this.dataManager.getInstanceDAO().deleteInstance(user.getInstance());
     }
 
     /**
@@ -161,42 +156,25 @@ public class UserDAO {
      * @param login
      * @param password
      * @return
+     * @throws java.sql.SQLException
      */
-    public User get(String login, String password) {
-        try {
-            Instance instance;
-            // busca a instância de usuário que possui login de acordo com o útimo conteúdo do estado de login,
-            instance = this.dataManager.getInstanceDAO().getInstanceByStateContent(
-                    login, STATE_ID_OF_USER_MANAGEMENT_USER_LOGIN, ENTITY_ID_OF_USER_MANAGEMENT, COMPONENT_ID);
-            // se retornar nulo o usuário não existe
-            if (instance == null) {
-                return null;
-            }
-            // Compara os conteúdos atuais do usuário relativos ao login e ao password, se não forem retorna null
-            if (this.getStateFromUserInstance(STATE_ID_OF_USER_MANAGEMENT_USER_LOGIN, instance).toString().equals(login)
-                    && this.getStateFromUserInstance(STATE_ID_OF_USER_MANAGEMENT_USER_PASSWORD, instance).toString().equals(password)) {
-                // cria um usuário e atribui os dados
-                User user = new User();
-                user.setInstance(instance);
-                user.setPassword(password);
-                user.setLogin(login);
-                user.setId(instance.getId());
-                user.setIsBeingMonitored((Boolean)this.getStateFromUserInstance(STATE_ID_OF_USER_MANAGEMENT_USER_BEING_MONITORED, instance).getCurrentValue());
-                user.setOptedByAnonymousUpload((Boolean)this.getStateFromUserInstance(STATE_ID_OF_USER_MANAGEMENT_ANONYMOUS_UPLOAD, instance).getCurrentValue());
-                user.setAcceptedDataSharing((Boolean)this.getStateFromUserInstance(STATE_ID_OF_USER_MANAGEMENT_SYSTEM_DATA_SHARING_PERMISSION_BY_USER, instance).getCurrentValue());
-                user.setAcceptedPrivacyTerm((Boolean)this.getStateFromUserInstance(STATE_ID_OF_USER_MANAGEMENT_USER_PRIVACY_TERM, instance).getCurrentValue());
-                user.setUserPosition((Integer)this.getStateFromUserInstance(STATE_ID_OF_USER_MANAGEMENT_USER_POSITION, instance).getCurrentValue());
-                user.setUserPreferences(this.dataManager.getInstanceDAO().getUserPreferences(instance));
-                return user;
-            }
-//            for (User user : users) {
-//                if (user.getPassword().equals(password)
-//                        && user.getLogin().equals(password)) {
-//                    return user;
-//                }
-//            }
-        } catch (SQLException ex) {
-            Logger.getLogger(UserDAO.class.getName()).log(Level.SEVERE, null, ex);
+    public User get(String login, String password) throws SQLException {
+        Instance instance;
+        // busca a instância de usuário que possui login de acordo com o útimo conteúdo do estado de login,
+        instance = this.dataManager.getInstanceDAO().getInstanceByStateContent(
+                login, STATE_ID_OF_USER_MANAGEMENT_USER_LOGIN, ENTITY_ID_OF_USER_MANAGEMENT, COMPONENT_ID);
+        // se retornar nulo o usuário não existe
+        if (instance == null) {
+            return null;
+        }
+        // Compara os conteúdos atuais do usuário relativos ao login e ao password, se não forem retorna null
+        if (UserDAO.getStateFromUserInstance(STATE_ID_OF_USER_MANAGEMENT_USER_LOGIN, instance).toString().equals(login)
+                && UserDAO.getStateFromUserInstance(STATE_ID_OF_USER_MANAGEMENT_USER_PASSWORD, instance).toString().equals(password)) {
+            // cria um usuário e atribui os dados
+            User user = new User();
+            user.setInstance(instance);
+            user.setUserPreferences(this.getUserPreferences(instance));
+            return user;
         }
         return null;
     }
@@ -207,14 +185,21 @@ public class UserDAO {
      *
      * @param id
      * @return
+     * @throws java.sql.SQLException
      */
-    public User get(int id) {
-        for (User user : users) {
-            if (user.getId() == id) {
-                return user;
-            }
+    public User get(int id) throws SQLException {
+        Instance instance;
+        // busca a instância de usuário que possui login de acordo com o útimo conteúdo do estado de login,
+        instance = this.dataManager.getInstanceDAO().getInstance(id);
+        // se retornar nulo o usuário não existe
+        if (instance == null) {
+            return null;
         }
-        return null;
+        // cria um usuário e atribui os dados
+        User user = new User();
+        user.setInstance(instance);
+        user.setUserPreferences(this.getUserPreferences(instance));
+        return user;
     }
 
     /**
@@ -223,12 +208,16 @@ public class UserDAO {
      * UrboSenti.
      *
      * @return
+     * @throws java.sql.SQLException
      */
-    public User getMonitoredUser() {
-        for (User user : users) {
-            if (user.isBeingMonitored()) {
-                return user;
-            }
+    public User getMonitoredUser() throws SQLException {
+        //  busca quem está sendo monitorado e atualiza para não monitorado
+        Instance instance = this.dataManager.getInstanceDAO().getInstanceByStateContent(
+                true, STATE_ID_OF_USER_MANAGEMENT_USER_BEING_MONITORED, ENTITY_ID_OF_USER_MANAGEMENT, COMPONENT_ID);
+        if(instance != null){
+            User user = new User();
+            user.setInstance(instance);
+            user.setUserPreferences(this.getUserPreferences(instance));
         }
         return null;
     }
@@ -237,8 +226,20 @@ public class UserDAO {
      * Retorna a lista de todos os usuários cadastrados.
      *
      * @return
+     * @throws java.sql.SQLException
      */
-    public List<User> getUsers() {
+    public List<User> getUsers() throws SQLException {
+        List<User> users = new ArrayList();
+        // busca a todas as instâncias de usuário
+        List<Instance> instances = this.dataManager.getInstanceDAO().getEntityInstances(
+                this.dataManager.getEntityDAO().getEntity(COMPONENT_ID, ENTITY_ID_OF_USER_MANAGEMENT));
+        // percorre toda a lista a adiciona em objetos usuários
+        for(Instance instance : instances){
+            // cria um usuário e atribui os dados
+            User user = new User();
+            user.setInstance(instance);
+            user.setUserPreferences(this.getUserPreferences(instance));
+        }
         return users;
     }
 
@@ -249,15 +250,28 @@ public class UserDAO {
      * monitorado.
      *
      * @param user
+     * @throws java.sql.SQLException
      */
-    public void setMonitoredUser(User user) {
-        for (User u : users) {
-            if (u.getId() == user.getId()) {
-                u.setIsBeingMonitored(true);
-            } else {
-                u.setIsBeingMonitored(false);
-            }
+    public void setMonitoredUser(User user) throws SQLException {
+        if (user.getInstance() == null) {
+            throw new Error("Instância do usuário não foi especificada!");
         }
+        //  busca quem está sendo monitorado e atualiza para não monitorado
+        Instance instance = this.dataManager.getInstanceDAO().getInstanceByStateContent(
+                true, STATE_ID_OF_USER_MANAGEMENT_USER_BEING_MONITORED, ENTITY_ID_OF_USER_MANAGEMENT, COMPONENT_ID);
+        // se retornar null então ninguém está sendo monitorado
+        if(instance != null){
+            UserDAO.getStateFromUserInstance(STATE_ID_OF_USER_MANAGEMENT_USER_BEING_MONITORED, instance)
+                    .setContent(new Content(false));
+            this.dataManager.getInstanceDAO().insertContent(
+                    UserDAO.getStateFromUserInstance(STATE_ID_OF_USER_MANAGEMENT_USER_BEING_MONITORED, instance));
+        }
+        // busca o estado a partir da instância
+        State state = UserDAO.getStateFromUserInstance(STATE_ID_OF_USER_MANAGEMENT_USER_BEING_MONITORED, user.getInstance());
+        // verifica se o password não modificou
+        state.setContent(new Content(true));
+        this.dataManager.getInstanceDAO().insertContent(state);
+        user.setIsBeingMonitored(true);
     }
 
     /**
@@ -268,18 +282,37 @@ public class UserDAO {
      * @param user
      * @param newValue
      * @return Retorna o usuário alterado. Se ele não existir retorna null.
+     * @throws java.sql.SQLException
      */
-    public User updatePrivacyConfiguration(int privacyState, User user, boolean newValue) {
+    public User updatePrivacyConfiguration(int privacyState, User user, boolean newValue) throws SQLException {
         User u = get(user.getId());
         if (u != null) {
             switch (privacyState) {
                 case User.STATE_PRIVACY_TERM:
+                    // busca o estado a partir da instância e adiciona o novo conteúdo
+                    UserDAO.getStateFromUserInstance(STATE_ID_OF_USER_MANAGEMENT_USER_BEING_MONITORED, user.getInstance())
+                            .setContent(new Content(newValue));
+                    // persiste o novo conteúdo
+                    this.dataManager.getInstanceDAO().insertContent(
+                            UserDAO.getStateFromUserInstance(STATE_ID_OF_USER_MANAGEMENT_USER_BEING_MONITORED, user.getInstance()));
                     u.setAcceptedPrivacyTerm(newValue);
                     break;
                 case User.STATE_PRIVACY_DATA_SHARING:
+                    // busca o estado a partir da instância e adiciona o novo conteúdo
+                    UserDAO.getStateFromUserInstance(STATE_ID_OF_USER_MANAGEMENT_SYSTEM_DATA_SHARING_PERMISSION_BY_USER, user.getInstance())
+                            .setContent(new Content(newValue));
+                    // persiste o novo conteúdo
+                    this.dataManager.getInstanceDAO().insertContent(
+                            UserDAO.getStateFromUserInstance(STATE_ID_OF_USER_MANAGEMENT_SYSTEM_DATA_SHARING_PERMISSION_BY_USER, user.getInstance()));
                     u.setAcceptedDataSharing(newValue);
                     break;
                 case User.STATE_PRIVACY_ANONYMOUS_UPLOAD:
+                    // busca o estado a partir da instância e adiciona o novo conteúdo
+                    UserDAO.getStateFromUserInstance(STATE_ID_OF_USER_MANAGEMENT_ANONYMOUS_UPLOAD, user.getInstance())
+                            .setContent(new Content(newValue));
+                    // persiste o novo conteúdo
+                    this.dataManager.getInstanceDAO().insertContent(
+                            UserDAO.getStateFromUserInstance(STATE_ID_OF_USER_MANAGEMENT_ANONYMOUS_UPLOAD, user.getInstance()));
                     u.setOptedByAnonymousUpload(newValue);
                     break;
             }
@@ -338,12 +371,29 @@ public class UserDAO {
      * @param instance
      * @return
      */
-    private State getStateFromUserInstance(int stateId, Instance instance) {
-        for (State s : instance.getStates()) {
-            if (stateId == s.getModelId()) {
-                return s;
+    public static State getStateFromUserInstance(int stateId, Instance instance) {
+        for (int i = 0; i < instance.getStates().size(); i++) {
+            if (stateId == instance.getStates().get(i).getModelId()) {
+                return instance.getStates().get(i);
             }
         }
         return null;
+    }
+
+    public List<UserPreference> getUserPreferences(User user) throws SQLException {
+        return this.getUserPreferences(user.getInstance());
+    }
+
+    private List<UserPreference> getUserPreferences(Instance instance) throws SQLException {
+        List<UserPreference> list = new ArrayList();
+        for (State s : this.dataManager.getEntityStateDAO().getUserEntityStates(instance)) {
+            list.add(new UserPreference(s));
+        }
+        for (Instance i : this.dataManager.getInstanceDAO().getUserInstances(instance)) {
+            for (State s : i.getStates()) {
+                list.add(new UserPreference(s, i));
+            }
+        }
+        return list;
     }
 }

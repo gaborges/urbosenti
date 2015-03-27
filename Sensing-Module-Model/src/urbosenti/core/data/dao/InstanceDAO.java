@@ -21,6 +21,7 @@ import urbosenti.core.device.model.EntityType;
 import urbosenti.core.device.model.Instance;
 import urbosenti.core.device.model.PossibleContent;
 import urbosenti.core.device.model.State;
+import urbosenti.user.UserPreference;
 import urbosenti.util.DeveloperSettings;
 
 /**
@@ -69,6 +70,9 @@ public class InstanceDAO {
         if (state.getModelId() < 1) {
             state.setModelId(state.getId());
         }
+        System.out.println("INSERT INTO instance_states (description,user_can_change,instance_id,data_type_id,superior_limit,inferior_limit,initial_value,state_model_id) "
+                + " VALUES (" + state.getId() + ",'" + state.getDescription() + "'," + state.isUserCanChange() + "," + instance.getId()
+                + "," + state.getDataType().getId() + ",'" + state.getSuperiorLimit() + "','" + state.getInferiorLimit() + "','" + state.getInitialValue() + "'," + state.getModelId() + ");");
         // trata o tipo de dado do estado
         state.setSuperiorLimit(Content.parseContent(state.getDataType(), state.getSuperiorLimit()));
         state.setInferiorLimit(Content.parseContent(state.getDataType(), state.getInferiorLimit()));
@@ -92,7 +96,7 @@ public class InstanceDAO {
         }
         stmt.close();
         if (DeveloperSettings.SHOW_DAO_SQL) {
-            System.out.println("INSERT INTO instance_states (description,user_can_change,instance_id,data_type_id,superior_limit,inferior_limit,initial_value,state_model_id) "
+            System.out.println("INSERT INTO instance_states (id,description,user_can_change,instance_id,data_type_id,superior_limit,inferior_limit,initial_value,state_model_id) "
                     + " VALUES (" + state.getId() + ",'" + state.getDescription() + "'," + state.isUserCanChange() + "," + instance.getId()
                     + "," + state.getDataType().getId() + ",'" + state.getSuperiorLimit() + "','" + state.getInferiorLimit() + "','" + state.getInitialValue() + "'," + state.getModelId() + ");");
         }
@@ -105,7 +109,7 @@ public class InstanceDAO {
         if (state.getPossibleContents() != null) {
             for (PossibleContent possibleContent : state.getPossibleContents()) {
                 statement = this.connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
-                statement.setObject(1, Content.parseContent(state.getDataType(),possibleContent.getValue()));
+                statement.setObject(1, Content.parseContent(state.getDataType(), possibleContent.getValue()));
                 statement.setBoolean(2, possibleContent.isIsDefault());
                 statement.setInt(3, state.getId());
                 statement.execute();
@@ -119,7 +123,7 @@ public class InstanceDAO {
                 statement.close();
                 if (DeveloperSettings.SHOW_DAO_SQL) {
                     System.out.println("INSERT INTO possible_action_contents (id,possible_value, default_value, instance_state_id) "
-                            + " VALUES (" + possibleContent.getId() + "," + Content.parseContent(state.getDataType(),possibleContent.getValue()) + "," + possibleContent.isIsDefault() + "," + state.getId() + ");");
+                            + " VALUES (" + possibleContent.getId() + "," + Content.parseContent(state.getDataType(), possibleContent.getValue()) + "," + possibleContent.isIsDefault() + "," + state.getId() + ");");
                 }
             }
         }
@@ -168,7 +172,7 @@ public class InstanceDAO {
         }
     }
 
-    public List<Instance> getEntityInstaces(Entity entity) throws SQLException {
+    public List<Instance> getEntityInstances(Entity entity) throws SQLException {
         List<Instance> instances = new ArrayList();
         Instance instance = null;
         String sql = "SELECT id,  description, model_id, representative_class "
@@ -211,15 +215,15 @@ public class InstanceDAO {
             DataType type = new DataType();
             type.setId(rs.getInt("data_type_id"));
             type.setDescription(rs.getString("data_desc"));
-            type.setInitialValue(Content.parseContent(type,rs.getObject("data_initial_value")));
+            type.setInitialValue(Content.parseContent(type, rs.getObject("data_initial_value")));
             state.setDataType(type);
             state.setInferiorLimit(Content.parseContent(type, rs.getObject("inferior_limit")));
-            state.setSuperiorLimit(Content.parseContent(type,rs.getObject("superior_limit")));
-            state.setInitialValue(Content.parseContent(type,rs.getObject("initial_value")));
+            state.setSuperiorLimit(Content.parseContent(type, rs.getObject("superior_limit")));
+            state.setInitialValue(Content.parseContent(type, rs.getObject("initial_value")));
             state.setStateInstance(true);
             state.setUserCanChange(rs.getBoolean("user_can_change"));
             state.setModelId(rs.getInt("state_model_id"));
-            
+
             state.setPossibleContent(this.getPossibleStateContents(state));
             // pegar o valor atual
             Content c = this.getCurrentContentValue(state);
@@ -245,7 +249,7 @@ public class InstanceDAO {
             possibleContents.add(
                     new PossibleContent(
                             rs.getInt("id"),
-                            Content.parseContent(state.getDataType(),rs.getString("possible_value")),
+                            Content.parseContent(state.getDataType(), rs.getString("possible_value")),
                             rs.getBoolean("default_value")));
         }
         rs.close();
@@ -286,7 +290,7 @@ public class InstanceDAO {
     public Instance getInstance(int modelId, int entityModelId, int componentId) throws SQLException {
         Instance instance = null;
         String sql = "SELECT instances.description as instance_desc, representative_class, entity_id, entities.description as entity_desc, instances.model_id,\n"
-                + " entity_type_id, entity_types.description as type_desc, component_id, components.description as comp_desc, code_class, instance_id\n"
+                + " entity_type_id, entity_types.description as type_desc, component_id, components.description as comp_desc, code_class, instances.id as instance_id\n"
                 + " FROM instances, entities,entity_types, components \n"
                 + " WHERE instances.model_id = ? AND entities.model_id = ? AND entities.id = entity_id AND entity_types.id = entity_type_id AND components.id = component_id AND component_id = ?"
                 + " ORDER BY instances.model_id;";
@@ -367,6 +371,158 @@ public class InstanceDAO {
         rs.close();
         stmt.close();
         return instance;
+    }
+
+    /**
+     * Recebe por parâmetro uma instância de usuário e retorna todos os estados
+     * que podem ser alterados pelo usuário em cada interface. Esses estados
+     * retornam com o valor atual da última vez que o usuário alterou o
+     * conteúdo. Caso este não exista retorna o valor inicial. OBS.: Retorna
+     * todos os dados até os componentes a partir da visão do estado.
+     *
+     * @param instance
+     * @return
+     */
+    public List<State> getUserInstanceStates(Instance instance, Instance userInstance) throws SQLException {
+        List<State> states = new ArrayList();
+        State state = null;
+        String sql = "SELECT instance_states.id as state_id, instance_states.description as state_desc, user_can_change, superior_limit, "
+                + " state_model_id, inferior_limit, instance_states.initial_value, data_type_id, data_types.initial_value as data_initial_value, "
+                + " data_types.description as data_desc "
+                + " FROM instance_states, data_types \n"
+                + " WHERE user_can_change = 1 AND data_types.id = data_type_id; ";
+        PreparedStatement stmt = this.connection.prepareStatement(sql);
+        ResultSet rs = stmt.executeQuery();
+        while (rs.next()) {
+            state = new State();
+            state.setId(rs.getInt("state_id"));
+            state.setModelId(rs.getInt("state_model_id"));
+            state.setDescription(rs.getString("state_desc"));
+            state.setInferiorLimit(rs.getObject("inferior_limit"));
+            state.setSuperiorLimit(rs.getObject("superior_limit"));
+            state.setInitialValue(rs.getObject("initial_value"));
+            state.setStateInstance(true);
+            state.setUserCanChange(rs.getBoolean("user_can_change"));
+            DataType type = new DataType();
+            type.setId(rs.getInt("data_type_id"));
+            type.setDescription(rs.getString("data_desc"));
+            type.setInitialValue(rs.getObject("data_initial_value"));
+            state.setDataType(type);
+            state.setPossibleContent(this.getPossibleStateContents(state));
+            // pegar o valor atual
+            Content c = this.getCurrentUserInstanceContentValue(state, userInstance);
+            if (c != null) { // se c for nulo deve usar os valores iniciais, senão adiciona o conteúdo no estado
+                state.setContent(c);
+            }
+            states.add(state);
+        }
+        rs.close();
+        stmt.close();
+        return states;
+    }
+
+    /**
+     * Recebe por parâmetro uma instância de usuário e retorna todas as
+     * instâncias que possuem estados que podem ser alterados pelo usuário,
+     * juntamente com esses estados e seu valor atual em relação ao usuário.
+     * Esses estados retornam com o valor atual da última vez que o usuário
+     * alterou o conteúdo. Caso este não exista retorna o valor inicial. OBS.:
+     * Retorna todos os dados até os componentes a partir da visão do estado.
+     *
+     * @param userInstance
+     * @return
+     */
+    public List<Instance> getUserInstances(Instance userInstance) throws SQLException {
+        List<Instance> instances = new ArrayList();
+        Instance instance = null;
+        // Buscar todas as instâncias que possuam algum estado que pode ser alterado pelo usuário
+        String sql = "SELECT instances.id as instance_id,  instances.description as instance_desc, instances.model_id as instance_model_id, "
+                + " representative_class, (SELECT count(*) FROM instance_states WHERE user_can_change == 1  AND instance_id = instances.id) as count, "
+                + " entity_id, entities.description as entity_desc, component_id, components.description as component_desc, code_class, "
+                + " entities.model_id as entity_model_id, entity_type_id, entity_types.description as entity_type_desc\n"
+                + "    FROM instances, entities, components, entity_types \n"
+                + "    WHERE (SELECT count(*) FROM instance_states WHERE user_can_change == 1  AND instance_id = instances.id) > 0 "
+                + " AND entity_id = entities.id AND component_id = components.id AND entity_type_id = entity_types.id AND instance_id = instances.id;";
+        stmt = this.connection.prepareStatement(sql);
+        ResultSet rs = stmt.executeQuery();
+        while (rs.next()) {
+            instance = new Instance();
+            instance.setId(rs.getInt("instance_id"));
+            instance.setDescription(rs.getString("instance_desc"));
+            instance.setRepresentativeClass(rs.getString("representative_class"));
+            instance.setModelId(rs.getInt("instance_model_id"));
+            instance.setEntity(new Entity());
+            instance.getEntity().setId(rs.getInt("entity_id"));
+            instance.getEntity().setDescription(rs.getString("entity_desc"));
+            instance.getEntity().setModelId(rs.getInt("entity_model_id"));
+            instance.getEntity().setEntityType(
+                    new EntityType(rs.getInt("entity_type_id"), rs.getString("type_desc")));
+            instance.getEntity().setComponent(
+                    new Component(rs.getInt("component_id"), rs.getString("comp_desc"), rs.getString("code_class")));
+            instance.setStates(this.getUserInstanceStates(instance, userInstance));
+            instances.add(instance);
+        }
+        rs.close();
+        stmt.close();
+        return instances;
+    }
+
+    private Content getCurrentUserInstanceContentValue(State state, Instance userInstance) throws SQLException {
+        Content content = null;
+        String sql = "SELECT id, reading_value, reading_time "
+                + " FROM instance_state_contents "
+                + " WHERE instance_state_id = ? AND monitored_user_instance_id = ? "
+                + " ORDER BY id DESC "
+                + " LIMIT 1; ";
+        PreparedStatement stmt = this.connection.prepareStatement(sql);
+        stmt.setInt(1, state.getId());
+        stmt.setInt(2, userInstance.getId());
+        ResultSet rs = stmt.executeQuery();
+        if (rs.next()) {
+            content = new Content();
+            // pegar o valor atual
+            content.setId(rs.getInt("id"));
+            content.setTime(rs.getObject("reading_time", Date.class));
+            content.setValue(Content.parseContent(state.getDataType(), (rs.getObject("reading_value"))));
+            content.setMonitoredInstance(userInstance);
+        }
+        rs.close();
+        stmt.close();
+        return content;
+    }
+
+    void deleteInstance(Instance instance) throws SQLException {
+        String sql = "DELETE * FROM entity_state_contents WHERE monitored_user_instance_id = ? ;";
+        stmt = this.connection.prepareStatement(sql);
+        stmt.setInt(1, instance.getId());
+        stmt.executeUpdate();
+        stmt.close();
+    }
+
+    void deleteInstanceStates(Instance instance) throws SQLException {
+        String sql = "DELETE * FROM entity_states WHERE instance_id = ? ;";
+        stmt = this.connection.prepareStatement(sql);
+        stmt.setInt(1, instance.getId());
+        stmt.executeUpdate();
+        stmt.close();
+    }
+
+    void deleteInstanceStateContents(Instance instance) throws SQLException {
+        for (State state : instance.getStates()) {
+            String sql = "DELETE * FROM instance_state_contents WHERE instance_state_id = ? ;";
+            stmt = this.connection.prepareStatement(sql);
+            stmt.setInt(1, state.getId());
+            stmt.executeUpdate();
+            stmt.close();
+        }
+    }
+
+    void deleteUserInstanceContents(Instance instance) throws SQLException {
+        String sql = "DELETE * FROM instance_state_contents WHERE monitored_user_instance_id = ? ;";
+        stmt = this.connection.prepareStatement(sql);
+        stmt.setInt(1, instance.getId());
+        stmt.executeUpdate();
+        stmt.close();
     }
 
 }

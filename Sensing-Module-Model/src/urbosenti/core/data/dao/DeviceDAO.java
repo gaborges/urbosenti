@@ -183,7 +183,7 @@ public class DeviceDAO {
             for(Entity entity : component.getEntities()){
                 entity.setActions(dataManager.getActionModelDAO().getEntityActions(entity));
                 entity.setEvents(dataManager.getEventModelDAO().getEntityEvents(entity));
-                entity.setInstaces(dataManager.getInstanceDAO().getEntityInstaces(entity));
+                entity.setInstaces(dataManager.getInstanceDAO().getEntityInstances(entity));
                 entity.setStates(dataManager.getEntityStateDAO().getEntityStates(entity));
             }
         }

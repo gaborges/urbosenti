@@ -18,6 +18,14 @@ public interface BaseComponentManager {
      * @return 
      */
     public Device getBaseDeviceStructure();
+    /**
+     * Retorna todos os componentes conhecidos
+     * @return 
+     */
     public List<ComponentManager> getComponentManagers();
+    /**
+     * Método utilizado para inserir Gerênciadores de componentes externos a UrboSenti. Atualmente não implementado.
+     * @param componentManager 
+     */
     public void addComponentManager(ComponentManager componentManager);
 }

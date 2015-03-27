@@ -335,7 +335,7 @@
                         <value>java.util.Date</value>
                     </content>
                 </state>
-                <state id="4" userCanChange="true" description="Política">
+                <state id="4" userCanChange="true" description="Política" instaceState="false">
                     <content dataType="3">
                         <possibleValues inferiorLimit="1" superiorLimit="4">
                             <value>1</value>
@@ -400,7 +400,7 @@
                         <value>2</value>
                     </content>
                 </state>
-                <state id="3" userCanChange="true" description="Política">
+                <state id="3" userCanChange="true" description="Política" instaceState="false">
                     <content dataType="3" inferiorLimit="1" superiorLimit="2" initialValue="1">
                         <value default="true">1</value>
                         <value>2</value>
@@ -428,12 +428,12 @@
                 <!-- actions -->
                 <action id="5"  description="Alterar intervalo de reconexão">
                     <parameter id="1" optional="false" dataType="3" label="interval" state="1">
-                        <description>Nova política</description>
+                        <description>Nova intervalo de reconexão</description>
                     </parameter>
                 </action>
                 <action id="6"  description="Alterar método">
                     <parameter id="1" optional="false" dataType="3" label="method" state="2">
-                        <description>Nova política</description>
+                        <description>Novo método</description>
                     </parameter>
                 </action>
                 <action id="7"  description="Alterar política">
@@ -459,7 +459,7 @@
                 <state id="5" userCanChange="false" description="Desconectado?">
                     <content dataType="7" initialValue="true"></content>
                 </state>
-                <state id="6" userCanChange="true" description="Política">
+                <state id="6" userCanChange="true" description="Política" instaceState="false">
                     <content dataType="3" inferiorLimit="1" superiorLimit="4" initialValue="1">
                         <value default="true">1</value>
                         <value>2</value>
@@ -691,7 +691,7 @@
                     <parameter id="2" optional="false" dataType="7" label="status" state="2">
                         <description>Condição</description>
                         <possibleValues>
-                            <value>false</value>
+                            <value default="true">false</value>
                         </possibleValues>
                     </parameter>
                 </action>
@@ -702,7 +702,7 @@
                     <parameter id="2" optional="false" dataType="7" label="status" state="2">
                         <description>Condição</description>
                         <possibleValues>
-                            <value>true</value>
+                            <value default="true">true</value>
                         </possibleValues>
                     </parameter>
                 </action>
@@ -740,7 +740,7 @@
                 </instances>
                 <!-- states -->
                 <state id="1" userCanChange="true" description="Estado de execução atual" instanceState="true">
-                    <content dataType="3" initialValue="0" superiorLimit="1" inferiorLimit="0"></content>
+                    <content dataType="7" initialValue="0" superiorLimit="1" inferiorLimit="0"></content>
                 </state>
                 <!-- events -->
                 <event id="4" synchronous="false" implementation="1" description="Mensagem recebida">
@@ -773,7 +773,7 @@
                 </event>
                 <!-- actions -->
                 <action id="20"  description="Habilitar Interface">
-                    <parameter id="1" optional="false" dataType="3" label="status" state="1">
+                    <parameter id="1" optional="false" dataType="7" label="status" state="1">
                         <description>Estado</description>
                         <possibleValues>
                             <value>1</value>
@@ -784,7 +784,7 @@
                     </parameter>
                 </action>    
                 <action id="21"  description="Desabilitar Interface">
-                    <parameter id="1" optional="false" dataType="3" label="status" state="1">
+                    <parameter id="1" optional="false" dataType="7" label="status" state="1">
                         <description>Condição</description>
                         <possibleValues>
                             <value>0</value>
@@ -798,13 +798,13 @@
         </component>
         <component name="Adaptation" class="urbosenti.adaptation.AdaptationManger"></component>
         <component name="User" class="urbosenti.user.UserManager">
-            <entity type="1" description="Gerenciamento do Usuário">
+            <entity type="3" description="Gerenciamento do Usuário">
                 <!-- intances - Usuarios estaticos e iniciais podem ser adicionados aqui, contudo devem ter ids únicos entre todas as instâncias do sistema -->
                 <!-- status -->
-                <state id="1" userCanChange="true" description="Ordem do usuário" instanceState="true">
+                <state id="1" userCanChange="false" description="Ordem do usuário" instanceState="true">
                     <content dataType="3" inferiorLimit="0"></content>
                 </state>
-                <state id="2" userCanChange="true" description="Login do usuário" instanceState="true">
+                <state id="2" userCanChange="false" description="Login do usuário" instanceState="true">
                     <content dataType="9"></content>
                 </state>
                 <state id="3" userCanChange="true" description="Senha do usuário" instanceState="true">
@@ -965,20 +965,20 @@
             </interaction>
             <interaction id="2" type="1" direction="2" description="Assinar taxa de upload">
                 <communicativeAct>22</communicativeAct>
-                <parameter id="1" optional="false" dataType="6" label="address">
+                <parameter id="1" optional="false" dataType="9" label="address">
                     <description>Endereço do Assinante</description>
                 </parameter>
-                <parameter id="2" optional="false" dataType="6" label="interface">
+                <parameter id="2" optional="false" dataType="9" label="interface">
                     <description>Interface de entrada</description>
                     <possibleValues>
                         <value>GCM</value>
                         <value>Socket</value>
                     </possibleValues>
                 </parameter>
-                <parameter id="3" optional="false" dataType="6" label="uid">
+                <parameter id="3" optional="false" dataType="9" label="uid">
                     <description>UID do assinante</description>
                 </parameter>
-                <parameter id="4" optional="false" dataType="6" label="layer">
+                <parameter id="4" optional="false" dataType="9" label="layer">
                     <description>Camada</description>
                     <possibleValues>
                         <value>System</value>
@@ -988,7 +988,7 @@
             </interaction>
             <interaction id="3" type="2" direction="2" primaryInteraction="2" description="Cancelar assinatura">
                 <communicativeAct>3</communicativeAct>
-                <parameter id="1" optional="false" dataType="6" label="uid">
+                <parameter id="1" optional="false" dataType="9" label="uid">
                     <description>UID do assinante</description>
                 </parameter>
                 <parameter id="2" optional="false" dataType="3" label="conversation">
@@ -997,7 +997,7 @@
                 <parameter id="3" optional="false" dataType="3" label="cancelCode">
                     <description>Id do motivo</description>
                 </parameter>
-                <parameter id="4" optional="false" dataType="6" label="description">
+                <parameter id="4" optional="false" dataType="9" label="description">
                     <description>Descrição</description>
                 </parameter>
             </interaction>
@@ -1006,13 +1006,13 @@
                 <parameter id="1" optional="false" dataType="3" label="errorCode">
                     <description>Id da falha</description>
                 </parameter>
-                <parameter id="2" optional="false" dataType="6" label="description">
+                <parameter id="2" optional="false" dataType="9" label="description">
                     <description>Descrição da falha</description>
                 </parameter>
                 <parameter id="3" optional="false" dataType="3" label="conversation">
                     <description>Id da conversa primária</description>
                 </parameter>
-                <parameter id="4" optional="false" dataType="6" label="uid">
+                <parameter id="4" optional="false" dataType="9" label="uid">
                     <description>UID do servidor</description>
                 </parameter>
             </interaction>
@@ -1021,7 +1021,7 @@
                 <parameter id="1" optional="false" dataType="3" label="conversation">
                     <description>Id da conversa primária</description>
                 </parameter>
-                <parameter id="2" optional="false" dataType="6" label="uid">
+                <parameter id="2" optional="false" dataType="9" label="uid">
                     <description>UID do servidor</description>
                 </parameter>
             </interaction>
@@ -1030,7 +1030,7 @@
                 <parameter id="1" optional="false" dataType="3" label="conversation">
                     <description>Id da conversa primária</description>
                 </parameter>
-                <parameter id="2" optional="false" dataType="6" label="uid">
+                <parameter id="2" optional="false" dataType="9" label="uid">
                     <description>UID do servidor</description>
                 </parameter>
             </interaction>
@@ -1042,16 +1042,16 @@
                 <parameter id="2" optional="false" dataType="3" label="refuseCode">
                     <description>Id do motivo</description>
                 </parameter>
-                <parameter id="3" optional="false" dataType="6" label="conversation">
+                <parameter id="3" optional="false" dataType="9" label="conversation">
                     <description>Motivo da recusa</description>
                 </parameter>
-                <parameter id="4" optional="false" dataType="6" label="uid">
+                <parameter id="4" optional="false" dataType="9" label="uid">
                     <description>UID do servidor</description>
                 </parameter>
             </interaction>
             <interaction id="8" type="2" direction="1" primaryInteraction="2" description="Assinatura cancelada">
                 <communicativeAct>3</communicativeAct>
-                <parameter id="1" optional="false" dataType="6" label="uid">
+                <parameter id="1" optional="false" dataType="9" label="uid">
                     <description>UID do servidor</description>
                 </parameter>
                 <parameter id="2" optional="false" dataType="3" label="conversation">
@@ -1060,7 +1060,7 @@
                 <parameter id="3" optional="false" dataType="3" label="cancelCode">
                     <description>Id do motivo</description>
                 </parameter>
-                <parameter id="4" optional="false" dataType="6" label="description">
+                <parameter id="4" optional="false" dataType="9" label="description">
                     <description>Descrição</description>
                 </parameter>
             </interaction>

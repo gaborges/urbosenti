@@ -35,7 +35,6 @@ import urbosenti.core.device.model.FeedbackAnswer;
 import urbosenti.core.device.model.TargetOrigin;
 import urbosenti.core.events.Action;
 import urbosenti.core.events.ApplicationEvent;
-import urbosenti.core.events.AsynchronouslyManageableComponent;
 import urbosenti.core.events.Event;
 import urbosenti.core.events.SystemEvent;
 
@@ -518,7 +517,7 @@ public class CommunicationManager extends ComponentManager implements Runnable {
             case 20: // Habilitar Interface
                 for(int i = 0; i < pushServiceReveivers.size();i++){
                     if(pushServiceReveivers.get(i).getId() == (Integer) action.getParameters().get("interface")){
-                        if((Integer) action.getParameters().get("status") == PushServiceReceiver.STATUS_LISTENING){
+                        if((Boolean) action.getParameters().get("status") == PushServiceReceiver.STATUS_LISTENING){
                             pushServiceReveivers.get(i).setStatus(PushServiceReceiver.STATUS_LISTENING);
                         }
                     }
@@ -527,7 +526,7 @@ public class CommunicationManager extends ComponentManager implements Runnable {
             case 21: // Desabilitar Interface
                 for(int i = 0; i < pushServiceReveivers.size();i++){
                     if(pushServiceReveivers.get(i).getId() == (Integer) action.getParameters().get("interface")){
-                        if((Integer) action.getParameters().get("status") == PushServiceReceiver.STATUS_STOPPED){
+                        if((Boolean) action.getParameters().get("status") == PushServiceReceiver.STATUS_STOPPED){
                             pushServiceReveivers.get(i).setStatus(PushServiceReceiver.STATUS_STOPPED);
                         }
                     }
