@@ -32,6 +32,7 @@ public class MessageWrapper {
     private Date sentTime;
     private boolean checked; // Se foi checada pela aplicação
     private boolean sent;
+    private long serviceProcessingTime;
     // Critérios utilizados para avaliação ao enviar a mensagem
     private int size; // number of characters
     private long responseTime; // milliseconds
@@ -133,43 +134,47 @@ public class MessageWrapper {
                     target = doc.createElement("target"),
                     layer = doc.createElement("layer"),
                     uid = doc.createElement("uid"),
-                    address = doc.createElement("address"),
-                    name = doc.createElement("name"),
+                    priority = doc.createElement("priority"),
+                    subject = doc.createElement("subject"),
+                    contentType = doc.createElement("contentType"),
+                    contentSize = doc.createElement("contentSize"),
                     anonymousUpload = doc.createElement("anonymousUpload");
 
-            // origin
-            uid.setTextContent(message.getSender().getUid());
-            name.setTextContent(message.getSender().getDescription());
-            layer.setTextContent(String.valueOf(message.getSender().getLayer()));
-            origin.appendChild(uid);
-            origin.appendChild(name);
-            origin.appendChild(layer);
+            // atributo requireResponse
+            root.setAttribute("requireResponse", String.valueOf(message.isRequireResponse()));
 
+            // origin
+            if (Message.SUBJECT_REGISTRATION != message.getSubject()) { // Se for para registro não há UID de origem
+                uid.setTextContent(message.getOrigin().getUid());
+                layer.setTextContent(message.getOrigin().getLayer().toString());
+                origin.appendChild(uid);
+                origin.appendChild(layer);                
+                header.appendChild(origin);
+            }
             // target
-            layer = doc.createElement("layer");
-            uid = doc.createElement("uid");
-            name = doc.createElement("name");
-            uid.setTextContent(message.getTarget().getUid());
-            name.setTextContent(message.getTarget().getDescription());
-            layer.setTextContent(String.valueOf(message.getTarget().getLayer()));
-            address.setTextContent(message.getTarget().getAddress());
-            target.appendChild(uid);
-            target.appendChild(name);
-            target.appendChild(layer);
-            target.appendChild(address);
+            if (Message.SUBJECT_REGISTRATION != message.getSubject()) { // Se for para registro não há UID do alvo
+                layer = doc.createElement("layer");
+                uid = doc.createElement("uid");
+                uid.setTextContent(message.getTarget().getUid());
+                layer.setTextContent(String.valueOf(message.getTarget().getLayer().toString()));
+                target.appendChild(uid);
+                target.appendChild(layer);            
+                header.appendChild(target);
+            }
 
             // header
-            Element subject = doc.createElement("subject"),
-                    contentType = doc.createElement("contentType");
             contentType.setTextContent(message.getContentType());
-            subject.setTextContent(message.getSubject());
+            subject.setTextContent(String.valueOf(message.getSubject()));
             anonymousUpload.setTextContent(message.isAnonymousUpload().toString());
+            priority.setTextContent(String.valueOf(message.getPriority()));
+            contentSize.setTextContent(String.valueOf(message.getContent().length()));
+            
+            header.appendChild(priority);
             header.appendChild(subject);
             header.appendChild(contentType);
-            header.appendChild(origin);
-            header.appendChild(target);
+            header.appendChild(contentSize);
             header.appendChild(anonymousUpload);
-
+            
             // content
             content.setTextContent(message.getContent());
 
@@ -204,4 +209,13 @@ public class MessageWrapper {
     public void setSent(boolean sent) {
         this.sent = sent;
     }
+
+    public long getServiceProcessingTime() {
+        return serviceProcessingTime;
+    }
+
+    public void setServiceProcessingTime(long serviceProcessingTime) {
+        this.serviceProcessingTime = serviceProcessingTime;
+    }
+    
 }

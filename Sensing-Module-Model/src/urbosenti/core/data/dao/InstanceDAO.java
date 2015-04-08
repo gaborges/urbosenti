@@ -21,7 +21,6 @@ import urbosenti.core.device.model.EntityType;
 import urbosenti.core.device.model.Instance;
 import urbosenti.core.device.model.PossibleContent;
 import urbosenti.core.device.model.State;
-import urbosenti.user.UserPreference;
 import urbosenti.util.DeveloperSettings;
 
 /**
@@ -523,6 +522,40 @@ public class InstanceDAO {
         stmt.setInt(1, instance.getId());
         stmt.executeUpdate();
         stmt.close();
+    }
+    
+    public List<Instance> getEntityInstances(int entityModelId, int componentId) throws SQLException {
+        Instance instance = null;
+        List<Instance> instances = new ArrayList();
+        String sql = "SELECT instances.description as instance_desc, representative_class, entity_id, entities.description as entity_desc, instances.model_id,\n"
+                + " entity_type_id, entity_types.description as type_desc, component_id, components.description as comp_desc, code_class, instances.id as instance_id\n"
+                + " FROM instances, entities,entity_types, components \n"
+                + " WHERE entities.model_id = ? AND entities.id = entity_id AND entity_types.id = entity_type_id AND components.id = component_id AND component_id = ?"
+                + " ORDER BY instances.model_id;";
+        stmt = this.connection.prepareStatement(sql);
+        stmt.setInt(1, entityModelId);
+        stmt.setInt(2, componentId);
+        ResultSet rs = stmt.executeQuery();
+        while (rs.next()) {
+            instance = new Instance();
+            instance.setId(rs.getInt("instance_id"));
+            instance.setDescription(rs.getString("instance_desc"));
+            instance.setRepresentativeClass(rs.getString("representative_class"));
+            instance.setEntity(new Entity());
+            instance.setModelId(rs.getInt("model_id"));
+            instance.getEntity().setId(rs.getInt("entity_id"));
+            instance.getEntity().setDescription(rs.getString("entity_desc"));
+            instance.getEntity().setModelId(entityModelId);
+            instance.getEntity().setEntityType(
+                    new EntityType(rs.getInt("entity_type_id"), rs.getString("type_desc")));
+            instance.getEntity().setComponent(
+                    new Component(rs.getInt("component_id"), rs.getString("comp_desc"), rs.getString("code_class")));
+            instance.setStates(this.getInstanceStates(instance));
+            instances.add(instance);
+        }
+        rs.close();
+        stmt.close();
+        return instances;
     }
 
 }

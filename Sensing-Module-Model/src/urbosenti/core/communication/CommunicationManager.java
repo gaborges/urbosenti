@@ -25,18 +25,22 @@ import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.TransformerException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
+import urbosenti.core.communication.receivers.SocketPushServiceReceiver;
 import urbosenti.core.data.dao.CommunicationDAO;
 import urbosenti.core.device.model.Agent;
 import urbosenti.core.device.ComponentManager;
 import urbosenti.core.device.DeviceManager;
 import urbosenti.core.device.model.FeedbackAnswer;
+import urbosenti.core.device.model.Service;
 import urbosenti.core.device.model.TargetOrigin;
 import urbosenti.core.events.Action;
 import urbosenti.core.events.ApplicationEvent;
 import urbosenti.core.events.Event;
 import urbosenti.core.events.SystemEvent;
+import urbosenti.user.User;
 
 /**
  *
@@ -209,7 +213,7 @@ public class CommunicationManager extends ComponentManager implements Runnable {
     private CommunicationInterface currentCommunicationInterface;
     private List<CommunicationInterface> communicationInterfaces;
     private ReconnectionService reconnectionService;
-    private Agent uploadServer;
+    private Service uploadServer;
     private boolean running; // indica se o servidor está rodando ou não
     private List<PushServiceReceiver> pushServiceReveivers;
 
@@ -387,7 +391,7 @@ public class CommunicationManager extends ComponentManager implements Runnable {
                 // Parâmetro
                 genericInteger = (Integer) action.getParameters().get("interval");
                 // verifica se a política é a estática e se a origem não é o sistema, pois nesse caso somente a aplicação e usuários podem alterar.
-                if(reconnectionPolicy == 1 && action.getOrigin() != Agent.LAYER_SYSTEM){
+                if(reconnectionPolicy == 1 && action.getOrigin() != Address.LAYER_SYSTEM){
                     // Atribuir o valor
                     this.reconnectionService.setReconnectionTime(genericInteger);
                     this.reconnectionAttemptInterval = genericInteger;
@@ -398,7 +402,7 @@ public class CommunicationManager extends ComponentManager implements Runnable {
                 genericInteger = (Integer) action.getParameters().get("method");
                 agent = (Agent) action.getParameters().get("origin");
                 // verifica se a política é a estática e se a origem não é o sistema, pois nesse caso somente a aplicação e usuários podem alterar.
-                if(reconnectionPolicy == 1 && action.getOrigin() != Agent.LAYER_SYSTEM){
+                if(reconnectionPolicy == 1 && action.getOrigin() != Address.LAYER_SYSTEM){
                     // Verificar o valor
                     if(genericInteger == 1){
                         reconnectionService.setReconnectionMethodOneByTime();
@@ -410,7 +414,7 @@ public class CommunicationManager extends ComponentManager implements Runnable {
                 break;
             case 7: // Alterar política
                 // Parâmetro
-                if(reconnectionPolicy == 1 && action.getOrigin() != Agent.LAYER_SYSTEM){
+                if(reconnectionPolicy == 1 && action.getOrigin() != Address.LAYER_SYSTEM){
                     // atribuir
                     this.reconnectionPolicy = (Integer) action.getParameters().get("policy");
                 }
@@ -552,11 +556,10 @@ public class CommunicationManager extends ComponentManager implements Runnable {
         /*
          * Se quem está enviando não foi explicitado, então, por padrão, são preenxidos os dados do envio da aplicação.
          */
-        if (message.getSender() == null) {
-            message.setSender(new Agent());
-            message.getSender().setLayer(Agent.LAYER_APPLICATION);
-            message.getSender().setUid(getDeviceManager().getUID());
-            message.getSender().setDescription("Sensing Module");
+        if (message.getOrigin() == null) {
+            message.setOrigin(new Address());
+            message.getOrigin().setLayer(Address.LAYER_APPLICATION);
+            message.getOrigin().setUid(getDeviceManager().getUID());
         }
         MessageWrapper messageWrapper = new MessageWrapper(message);
         try {
@@ -618,12 +621,13 @@ public class CommunicationManager extends ComponentManager implements Runnable {
         /*
          * Se quem está enviando não foi explicitado, então, por padrão, são preenxidos os dados do envio da aplicação.
          */
-        if (message.getSender() == null) {
-            message.setSender(new Agent());
-            message.getSender().setLayer(Agent.LAYER_APPLICATION);
-            message.getSender().setUid(getDeviceManager().getUID());
-            message.getSender().setDescription("Sensing Module");
+        if (message.getOrigin() == null) {
+            message.setOrigin(new Address());
+            message.getOrigin().setLayer(Address.LAYER_APPLICATION);
+            message.getOrigin().setUid(getDeviceManager().getUID());
         }
+        // Adiciona na mensagem que ele requer resposta
+        message.setRequireResponse(true);
         MessageWrapper messageWrapper = new MessageWrapper(message);
         try {
             // 2 - Cria o envelope XML da UrboSenti correspondente da mensagem
@@ -648,10 +652,12 @@ public class CommunicationManager extends ComponentManager implements Runnable {
             // 5 - Tenta enviar --- OBS.: Implementar
             String response = (String) ci.sendMessageWithResponse(this, messageWrapper);
             // se não conseguir tenta por outro
+            HashMap<String,Object> contents = processEnvelope(response); 
+            messageWrapper.setServiceProcessingTime((Long)contents.get("processingTime"));
             // evento de mensagem entregue
             this.newInternalEvent(EVENT_MESSAGE_DELIVERED, messageWrapper, message.getTarget(), currentCommunicationInterface);
             // retorna resultado
-            return response;
+            return contents.get("content").toString();
         } catch (SocketTimeoutException ex) {
             //[Endereço não acessível]
             // Evento: Endereço não acessível
@@ -684,11 +690,10 @@ public class CommunicationManager extends ComponentManager implements Runnable {
         /*
          * Se quem está enviando não foi explicitado, então, por padrão, são preenxidos os dados do envio da aplicação.
          */
-        if (message.getSender() == null) {
-            message.setSender(new Agent());
-            message.getSender().setLayer(Agent.LAYER_APPLICATION);
-            message.getSender().setUid(getDeviceManager().getUID());
-            message.getSender().setDescription("Sensing Module");
+        if (message.getOrigin() == null) {
+            message.setOrigin(new Address());
+            message.getOrigin().setLayer(Address.LAYER_APPLICATION);
+            message.getOrigin().setUid(getDeviceManager().getUID());
         }
         MessageWrapper messageWrapper = new MessageWrapper(message);
         messageWrapper.setTimeout(timeout);
@@ -715,10 +720,12 @@ public class CommunicationManager extends ComponentManager implements Runnable {
             // 5 - Tenta enviar --- OBS.: Implementar
             String response = (String) ci.sendMessageWithResponse(this, messageWrapper);
             // se não conseguir tenta por outro
+            HashMap<String,Object> contents = processEnvelope(response); 
+            messageWrapper.setServiceProcessingTime((Long)contents.get("processingTime"));
             // evento de mensagem entregue
             this.newInternalEvent(EVENT_MESSAGE_DELIVERED, messageWrapper, message.getTarget(), currentCommunicationInterface);
             // retorna resultado
-            return response;
+            return contents.get("content").toString();
         } catch (SocketTimeoutException ex) {
             //[Endereço não acessível]
             // Evento: Endereço não acessível
@@ -752,13 +759,38 @@ public class CommunicationManager extends ComponentManager implements Runnable {
     public void sendReport(Message message) {
         // recebe o report para envio
         // cria envelope
-        if (message.getSender() == null) {
-            message.setSender(new Agent());
-            message.getSender().setLayer(Agent.LAYER_APPLICATION);
-            message.getSender().setUid(getDeviceManager().getUID());
-            message.getSender().setDescription("Sensing Module");
+        if (message.getOrigin() == null) {
+            message.setOrigin(new Address());
+            message.getOrigin().setLayer(Address.LAYER_APPLICATION);
         }
+        // adiciona o application UID para o serviço
+        message.getOrigin().setUid(uploadServer.getApplicationUID());
+        // cria o MessageWrapper que será utilizado para criar o envelope
         MessageWrapper messageWrapper = new MessageWrapper(message);
+        // Adiciona o servidor visado
+        messageWrapper.getMessage().setTarget(new Address());
+        messageWrapper.getMessage().getTarget().setAddress(uploadServer.getAddress()); 
+        messageWrapper.getMessage().getTarget().setLayer(Address.LAYER_APPLICATION);
+        messageWrapper.getMessage().getTarget().setUid(uploadServer.getServiceUID());
+        // adiciona o assunto da mensagem
+        messageWrapper.getMessage().setSubject(Message.SUBJECT_UPLOAD_REPORT);
+        // adiciona o encapsulamente específico para relatos
+        // verifica se o módulo de usuário está habilitado, se tiver ID do usuário monitorado é enviado
+        if(getDeviceManager().getUserManager() != null){
+            User user;
+            String contentReport = "<report>";
+            try {
+                user = getDeviceManager().getUserManager().getMonitoredUser();
+                if(user != null){
+                    contentReport = "<report userId=\""+user.getId()+"\">";
+                }
+            } catch (SQLException ex) {
+                Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            }
+             messageWrapper.getMessage().setContent(contentReport+messageWrapper.getMessage().getContent()+"</report>");
+        } else {
+            messageWrapper.getMessage().setContent("<report>"+messageWrapper.getMessage().getContent()+"</report>");
+        }
         try {
             // Cria o envelope XML da UrboSenti correspondente da mensagem
             messageWrapper.build();
@@ -772,40 +804,49 @@ public class CommunicationManager extends ComponentManager implements Runnable {
         // adiciona na fila de upload
         this.addReport(messageWrapper);
     }
-
-    public void newPushMessage(Agent origin, String bruteMessage) {
+    /**
+     * Recebe a mensagem de alguma origem; O GCM deve enviar o endereço de origem como parâmetro separado para colocar no parâmetro.
+     * Nesta versão somente suporta dados em formato texto. Futuramente outros formatos podem ser considerados.
+     * @param originAddress -- Contem o endereço de quem enviou no formato ip:porta ou um host
+     * @param bruteMessage -- Contem a mensagem em formato de texto. 
+     */
+    public void newPushMessage(String originAddress, String bruteMessage) {
         try {
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             DocumentBuilder builder = factory.newDocumentBuilder();
 
-            // Criar o documento e com verte a String em DOC
+            // Criar o documento e com verte a String em DOC 
             Document doc = builder.parse(new InputSource(new StringReader(bruteMessage)));
-
+            // Cria a mensagem para passar para o sistema
             Message msg = new Message();
-            msg.setSender(new Agent());
-            msg.setTarget(new Agent());
+            msg.setOrigin(new Address());
+            msg.setTarget(new Address());
+            // Verifica se o endereço de origem foi atribuído
+            if (originAddress.length() > 0) {
+                msg.getOrigin().setAddress(originAddress);
+            } else {
+                throw new Error("Origin address does not specified!");
+            }
+            // Acessa o elemento raiz para processar o XML
+            // <message requireResponse="false">
             Element response = doc.getDocumentElement();
+            // requireResponse
+            if(response.hasAttribute("requireResponse")){
+                msg.setRequireResponse(response.getAttribute("requireResponse").equals("true"));
+            }
+            //<header>
             Element header = (Element) response.getElementsByTagName("header").item(0);
 
-            msg.getSender().setUid(((Element) header.getElementsByTagName("origin").item(0)).getElementsByTagName("uid").item(0).getTextContent());
-            if (((Element) header.getElementsByTagName("origin").item(0)).getElementsByTagName("name").getLength() > 0) {
-                msg.getSender().setDescription(((Element) header.getElementsByTagName("origin").item(0)).getElementsByTagName("name").item(0).getTextContent());
-            }
-            if (((Element) header.getElementsByTagName("origin").item(0)).getElementsByTagName("address").getLength() > 0) {
-                msg.getSender().setServiceAddress(((Element) header.getElementsByTagName("origin").item(0)).getElementsByTagName("address").item(0).getTextContent());
-            }
-            msg.getSender().setLayer(Integer.parseInt(((Element) header.getElementsByTagName("origin").item(0)).getElementsByTagName("layer").item(0).getTextContent()));
+            // <origin> -> <uid>
+            msg.getOrigin().setUid(((Element) header.getElementsByTagName("origin").item(0)).getElementsByTagName("uid").item(0).getTextContent());
+            // <origin> -> <layer>
+            msg.getOrigin().setLayer(Integer.parseInt(((Element) header.getElementsByTagName("origin").item(0)).getElementsByTagName("layer").item(0).getTextContent()));
+            // <target> -> <uid>
             msg.getTarget().setUid(((Element) header.getElementsByTagName("target").item(0)).getElementsByTagName("uid").item(0).getTextContent());
-            msg.getTarget().setServiceAddress(((Element) header.getElementsByTagName("target").item(0)).getElementsByTagName("address").item(0).getTextContent());
+            // <target> -> <layer>
             msg.getTarget().setLayer(Integer.parseInt(((Element) header.getElementsByTagName("target").item(0)).getElementsByTagName("layer").item(0).getTextContent()));
-            msg.setContentType(header.getElementsByTagName("contentType").item(0).getTextContent());
-            msg.setSubject(header.getElementsByTagName("subject").item(0).getTextContent());
-            if (header.getElementsByTagName("anonymousUpload").getLength() > 0) {
-                msg.setAnonymousUpload(Boolean.parseBoolean(header.getElementsByTagName("anonymousUpload").item(0).getTextContent()));
-            } else {
-                msg.setAnonymousUpload(false);
-            }
-
+            
+            // <priority>
             if (header.getElementsByTagName("priority").getLength() > 0) {
                 if (header.getElementsByTagName("priority").item(0).getTextContent().equals("preferential")) {
                     msg.setPreferentialPriority();
@@ -813,26 +854,35 @@ public class CommunicationManager extends ComponentManager implements Runnable {
                     msg.setNormalPriority();
                 }
             }
-
-            msg.setContent(response.getElementsByTagName("content").item(0).getTextContent());
-
-            if (origin != null && msg.getSender().getAddress().isEmpty()) {
-                msg.getSender().setServiceAddress(origin.getAddress());
+            //<subject>
+            msg.setSubject(Integer.parseInt(header.getElementsByTagName("subject").item(0).getTextContent()));
+            //<contentType>
+            msg.setContentType(header.getElementsByTagName("contentType").item(0).getTextContent());
+            //<contentSize> -- utilizado somente para comparar;
+            
+            //<anonymousUpload>
+            if (header.getElementsByTagName("anonymousUpload").getLength() > 0) {
+                msg.setAnonymousUpload(Boolean.parseBoolean(header.getElementsByTagName("anonymousUpload").item(0).getTextContent()));
+            } else {
+                msg.setAnonymousUpload(false);
             }
 
-            System.out.println("Layer: " + msg.getTarget().getLayer());
+            // <content> - conteúdo da mensagem
+            msg.setContent(response.getElementsByTagName("content").item(0).getTextContent());
 
-            this.newInternalEvent(EVENT_MESSAGE_RECEIVED, msg.getSender(), msg);
+            System.out.println("Layer: " + msg.getTarget().getLayer());
+            // Evento - Mensagem Recebida
+            this.newInternalEvent(EVENT_MESSAGE_RECEIVED, msg.getOrigin(), msg);
 
         } catch (ParserConfigurationException ex) {
             Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
-            this.newInternalEvent(EVENT_MESSAGE_RECEIVED_INVALID_FORMAT, origin, bruteMessage);
+            this.newInternalEvent(EVENT_MESSAGE_RECEIVED_INVALID_FORMAT, originAddress, bruteMessage);
         } catch (SAXException ex) {
             Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
-            this.newInternalEvent(EVENT_MESSAGE_RECEIVED_INVALID_FORMAT, origin, bruteMessage);
+            this.newInternalEvent(EVENT_MESSAGE_RECEIVED_INVALID_FORMAT, originAddress, bruteMessage);
         } catch (IOException ex) {
             Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
-            this.newInternalEvent(EVENT_MESSAGE_RECEIVED_INVALID_FORMAT, origin, bruteMessage);
+            this.newInternalEvent(EVENT_MESSAGE_RECEIVED_INVALID_FORMAT, originAddress, bruteMessage);
         }
 
     }
@@ -1175,7 +1225,7 @@ public class CommunicationManager extends ComponentManager implements Runnable {
      * @see #EVENT_MESSAGE_STORED_REMOVED
      */
     private synchronized void newInternalEvent(int eventId, Object... parameters) {
-        Agent agent;
+        Address address;
         CommunicationInterface ci;
         MessageWrapper mw;
         Event event = null;
@@ -1203,13 +1253,13 @@ public class CommunicationManager extends ComponentManager implements Runnable {
                 break;
             case EVENT_MESSAGE_DELIVERED: // 2 - Mensagem Entregue - parâmetros: Mensagem; Destinatário; Interface;
                 mw = (MessageWrapper) parameters[0];
-                agent = (Agent) parameters[1];
+                address = (Address) parameters[1];
                 ci = (CommunicationInterface) parameters[2];
 
                 // Adiciona os valores que serão passados para serem tratados
                 values = new HashMap<String, Object>();
                 values.put("messageWrapper", mw);
-                values.put("target", agent);
+                values.put("target", address);
                 values.put("interface", ci);
 
                 // cria o evento
@@ -1225,12 +1275,12 @@ public class CommunicationManager extends ComponentManager implements Runnable {
                 break;
             case EVENT_MESSAGE_NOT_DELIVERED: // 3 - Mensagem Não Entregue - parâmetros: Mensagem; Destinatário;
                 mw = (MessageWrapper) parameters[0];
-                agent = (Agent) parameters[1];
+                address = (Address) parameters[1];
 
                 // Adiciona os valores que serão passados para serem tratados
                 values = new HashMap<String, Object>();
                 values.put("messageWrapper", mw);
-                values.put("target", agent);
+                values.put("target", address);
 
                 // cria o evento de Sistema
                 event = new SystemEvent(this);// Event: new Message
@@ -1240,7 +1290,7 @@ public class CommunicationManager extends ComponentManager implements Runnable {
                 event.setValue(values);
 
                 // Se foi enviado para aplicação avisa também a aplicação
-                if (mw.getMessage().getSender().getLayer() == Agent.LAYER_APPLICATION) {
+                if (mw.getMessage().getOrigin().getLayer() == Address.LAYER_APPLICATION) {
                     // cria o evento de Aplicação
                     event = new ApplicationEvent(this);// Event: new Message
                     event.setId(3);
@@ -1254,20 +1304,20 @@ public class CommunicationManager extends ComponentManager implements Runnable {
                 break;
 
             case EVENT_MESSAGE_RECEIVED: // 4 - Mensagem Recebida - parâmetros: Origem; Mensagem
-                agent = (Agent) parameters[0];
+                address = (Address) parameters[0];
                 msg = (Message) parameters[1];
 
                 if (msg != null) {
-                    if (msg.getTarget().getLayer() == Agent.LAYER_SYSTEM) { // if the target is the system
+                    if (msg.getTarget().getLayer() == Address.LAYER_SYSTEM) { // if the target is the system
                         event = new SystemEvent(this);
-                    } else if (msg.getTarget().getLayer() == Agent.LAYER_APPLICATION) { // if the target is the application
+                    } else if (msg.getTarget().getLayer() == Address.LAYER_APPLICATION) { // if the target is the application
                         event = new ApplicationEvent(this);
                     }
 
                     // Adiciona os valores que serão passados para serem tratados
                     values = new HashMap<String, Object>();
                     values.put("message", msg);
-                    values.put("sender", agent);
+                    values.put("sender", address);
 
                     // Event: new Message
                     if (event != null) {
@@ -1283,13 +1333,13 @@ public class CommunicationManager extends ComponentManager implements Runnable {
                 break;
 
             case EVENT_MESSAGE_RECEIVED_INVALID_FORMAT: // 5 - Mensagem Recebida em Formato Inválido - parâmetros: Origem; Mensagem
-                agent = (Agent) parameters[0];
+                address = (Address) parameters[0];
                 bruteMessage = (String) parameters[1];
 
                 // Adiciona os valores que serão passados para serem tratados
                 values = new HashMap<String, Object>();
                 values.put("message", bruteMessage);
-                values.put("sender", agent);
+                values.put("sender", address);
 
                 // Event: new Message
                 event = new SystemEvent(this);
@@ -1303,7 +1353,7 @@ public class CommunicationManager extends ComponentManager implements Runnable {
                 getEventManager().newEvent(event);
                 break;
             case EVENT_ADDRESS_NOT_REACHABLE: // 6 - Endereço não acessível - Mensagem; Destinatário; Interface
-                agent = (Agent) parameters[1];
+                address = (Address) parameters[1];
                 mw = (MessageWrapper) parameters[0];
                 ci = (CommunicationInterface) parameters[2];
 
@@ -1311,10 +1361,10 @@ public class CommunicationManager extends ComponentManager implements Runnable {
                 values = new HashMap<String, Object>();
                 values.put("messageWrapper", mw);
                 values.put("interface", ci);
-                values.put("target", agent);
+                values.put("target", address);
 
                 // Event: new Message
-                if (mw.getMessage().getSender().getLayer() == Agent.LAYER_SYSTEM) {
+                if (mw.getMessage().getOrigin().getLayer() == Address.LAYER_SYSTEM) {
                     event = new SystemEvent(this);
                 } else {
                     event = new ApplicationEvent(this);
@@ -1521,7 +1571,7 @@ public class CommunicationManager extends ComponentManager implements Runnable {
      * @param server Adiciona o servidor que a função de upload dinâmico vai
      * reportar.
      */
-    public void addUploadServer(Agent server) {
+    public void addUploadServer(Service server) {
         this.uploadServer = server;
     }
 
@@ -1534,7 +1584,7 @@ public class CommunicationManager extends ComponentManager implements Runnable {
      * @param server contém o agente que será usado de servidor.
      *
      */
-    private void uploadService(Agent server) throws InterruptedException {
+    private void uploadService(Service server) throws InterruptedException {
         this.running = true;
         final Integer waitUpload = 0;
         boolean sent;
@@ -1590,8 +1640,6 @@ public class CommunicationManager extends ComponentManager implements Runnable {
             // Busca uma mensagem da fila para a upload
             // Aguarda condições de dados móveis [Implementar outra hora] - Serviço compartilhado entre os servers
             MessageWrapper mw = this.mobileDataPolicy();
-            // Adiciona o servidor visado
-            mw.getMessage().setTarget(server);
             // 3 - Verifica se alguma interface de comunicação está disponível
             CommunicationInterface ci = this.getCommunicationInterface(); // Método traz a interface de comunicação atual
             // 4 - [disponível]    
@@ -1694,4 +1742,49 @@ public class CommunicationManager extends ComponentManager implements Runnable {
     public void addPushServiceReceiver(PushServiceReceiver receiver) {
         this.pushServiceReveivers.add(receiver);
     }
+
+    private HashMap<String, Object> processEnvelope(String response) {
+        try {
+            HashMap<String, Object> map = new HashMap();
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            
+            // Criar o documento e com verte a String em DOC 
+            Document doc = builder.parse(new InputSource(new StringReader(response)));
+            // Acessa o elemento raiz para processar o XML
+            // <message>
+            Element message = doc.getDocumentElement();
+            //<header>
+            Element header = (Element) message.getElementsByTagName("header").item(0);
+
+            // <header> -> <contentType>
+            map.put("contentType",header.getElementsByTagName("contentType").item(0).getTextContent());
+            // <header> -> <contentSize>
+            map.put("contentType",Integer.parseInt(header.getElementsByTagName("contentSize").item(0).getTextContent()));
+            // <header> -> <performanceMeasure>s
+            NodeList elementsByTagName = header.getElementsByTagName("performanceMeasure");
+            for(int i = 0; i < elementsByTagName.getLength();i++){
+                Element performanceMeasure = (Element) elementsByTagName.item(i);
+                // adiciona todas as métricas utilizando o nome citado
+                map.put(performanceMeasure.getAttribute("metric"), 200);
+            }
+            
+            map.put("content", message.getElementsByTagName("content").item(0).getTextContent());
+            
+            return map;
+        } catch (SAXException ex) {
+            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (IOException ex) {
+            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (ParserConfigurationException ex) {
+            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return null;
+    }
+
+    public void updateInputCommunicationInterfaceConfiguration(SocketPushServiceReceiver aThis, HashMap<String, String> interfaceConfigurations) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+    
+    
 }

@@ -4,6 +4,7 @@
  */
 package urbosenti.core.device;
 
+import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import urbosenti.core.device.model.Agent;
@@ -17,6 +18,7 @@ import urbosenti.concerns.ConcernManager;
 import urbosenti.context.ContextManager;
 import urbosenti.core.communication.CommunicationInterface;
 import urbosenti.core.communication.CommunicationManager;
+import urbosenti.core.communication.Message;
 import urbosenti.core.communication.PushServiceReceiver;
 import urbosenti.core.data.DataManager;
 import urbosenti.core.data.dao.CommunicationDAO;
@@ -29,6 +31,7 @@ import urbosenti.core.device.model.FeedbackAnswer;
 import urbosenti.core.device.model.Instance;
 import urbosenti.core.device.model.Service;
 import urbosenti.core.device.model.State;
+import urbosenti.core.device.model.TargetOrigin;
 import urbosenti.core.events.Action;
 import urbosenti.core.events.ApplicationEvent;
 import urbosenti.core.events.Event;
@@ -535,9 +538,26 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
         dataManager.addSupportedCommunicationInterface(communicationInterface);
     }
 
-    public boolean registerSensingModule(Agent backendServer) {
-        discoverDeviceStates();
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    public boolean registerSensingModule(Service backendServer) {
+        try {
+            // busca as informações do dispositivo
+            Entity entity = this.dataManager.getEntityDAO().getEntity(
+                    DeviceDAO.COMPONENT_ID,
+                    DeviceDAO.ENTITY_ID_OF_BASIC_DEVICE_INFORMATIONS);
+            // busca as interfaces de comunicação de entrada
+            List<Instance> instances = this.dataManager.getInstanceDAO().getEntityInstances(
+                    CommunicationDAO.ENTITY_ID_OF_INPUT_COMMUNICATION_INTERFACES, CommunicationDAO.COMPONENT_ID);
+            
+            // cria o xml
+            // envia a mensagem de registro
+            // recebe o novo registro
+            // processa o XML
+            // salva as informações e gera o envento
+            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        } catch (SQLException ex) {
+            Logger.getLogger(DeviceManager.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return false;
     }
 
     public HashMap<String, Object> discoverDeviceStates() {
@@ -552,7 +572,7 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
     public void setDeviceKnowledgeRepresentationModel(Object o, String dataType) {
         this.dataManager.setKnowledgeRepresentation(o, dataType);
     }
-    
+
     public void setOSDiscovery(OperatingSystemDiscovery OSDiscovery) {
         this.OSDiscovery = OSDiscovery;
     }
@@ -605,7 +625,7 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
                 if (discoveredInformation.containsKey(OperatingSystemDiscovery.CPU_CORE_FREQUENCY)) {
                     content = new Content();
                     content.setValue(Content.parseContent(
-                            entity.getStates().get(DeviceDAO.STATE_ID_OF_BASIC_DEVICE_INFORMATIONS_ABOUT_CPU_CORE_FREQUENCY_CLOCK- 1)
+                            entity.getStates().get(DeviceDAO.STATE_ID_OF_BASIC_DEVICE_INFORMATIONS_ABOUT_CPU_CORE_FREQUENCY_CLOCK - 1)
                             .getDataType(),
                             discoveredInformation.get(OperatingSystemDiscovery.CPU_CORE_FREQUENCY)));
                     content.setTime(discoveryTime);
@@ -698,7 +718,7 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
             content.setValue(true);
             // verifica se o ID de cada uma dessas instâncias existe, se existe relaciona as duas senão cria uma nova instância.
             Instance instance = this.dataManager.getInstanceDAO().getInstance(
-                    ci.getId(), CommunicationDAO.ENTITY_ID_OF_OUTPUT_COMMUNICATION_INTERFACES,CommunicationDAO.COMPONENT_ID);
+                    ci.getId(), CommunicationDAO.ENTITY_ID_OF_OUTPUT_COMMUNICATION_INTERFACES, CommunicationDAO.COMPONENT_ID);
             if (instance != null) {
                 ci.setInstance(instance);
                 for (State s : instance.getStates()) {
@@ -752,7 +772,7 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
             content.setValue(true);
             // verifica se o ID de cada uma dessas instâncias existe, se existe relaciona as duas senão cria uma nova instância.
             Instance instance = this.dataManager.getInstanceDAO().getInstance(
-                    psr.getId(), CommunicationDAO.ENTITY_ID_OF_INPUT_COMMUNICATION_INTERFACES,CommunicationDAO.COMPONENT_ID);
+                    psr.getId(), CommunicationDAO.ENTITY_ID_OF_INPUT_COMMUNICATION_INTERFACES, CommunicationDAO.COMPONENT_ID);
             if (instance != null) {
                 psr.setInstance(instance);
             } else { // cria uma nova instância se ela não estiver cadastrada
@@ -778,6 +798,21 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
                     this.dataManager.getInstanceDAO().insertState(s, instance);
                 }
                 psr.setInstance(instance);
+            }
+            try {
+                // Descobre o endereço atual e adiciona no estado correspondente
+                psr.addressDiscovery();
+                HashMap<String, String> interfaceConfigurations = psr.getInterfaceConfigurations();
+                content = new Content(interfaceConfigurations.toString());
+                for(State s : instance.getStates()){
+                    if(s.getModelId() == CommunicationDAO.STATE_ID_OF_INPUT_COMMUNICATION_INTERFACE_CONFIGURATIONS){
+                        s.setContent(content);
+                        this.dataManager.getInstanceDAO().insertContent(s);
+                        break;
+                    }
+                }
+            } catch (IOException ex) {
+                Logger.getLogger(DeviceManager.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
     }
@@ -806,6 +841,7 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
 
     /**
      * Adiciona um serviço que não necessita de agente
+     *
      * @param service
      */
     public void insertRemoteService(Service service) {
@@ -816,6 +852,7 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
      * Adiciona um serviço e cria o agente baseado em configurações padrão e o
      * tipo de agente passado. Caso o tipo de agente for 0 então não é criado
      * nenhum agente
+     *
      * @param service
      * @param agentType
      * @param agentLayer
@@ -847,7 +884,7 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
     }
 
     public void insertRemoteService(Service service, int agentType) {
-        this.insertRemoteService(service, agentType, Agent.LAYER_SYSTEM, "/");
+        this.insertRemoteService(service, agentType, TargetOrigin.SYSTEM_LAYER, "/");
     }
 
     @Override

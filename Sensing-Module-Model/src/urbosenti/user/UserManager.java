@@ -681,4 +681,8 @@ public class UserManager extends ComponentManager {
         return false;
     }
     
+    public User getMonitoredUser() throws SQLException{
+        return this.getDeviceManager().getDataManager().getUserDAO().getMonitoredUser();
+    }
+    
 }

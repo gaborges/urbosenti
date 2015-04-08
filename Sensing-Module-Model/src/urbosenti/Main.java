@@ -15,6 +15,7 @@ import urbosenti.core.communication.interfaces.WirelessCommunicationInterface;
 import urbosenti.core.communication.receivers.SocketPushServiceReceiver;
 import urbosenti.core.device.model.Agent;
 import urbosenti.core.device.DeviceManager;
+import urbosenti.core.device.model.Service;
 import urbosenti.test.ConcreteApplicationHandler;
 import urbosenti.test.DesktopOperationalSystemDiscovery;
 import urbosenti.test.TestCommunication;
@@ -85,7 +86,7 @@ public class Main {
         /***** Registro do nó de sensoriamento móvel no servidor de aplicação - falta fazer a função e o servidor *****/
         
         // Servidor ainda não criado - pegar direto do banco de dados ou a mão
-        Agent backendServer = deviceManager.getRemoteServices().get(0).getAgent();
+        Service backendServer = deviceManager.getRemoteServices().get(0);
         
         // Registrar no Servidor Backend
         deviceManager.registerSensingModule(backendServer);

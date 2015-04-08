@@ -207,7 +207,7 @@ public class UserDAO {
      * monitorado pelo módulo de sensoriamento por vez nessa versão da
      * UrboSenti.
      *
-     * @return
+     * @return retorna null se nenhum usuário estiver sendo monitorado
      * @throws java.sql.SQLException
      */
     public User getMonitoredUser() throws SQLException {

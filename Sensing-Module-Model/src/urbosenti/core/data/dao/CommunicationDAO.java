@@ -54,6 +54,7 @@ public class CommunicationDAO {
     public static final int STATE_ID_OF_OUTPUT_COMMUNICATION_INTERFACE_IS_ENABLED = 2;
     public static final int STATE_ID_OF_OUTPUT_COMMUNICATION_INTERFACE_TIMEOUT = 3;
     public static final int STATE_ID_OF_INPUT_COMMUNICATION_INTERFACE_EXECUTION_STATUS = 1;
+    public static final int STATE_ID_OF_INPUT_COMMUNICATION_INTERFACE_CONFIGURATIONS = 2;
     
     public final static int  MOBILE_DATA_POLICY = 1;
     public final static int  MESSAGE_STORAGE_POLICY = 2;

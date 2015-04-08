@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import urbosenti.core.communication.Address;
 import urbosenti.core.communication.Message;
 import urbosenti.core.device.model.Agent;
 import urbosenti.core.device.DeviceManager;
@@ -38,25 +39,18 @@ public class TestCommunication {
     }
     
     public void testaEnvioMensagemSemRetorno(){
-        Service service = new Service();
-        service.setServiceUID("666");
-        service.setApplicationUID("333");
-        service.setAddress("http://localhost:8090/Test2Server/webresources/generic");
         // Envio normal de mensagem sem retorno
-        Agent target = new Agent();
-        target.setRelativeAddress("/");
-        target.setLayer(Agent.LAYER_APPLICATION);
-        target.setService(service);
-        target.setDescription("Backend Module");
+        Address target = new Address("http://localhost:8090/Test2Server/webresources/generic");
+        target.setUid("12345");
         
-        Agent origin = new Agent();
-        origin.setLayer(Agent.LAYER_SYSTEM);
-        origin.setDescription("Sensing Module");
+        Address origin = new Address();
+        origin.setLayer(Address.LAYER_SYSTEM);
+        origin.setUid("6666");
         
         Message m = new Message();
         m.setTarget(target);
-        m.setSender(origin);
-        m.setSubject("Textando");
+        m.setOrigin(origin);
+        m.setSubject(Message.SUBJECT_APPLICATION_DEFINED);
         m.setContentType("application/xml");
         m.setContent("oiiiiii");
         try {
@@ -71,19 +65,16 @@ public class TestCommunication {
     }
     
     public void testaEnvioMensagemComRetorno(){
-        Agent target = new Agent();
-        target.setServiceAddress("http://localhost:8090/Test2Server/webresources/generic");
-        target.setLayer(Agent.LAYER_APPLICATION);
-        target.setDescription("Backend Module");
+        Address target = new Address("http://localhost:8090/Test2Server/webresources/generic");
+        target.setUid("12345");
         
-        Agent origin = new Agent();
-        origin.setLayer(Agent.LAYER_APPLICATION);
-        origin.setDescription("Sensing Module");
+        Address origin = new Address();
+        origin.setUid("6666");
         
         Message m = new Message();
         m.setTarget(target);
-        m.setSender(origin);
-        m.setSubject("Textando Retorno");
+        m.setOrigin(origin);
+        m.setSubject(Message.SUBJECT_APPLICATION_DEFINED);
         m.setContentType("application/xml");
         m.setContent("oi22222");
         
@@ -99,33 +90,32 @@ public class TestCommunication {
     }
     
     public void testaUploadServer(){
-        
+        // Serviço do report
         Service service = new Service();
         service.setServiceUID("666");
         service.setApplicationUID("333");
         service.setAddress("http://localhost:8090/Test2Server/webresources/generic");
-        Agent target = new Agent();
-        target.setService(service);
-        target.setLayer(Agent.LAYER_APPLICATION);
-        target.setDescription("Backend Module");
+        // adiciona o serviço       
+        deviceManager.getCommunicationManager().addUploadServer(service);
         
-        Agent origin = new Agent();
-        target.setService(service);
-        origin.setLayer(Agent.LAYER_APPLICATION);
-        origin.setDescription("Sensing Module");
+        // Inicia o serviço de envio de mensagens
+        Thread t = new Thread(deviceManager.getCommunicationManager());
+        t.start();        
         
+        // Adiciona a origem, e é somente necessário se for uma mensagem de 
+        // sistema, caso não seja somente a mensagem é necessária
+        Address origin = new Address();
+        origin.setLayer(Address.LAYER_SYSTEM);
+        
+        // Cria a mensagem
         Message m = new Message();
-        m.setTarget(target);
-        m.setSender(origin);
-        m.setSubject("Textando");
+        m.setOrigin(origin);
+        m.setSubject(Message.SUBJECT_UPLOAD_REPORT);
         m.setContentType("application/xml");
         m.setContent("oiiiiii");
-
         
-        deviceManager.getCommunicationManager().addUploadServer(target);
+        // Envia o relato
         deviceManager.getCommunicationManager().sendReport(m);
-        Thread t = new Thread(deviceManager.getCommunicationManager());
-        t.start();
       
     }
 

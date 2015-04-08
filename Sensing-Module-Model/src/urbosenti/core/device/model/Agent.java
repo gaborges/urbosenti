@@ -12,10 +12,6 @@ import java.util.List;
  */
 public class Agent {
 
-    public static final int LAYER_SYSTEM = 2;
-    public static final int LAYER_APPLICATION = 1;
-
-    private String uid;
     private int layer;
     private String description;
     private int id;
@@ -28,16 +24,9 @@ public class Agent {
     private Service service;
 
     public Agent() {
-        layer = LAYER_APPLICATION;
+        layer = TargetOrigin.APPLICATION_LAYER;
     }
     
-    public String getUid() {
-        return uid;
-    }
-
-    public void setUid(String uid) {
-        this.uid = uid;
-    }
     /**
      *
      * @return Retorna a camada do agente: Agent.LAYER_SYSTEM = "system";

@@ -4,6 +4,8 @@
  */
 package urbosenti.core.communication;
 
+import java.io.IOException;
+import java.util.HashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import urbosenti.core.device.model.Instance;
@@ -12,43 +14,45 @@ import urbosenti.core.device.model.Instance;
  *
  * @author Guilherme
  */
-public abstract class PushServiceReceiver implements Runnable{
-    
+public abstract class PushServiceReceiver implements Runnable {
+
     public static final boolean STATUS_LISTENING = true;
     public static final boolean STATUS_STOPPED = false;
     private boolean status;
     private int id;
     public final CommunicationManager communicationManager;
+    private final HashMap<String, String> interfaceConfigurations;
     private Thread t;
     private final Boolean flag;
     private String description;
     private Instance instance;
-        
+
     public PushServiceReceiver(CommunicationManager communicationManager) {
         this.communicationManager = communicationManager;
         this.t = null;
         this.status = STATUS_STOPPED;
         this.communicationManager.addPushServiceReceiver(this);
         this.flag = true;
+        this.interfaceConfigurations = new HashMap();
     }
-        
+
     @Override
     public abstract void run();
-    
+
     public void start() {
         // Create a Service to receive Push Messages in text format
-        synchronized (flag){
-            if(t==null) {
+        synchronized (flag) {
+            if (t == null) {
                 t = new Thread(this);
                 t.start();
             }
             this.status = STATUS_LISTENING;
-        }        
+        }
     }
 
     public void stop() {
         try {
-            synchronized (flag){
+            synchronized (flag) {
                 this.t.wait();
             }
         } catch (InterruptedException ex) {
@@ -56,9 +60,9 @@ public abstract class PushServiceReceiver implements Runnable{
         }
         this.status = STATUS_STOPPED;
     }
-    
-    public synchronized void resume() {
-        synchronized (flag){
+
+    public void resume() {
+        synchronized (flag) {
             this.t.notifyAll();
             this.status = STATUS_LISTENING;
         }
@@ -95,5 +99,15 @@ public abstract class PushServiceReceiver implements Runnable{
     public void setInstance(Instance instance) {
         this.instance = instance;
     }
-         
+
+    public HashMap<String, String> getInterfaceConfigurations() {
+        return interfaceConfigurations;
+    }
+
+    /**
+     * Descobre o endereço e adiciona nas configurações de interface
+     * (HashMap<String,String> interfaceConfigurations;)
+     * @throws java.io.IOException
+     */
+    public abstract void addressDiscovery() throws IOException;
 }
