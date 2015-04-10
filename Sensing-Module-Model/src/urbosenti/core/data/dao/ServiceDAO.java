@@ -156,4 +156,14 @@ public class ServiceDAO {
         return agent;
     }
 
+    public void updateServiceUIDs(Service service) throws SQLException {
+        String sql = "UPDATE services SET service_uid = ?,application_uid = ? "
+                + " WHERE id = ?;";
+        this.stmt = this.connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+        stmt.setString(1, service.getServiceUID());
+        stmt.setString(2, service.getApplicationUID());
+        stmt.setInt(3, service.getId());
+        stmt.executeUpdate();
+        stmt.close();
+    }
 }

@@ -73,7 +73,7 @@
         <component name="Device" class="urbosenti.core.device.DeviceManager">
             <entity type="1" description="Registro no Serviço Backend" >
                 <!-- states -->
-                <state id="1" userCanChange="false" description="Usuário Remoto">
+                <state id="1" userCanChange="false" description="Identificador Único do Serviço">
                     <content dataType="9"></content>
                 </state>
                 <state id="2" userCanChange="false" description="Password Remoto">
@@ -507,7 +507,7 @@
                     <parameter id="3" optional="false" dataType="10" label="target">
                         <description>Destinatário</description>
                         <possibleValues>
-                            <value>urbosenti.core.device.Agent</value>
+                            <value>urbosenti.core.communication.Address</value>
                         </possibleValues>
                     </parameter>
                 </event>
@@ -523,7 +523,7 @@
                     <parameter id="3" optional="false" dataType="10" label="target">
                         <description>Destinatário</description>
                         <possibleValues>
-                            <value>urbosenti.core.device.Agent</value>
+                            <value>urbosenti.core.communication.Address</value>
                         </possibleValues>
                     </parameter>
                 </event>
@@ -544,7 +544,7 @@
                     <parameter id="3" optional="false" dataType="10" label="target">
                         <description>Destinatário</description>
                         <possibleValues>
-                            <value>urbosenti.core.device.Agent</value>
+                            <value>urbosenti.core.communication.Address</value>
                         </possibleValues>
                     </parameter>
                 </event>
@@ -603,7 +603,7 @@
                     <parameter id="3" optional="false" dataType="10" label="target">
                         <description>Destinatário</description>
                         <possibleValues>
-                            <value>urbosenti.core.device.Agent</value>
+                            <value>urbosenti.core.communication.Address</value>
                         </possibleValues>
                     </parameter>
                 </event>
@@ -619,7 +619,7 @@
                     <parameter id="3" optional="false" dataType="10" label="target">
                         <description>Destinatário</description>
                         <possibleValues>
-                            <value>urbosenti.core.device.Agent</value>
+                            <value>urbosenti.core.communication.Address</value>
                         </possibleValues>
                     </parameter>
                 </event>
@@ -640,7 +640,7 @@
                     <parameter id="3" optional="false" dataType="10" label="target">
                         <description>Destinatário</description>
                         <possibleValues>
-                            <value>urbosenti.core.device.Agent</value>
+                            <value>urbosenti.core.communication.Address</value>
                         </possibleValues>
                     </parameter>
                 </event>
@@ -742,6 +742,11 @@
                 <state id="1" userCanChange="true" description="Estado de execução atual" instanceState="true">
                     <content dataType="7" initialValue="0" superiorLimit="1" inferiorLimit="0"></content>
                 </state>
+                <state id="2" userCanChange="false" description="Configurações de endereço" instanceState="true">
+                    <content dataType="10">
+                        <value>java.util.HashMap</value>
+                    </content>
+                </state>
                 <!-- events -->
                 <event id="4" synchronous="false" implementation="1" description="Mensagem recebida">
                     <target mandatory="false">1</target>
@@ -749,7 +754,7 @@
                     <parameter id="1" optional="false" dataType="10" label="sender">
                         <description>Origem</description>
                         <possibleValues>
-                            <value>urbosenti.core.device.Agent</value>
+                            <value>urbosenti.core.communication.Address</value>
                         </possibleValues>
                     </parameter>
                     <parameter id="2" optional="false" dataType="10" label="message">
@@ -764,7 +769,7 @@
                     <parameter id="1" optional="false" dataType="10" label="sender">
                         <description>Origem</description>
                         <possibleValues>
-                            <value>urbosenti.core.device.Agent</value>
+                            <value>urbosenti.core.communication.Address</value>
                         </possibleValues>
                     </parameter>
                     <parameter id="2" optional="false" dataType="9" label="message">

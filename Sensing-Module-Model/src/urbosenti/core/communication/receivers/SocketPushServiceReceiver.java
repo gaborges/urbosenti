@@ -12,9 +12,7 @@ import java.net.Socket;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import urbosenti.core.communication.CommunicationManager;
-import urbosenti.core.communication.Message;
 import urbosenti.core.communication.PushServiceReceiver;
-import urbosenti.core.device.model.Agent;
 
 /**
  *
