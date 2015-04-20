@@ -11,4 +11,5 @@ package urbosenti.util;
  */
 public class DeveloperSettings {
     public static final boolean SHOW_DAO_SQL = true;
+    public static final boolean SHOW_FUNCTION_DEBUG_ACTIVITY = true;
 }

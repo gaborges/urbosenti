@@ -82,7 +82,7 @@ public class WiredCommunicationInterface extends CommunicationInterface{
         //URL url = new URL("http://143.54.12.47:8084/TestServer/webresources/test/return");
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setDoOutput(true);
-        conn.setRequestMethod("PUT");
+        conn.setRequestMethod("POST");
         //conn.setRequestProperty("Accept", "application/json");
         //conn.setRequestProperty("Content-Type", "text/plain");
         conn.setRequestProperty("Content-Type", messageWrapper.getMessage().getContentType());
@@ -119,7 +119,7 @@ public class WiredCommunicationInterface extends CommunicationInterface{
     @Override
     public boolean sendMessage(CommunicationManager communicationManager, MessageWrapper messageWrapper) throws SocketTimeoutException, IOException{
         String result = "";
-        URL url = new URL(messageWrapper.getMessage().getTarget().getAddress());
+        URL url = new URL(messageWrapper.getTargetAddress());
         //URL url = new URL("http://143.54.12.47:8084/TestServer/webresources/test");
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         // Se possuí timeout customizado o utiliza
@@ -127,7 +127,7 @@ public class WiredCommunicationInterface extends CommunicationInterface{
         Date iniTime = new Date(); 
 
         conn.setDoOutput(true);
-        conn.setRequestMethod("PUT");
+        conn.setRequestMethod("POST");
         //conn.setRequestProperty("Accept", "application/json");
         //conn.setRequestProperty("Content-Type", "text/plain");
         conn.setRequestProperty("Content-Type", messageWrapper.getMessage().getContentType());

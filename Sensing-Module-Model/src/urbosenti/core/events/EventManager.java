@@ -16,6 +16,7 @@ import urbosenti.core.events.timer.EventTimer;
 import urbosenti.core.events.timer.EventTimerFactory;
 import urbosenti.core.events.timer.TriggerRequest;
 import urbosenti.core.events.timer.UrboSentiEventTimerFactory;
+import urbosenti.util.DeveloperSettings;
 
 /**
  *
@@ -62,7 +63,9 @@ public class EventManager extends ComponentManager {
 
     @Override
     public void onCreate() {
-        System.out.println("Activating: " + getClass());
+        if(DeveloperSettings.SHOW_FUNCTION_DEBUG_ACTIVITY){
+            System.out.println("Activating: " + getClass());
+        }
     }
 
     public void newEvent(Event event) {

@@ -27,6 +27,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
+import urbosenti.Main;
 import urbosenti.adaptation.AdaptationManager;
 import urbosenti.concerns.ConcernManager;
 import urbosenti.context.ContextManager;
@@ -55,6 +56,7 @@ import urbosenti.core.events.SystemEvent;
 import urbosenti.localization.LocalizationManager;
 import urbosenti.resources.ResourceManager;
 import urbosenti.user.UserManager;
+import urbosenti.util.DeveloperSettings;
 
 /**
  *
@@ -240,6 +242,9 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
 
     @Override
     public void onCreate() { // Before the execution
+        if(DeveloperSettings.SHOW_FUNCTION_DEBUG_ACTIVITY){
+            System.out.println("Activating: " + getClass());
+        }
         // instancia um estado para ser usado na ativaçaõ dos módulos sobdemanda
         State entityState;
         // Conteúdo usado para habilitar os componentes da urbosenti
@@ -380,6 +385,7 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
             throw new Error(ex);
         }
         this.enabledComponentManagers.add(this);
+        System.out.println("onCreate Process Finished");
     }
 
     /**
@@ -555,6 +561,10 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
 
     public boolean registerSensingModule(Service backendServer) throws IOException {
         try {
+            // verifica se já está registrado, se sim retorna true, se não, continua executando
+            if (this.isSensingModuleRegistred(backendServer)) {
+                return true;
+            }
             // busca as informações do dispositivo
             Entity entity = this.dataManager.getEntityDAO().getEntity(
                     DeviceDAO.COMPONENT_ID,
@@ -562,63 +572,74 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
             // busca as interfaces de comunicação de entrada
             List<Instance> instances = this.dataManager.getInstanceDAO().getEntityInstances(
                     CommunicationDAO.ENTITY_ID_OF_INPUT_COMMUNICATION_INTERFACES, CommunicationDAO.COMPONENT_ID);
-            
+            // busca os estados da entidade
+            entity.setStates(this.dataManager.getEntityStateDAO().getEntityStates(entity));
             // cria o xml
             // gerar mensagem em XML
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             DocumentBuilder builder = factory.newDocumentBuilder();
             Document doc = builder.newDocument();
-            Element root = doc.createElement("device"), deviceSetup,inputCommunicationInterface ,extra;
-            for(State s : entity.getStates()){
+            Element root = doc.createElement("device"), deviceSetup, inputCommunicationInterface, extra;
+            for (State s : entity.getStates()) {
                 deviceSetup = doc.createElement("deviceSetup");
-                if(s.getModelId() == DeviceDAO.STATE_ID_OF_BASIC_DEVICE_INFORMATIONS_ABOUT_CPU_MODEL){
-                    deviceSetup.setAttribute("name","cpuModel");
+                if (s.getModelId() == DeviceDAO.STATE_ID_OF_BASIC_DEVICE_INFORMATIONS_ABOUT_CPU_MODEL) {
+                    deviceSetup.setAttribute("name", "cpuModel");
                     deviceSetup.setTextContent(s.getCurrentValue().toString());
                     root.appendChild(deviceSetup);
-                } else if(s.getModelId() == DeviceDAO.STATE_ID_OF_BASIC_DEVICE_INFORMATIONS_ABOUT_CPU_CORES){
-                    deviceSetup.setAttribute("name","cpuCore");
+                } else if (s.getModelId() == DeviceDAO.STATE_ID_OF_BASIC_DEVICE_INFORMATIONS_ABOUT_CPU_CORES) {
+                    deviceSetup.setAttribute("name", "cpuCore");
                     deviceSetup.setTextContent(s.getCurrentValue().toString());
                     root.appendChild(deviceSetup);
-                } else if(s.getModelId() == DeviceDAO.STATE_ID_OF_BASIC_DEVICE_INFORMATIONS_ABOUT_CPU_CORE_FREQUENCY_CLOCK){
-                    deviceSetup.setAttribute("name","cpuClock");
+                } else if (s.getModelId() == DeviceDAO.STATE_ID_OF_BASIC_DEVICE_INFORMATIONS_ABOUT_CPU_CORE_FREQUENCY_CLOCK) {
+                    deviceSetup.setAttribute("name", "cpuClock");
                     deviceSetup.setTextContent(s.getCurrentValue().toString());
                     root.appendChild(deviceSetup);
-                } else if(s.getModelId() == DeviceDAO.STATE_ID_OF_BASIC_DEVICE_INFORMATIONS_ABOUT_DEVICE_MODEL){
-                    deviceSetup.setAttribute("name","deviceModel");
+                } else if (s.getModelId() == DeviceDAO.STATE_ID_OF_BASIC_DEVICE_INFORMATIONS_ABOUT_DEVICE_MODEL) {
+                    deviceSetup.setAttribute("name", "deviceModel");
                     deviceSetup.setTextContent(s.getCurrentValue().toString());
                     root.appendChild(deviceSetup);
-                } else if(s.getModelId() == DeviceDAO.STATE_ID_OF_BASIC_DEVICE_INFORMATIONS_ABOUT_NATIVE_OPERATIONAL_SYSTEM){
-                    deviceSetup.setAttribute("name","nativeOS");
+                } else if (s.getModelId() == DeviceDAO.STATE_ID_OF_BASIC_DEVICE_INFORMATIONS_ABOUT_NATIVE_OPERATIONAL_SYSTEM) {
+                    deviceSetup.setAttribute("name", "nativeOS");
                     deviceSetup.setTextContent(s.getCurrentValue().toString());
                     root.appendChild(deviceSetup);
-                } else if(s.getModelId() == DeviceDAO.STATE_ID_OF_BASIC_DEVICE_INFORMATIONS_ABOUT_STORAGE_SYSTEM){
-                    deviceSetup.setAttribute("name","storage");
+                } else if (s.getModelId() == DeviceDAO.STATE_ID_OF_BASIC_DEVICE_INFORMATIONS_ABOUT_STORAGE_SYSTEM) {
+                    deviceSetup.setAttribute("name", "storage");
                     deviceSetup.setTextContent(s.getCurrentValue().toString());
                     root.appendChild(deviceSetup);
-                } else if(s.getModelId() == DeviceDAO.STATE_ID_OF_BASIC_DEVICE_INFORMATIONS_ABOUT_BATTERY_CAPACITY){
-                    deviceSetup.setAttribute("name","battery");
+                } else if (s.getModelId() == DeviceDAO.STATE_ID_OF_BASIC_DEVICE_INFORMATIONS_ABOUT_BATTERY_CAPACITY) {
+                    deviceSetup.setAttribute("name", "battery");
                     deviceSetup.setTextContent(s.getCurrentValue().toString());
                     root.appendChild(deviceSetup);
-                } else if(s.getModelId() == DeviceDAO.STATE_ID_OF_BASIC_DEVICE_INFORMATIONS_ABOUT_MEMORY_RAM){
-                    deviceSetup.setAttribute("name","memory");
+                } else if (s.getModelId() == DeviceDAO.STATE_ID_OF_BASIC_DEVICE_INFORMATIONS_ABOUT_MEMORY_RAM) {
+                    deviceSetup.setAttribute("name", "memory");
                     deviceSetup.setTextContent(s.getCurrentValue().toString());
                     root.appendChild(deviceSetup);
-                }                
-            }         
-            for(Instance instance : instances){
+                }
+            }
+            for (Instance instance : instances) {
                 inputCommunicationInterface = doc.createElement("inputCommunicationInterface");
                 inputCommunicationInterface.setAttribute("type", instance.getDescription());
-                for(State state : instance.getStates()){
-                    if(state.getModelId() == CommunicationDAO.STATE_ID_OF_INPUT_COMMUNICATION_INTERFACE_CONFIGURATIONS){
-                        if(!state.getCurrentValue().equals("unknown")){
-                            HashMap<String, String> values = (HashMap) state.getCurrentValue();
-                            Object[] keys = values.keySet().toArray();
-                            for(Object key : keys){
+                for (State state : instance.getStates()) {
+                    if (state.getModelId() == CommunicationDAO.STATE_ID_OF_INPUT_COMMUNICATION_INTERFACE_CONFIGURATIONS) {
+                        if (!state.getCurrentValue().equals("unknown") && !state.getCurrentValue().equals("null")) {
+                            // Retorna a representação em String de um HashMap
+                            String savedExtras = (String) state.getCurrentValue();
+                            //System.out.println("dbExtra; "+savedExtras);
+                            savedExtras = savedExtras.replace("{", "");
+                            savedExtras = savedExtras.replace("}", "");
+                            // System.out.println("dbExtra; "+savedExtras);
+                            String[] pairs = savedExtras.split(",");
+                            // Adiciona no elemento
+                            for (String pair : pairs) {
+                                //System.out.println("pair: "+pair);
+                                String[] keyValue = pair.split("=");
+                                //System.out.println("key-l "+keyValue.length);
                                 extra = doc.createElement("extra");
-                                extra.setAttribute("name", key.toString());
-                                extra.setTextContent(values.get(key.toString()));
+                                //System.out.println(keyValue[0].trim()+" -> "+keyValue[1].trim());
+                                extra.setAttribute("name", keyValue[0].trim()); // Key
+                                extra.setTextContent(keyValue[1].trim()); // Value
                                 inputCommunicationInterface.appendChild(extra);
-                            }                            
+                            }
                         }
                     }
                 }
@@ -627,10 +648,10 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
             // Converter Documento para STRING
             StringWriter stw = new StringWriter();
             Transformer serializer = TransformerFactory.newInstance().newTransformer();
-            serializer.transform(new DOMSource(doc), new StreamResult(stw));
+            serializer.transform(new DOMSource(root), new StreamResult(stw));
 
             Address serviceAddress = new Address(backendServer.getAddress());
-            if(backendServer.getServiceUID().length() > 0){
+            if (backendServer.getServiceUID().length() > 0) {
                 serviceAddress.setUid(backendServer.getServiceUID());
             }
             Message message = new Message();
@@ -640,45 +661,89 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
             message.setContentType("text/xml");
             // envia a mensagem de registro e recebe o novo registro
             String response = this.communicationManager.sendMessageWithResponse(message);
-            // processa o XML
-            // Criar o documento e com verte a String em DOC 
+            // processa o XML - criar o documento e converte a String em DOC 
             doc = builder.parse(new InputSource(new StringReader(response)));
             Element registry = doc.getDocumentElement();
+            // Adicio a as informações nas respectivas variáveis
             backendServer.setApplicationUID(registry.getElementsByTagName("applicationUid").item(0).getTextContent());
             backendServer.setServiceUID(registry.getElementsByTagName("serviceUid").item(0).getTextContent());
             String password = registry.getElementsByTagName("password").item(0).getTextContent();
             Long expirationTime = Long.parseLong(registry.getElementsByTagName("expirationTime").item(0).getTextContent());
+            // busca a entidade de registro
+            entity = this.dataManager.getEntityDAO()
+                    .getEntity(DeviceDAO.COMPONENT_ID, DeviceDAO.ENTITY_ID_OF_SERVICE_REGISTRATION);
+            entity.setStates(this.dataManager.getEntityStateDAO().getEntityStates(entity));
             // salva as informações
-            entity = this.dataManager.getEntityDAO().getEntity(DeviceDAO.COMPONENT_ID, DeviceDAO.ENTITY_ID_OF_URBOSENTI_SERVICES);
-            for(State s : entity.getStates()){
+            for (State s : entity.getStates()) {
                 Date nowDate = new Date();
-                if(s.getModelId()==DeviceDAO.STATE_ID_OF_SERVICE_REGISTRATION_FOR_APPLICATION_UID){
+                if (s.getModelId() == DeviceDAO.STATE_ID_OF_SERVICE_REGISTRATION_FOR_APPLICATION_UID) {
                     s.setContent(new Content(backendServer.getApplicationUID(), nowDate));
                     this.dataManager.getEntityStateDAO().insertContent(s);
-                } else if(s.getModelId()==DeviceDAO.STATE_ID_OF_SERVICE_REGISTRATION_FOR_SERVICE_UID){
-                    s.setContent(new Content(backendServer.getApplicationUID(), nowDate));
+                } else if (s.getModelId() == DeviceDAO.STATE_ID_OF_SERVICE_REGISTRATION_FOR_SERVICE_UID) {
+                    s.setContent(new Content(backendServer.getServiceUID(), nowDate));
                     this.dataManager.getEntityStateDAO().insertContent(s);
-                } else if(s.getModelId()==DeviceDAO.STATE_ID_OF_SERVICE_REGISTRATION_FOR_REMOTE_PASSWORD){
+                } else if (s.getModelId() == DeviceDAO.STATE_ID_OF_SERVICE_REGISTRATION_FOR_REMOTE_PASSWORD) {
                     s.setContent(new Content(password, nowDate));
                     this.dataManager.getEntityStateDAO().insertContent(s);
-                } else if(s.getModelId()==DeviceDAO.STATE_ID_OF_SERVICE_REGISTRATION_FOR_SERVICE_EXPIRATION_TIME){
+                } else if (s.getModelId() == DeviceDAO.STATE_ID_OF_SERVICE_REGISTRATION_FOR_SERVICE_EXPIRATION_TIME) {
                     s.setContent(new Content(expirationTime, nowDate));
                     this.dataManager.getEntityStateDAO().insertContent(s);
                 }
             }
+            // atualiza as configurações do servidor
             this.dataManager.getServiceDAO().updateServiceUIDs(backendServer);
             // gera o evento
-            this.newInternalEvent(EVENT_DEVICE_REGISTRATION_SUCCESSFUL, backendServer.getApplicationUID(),expirationTime);
+            this.newInternalEvent(EVENT_DEVICE_REGISTRATION_SUCCESSFUL, backendServer.getApplicationUID(), expirationTime);
+            // retorna true
+            return true;
         } catch (SQLException ex) {
             Logger.getLogger(DeviceManager.class.getName()).log(Level.SEVERE, null, ex);
+            this.newInternalEvent(EVENT_DEVICE_REGISTRATION_UNSUCCESSFUL, 1, ex.toString());
         } catch (ParserConfigurationException ex) {
             Logger.getLogger(DeviceManager.class.getName()).log(Level.SEVERE, null, ex);
+            this.newInternalEvent(EVENT_DEVICE_REGISTRATION_UNSUCCESSFUL, 2, ex.toString());
         } catch (TransformerException ex) {
             Logger.getLogger(DeviceManager.class.getName()).log(Level.SEVERE, null, ex);
+            this.newInternalEvent(EVENT_DEVICE_REGISTRATION_UNSUCCESSFUL, 3, ex.toString());
         } catch (SAXException ex) {
             Logger.getLogger(DeviceManager.class.getName()).log(Level.SEVERE, null, ex);
+            this.newInternalEvent(EVENT_DEVICE_REGISTRATION_UNSUCCESSFUL, 4, ex.toString());
         }
         return false;
+    }
+
+    /**
+     * Verifica se o serviço foi registrado
+     *
+     * @param backendService
+     * @return
+     * @throws SQLException
+     */
+    public boolean isSensingModuleRegistred(Service backendService) throws SQLException {
+        // Busca os dado do serviço backend
+        Entity entity = this.dataManager.getEntityDAO()
+                .getEntity(DeviceDAO.COMPONENT_ID, DeviceDAO.ENTITY_ID_OF_SERVICE_REGISTRATION);
+        // busca os estados da entidade
+        entity.setStates(this.dataManager.getEntityStateDAO().getEntityStates(entity));
+        // Verifica se todas as informações estão cadastradas, 
+        // se qualquer uma delas não estiver retorna false;
+        for (State s : entity.getStates()) {
+            if (s.getModelId() == DeviceDAO.STATE_ID_OF_SERVICE_REGISTRATION_FOR_SERVICE_UID) {
+                if (!backendService.getServiceUID().equals(s.getCurrentValue())) {
+                    return false;
+                }
+            } else if (s.getModelId() == DeviceDAO.STATE_ID_OF_SERVICE_REGISTRATION_FOR_REMOTE_PASSWORD) {
+                if (s.getCurrentValue().equals(s.getDataType().getInitialValue())) {
+                    return false;
+                }
+            } else if (s.getModelId() == DeviceDAO.STATE_ID_OF_SERVICE_REGISTRATION_FOR_APPLICATION_UID) {
+                if (!backendService.getApplicationUID().equals(s.getCurrentValue())) {
+                    return false;
+                }
+            }
+        }
+        // retorna verdadeiro se as informações existem
+        return true;
     }
 
     public HashMap<String, Object> discoverDeviceStates() {
@@ -925,8 +990,8 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
                 psr.addressDiscovery();
                 HashMap<String, String> interfaceConfigurations = psr.getInterfaceConfigurations();
                 content = new Content(interfaceConfigurations);
-                for(State s : instance.getStates()){
-                    if(s.getModelId() == CommunicationDAO.STATE_ID_OF_INPUT_COMMUNICATION_INTERFACE_CONFIGURATIONS){
+                for (State s : instance.getStates()) {
+                    if (s.getModelId() == CommunicationDAO.STATE_ID_OF_INPUT_COMMUNICATION_INTERFACE_CONFIGURATIONS) {
                         s.setContent(content);
                         this.dataManager.getInstanceDAO().insertContent(s);
                         break;
@@ -1026,5 +1091,39 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
     @Override
     public void addComponentManager(ComponentManager componentManager) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    public void startUrboSentiServices() throws IOException {
+        // Cria as threads
+        Thread systemHandler = new Thread(adaptationManager);
+        Thread uploader = new Thread(communicationManager);
+        
+        /***** Configurações necessárias para os componentes *****/
+        // tratador de eventos do sistema
+        this.getAdaptationManager().start(); 
+        // Registrar do nó de sensoriamento movel no backend server :
+        // 1 - busca o servidor backend cadastrado no conhecimento inicial
+        Service backendServer = this.getRemoteServices().get(0);
+        // 2 - Registrar no Servidor Backend
+        this.registerSensingModule(backendServer);
+        // 3 - Adicionar o servidor da aplicação como servidor para upload
+        communicationManager.addUploadServer(backendServer);
+        
+        /**************** Iniciar os serviços **************/
+        // interfaces de comunicação de entrada
+        for(PushServiceReceiver receivers : dataManager.getCommunicationDAO().getInputCommunicationInterfaces()){
+            receivers.start();
+        }
+        // tratador de eventos do sistema
+        systemHandler.start();
+        // serviço de upload de relatos
+        uploader.start();
+    }
+    
+    public void stopUrboSentiServices(){
+        adaptationManager.stop();
+        for(PushServiceReceiver receivers : dataManager.getCommunicationDAO().getInputCommunicationInterfaces()){
+            receivers.stop();
+        }
     }
 }

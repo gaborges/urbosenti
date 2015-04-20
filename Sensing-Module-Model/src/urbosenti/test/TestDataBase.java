@@ -74,7 +74,9 @@ public class TestDataBase {
 
         Entity entity = new Entity();
         entity.setId(1);
-        if(true) return;
+        if (true) {
+            return;
+        }
         try {
             /**
              * **** Adição e consulta de conteúdo *****
@@ -122,17 +124,17 @@ public class TestDataBase {
 //        } catch (SQLException ex) {
 //            Logger.getLogger(TestDataBase.class.getName()).log(Level.SEVERE, null, ex);
 //        }
-            
+
             /**
              * **** Retornar o modelo geral do dispositivo *****
              */
             Device device = data.getDeviceDAO().getDeviceModel(data);
-            
+
             for (Component c : device.getComponents()) {
                 for (Entity e : c.getEntities()) {
                     System.out.println("Entity: " + e.getDescription());
                     for (State s : e.getStates()) {
-                    //System.out.println("State: "+s.getId()+","+s.getDescription()+", content: "+s.getCurrentValue());
+                        //System.out.println("State: "+s.getId()+","+s.getDescription()+", content: "+s.getCurrentValue());
                         //if(s.getId() == 5 || s.getId() == 9 ){
                         //    System.out.println("Content Boolean? "+(s.getContent().getValue() instanceof Boolean) );
 //                        Content c = new Content();
@@ -147,17 +149,17 @@ public class TestDataBase {
                     }
                 }
             }
-            for(Service service : device.getServices()){
-                System.out.println("Service: "+service.getServiceType().getDescription());
-                for(State s : service.getAgent().getAgentType().getStates()){
-                    System.out.println("State: "+s.getId()+","+s.getDescription()+", content: "+s.getCurrentValue());
+            for (Service service : device.getServices()) {
+                System.out.println("Service: " + service.getServiceType().getDescription());
+                for (State s : service.getAgent().getAgentType().getStates()) {
+                    System.out.println("State: " + s.getId() + "," + s.getDescription() + ", content: " + s.getCurrentValue());
                 }
-                for(Interaction i : service.getAgent().getAgentType().getInteraction()){
-                    System.out.println("Interaction "+i.getId()+", "+i.getDescription());
+                for (Interaction i : service.getAgent().getAgentType().getInteraction()) {
+                    System.out.println("Interaction " + i.getId() + ", " + i.getDescription());
                 }
-                for(Conversation c : service.getAgent().getConversations()){
-                    for(AgentMessage m : c.getMessages()){
-                        
+                for (Conversation c : service.getAgent().getConversations()) {
+                    for (AgentMessage m : c.getMessages()) {
+
                     }
                 }
             }

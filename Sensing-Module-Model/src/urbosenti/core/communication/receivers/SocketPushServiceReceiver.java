@@ -7,6 +7,7 @@ package urbosenti.core.communication.receivers;
 
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.logging.Level;
@@ -27,7 +28,7 @@ public class SocketPushServiceReceiver extends PushServiceReceiver {
         super(communicationManager);
         super.setId(1);
         super.setDescription("Socket Input Interface");
-        this.port = 556677;
+        this.port = 55666;
     }
 
     @Override
@@ -44,30 +45,30 @@ public class SocketPushServiceReceiver extends PushServiceReceiver {
     public void run() {
         try {            
             // When have a new message
-            String message
-                    = "<message>\n"
-                    + "	<header>\n"
-                    + "		<origin>\n"
-                    + "			<uid>11XYZ</uid>\n"
-                    + "			<layer>2</layer>\n"
-                    + "               </origin>\n"
-                    + "               <target>\n"
-                    + "			<uid>22XYZ</uid>\n"
-                    + " 			<layer>2</layer>\n"
-                    + "               </target>\n"
-                    + "               <priority>1</priority>\n"
-                    + "               <subject>4</subject>\n"
-                    + "               <contentType>text/xml</contentType>\n"
-                    + "               <contentSize>29</contentSize>\n"
-                    + "               <anonymousUpload>false</anonymousUpload>\n"
-                    + "	</header>\n"
-                    + "	<content>message according the subject</content>\n"
-                    + "</message>";
-            super.communicationManager.newPushMessage("http://exemplo:8084/TestServer/webresources/test/return", message);
+            String message="";
+//                    = "<message>"
+//                    + "	<header>"
+//                    + "		<origin>"
+//                    + "			<uid>11XYZ</uid>"
+//                    + "			<layer>2</layer>"
+//                    + "               </origin>"
+//                    + "               <target>"
+//                    + "			<uid>22XYZ</uid>"
+//                    + " 			<layer>2</layer>"
+//                    + "               </target>"
+//                    + "               <priority>1</priority>"
+//                    + "               <subject>4</subject>"
+//                    + "               <contentType>text/xml</contentType>"
+//                    + "               <contentSize>29</contentSize>"
+//                    + "               <anonymousUpload>false</anonymousUpload>"
+//                    + "	</header>\n"
+//                    + "	<content>message according the subject</content>"
+//                    + "</message>";
+//            super.communicationManager.newPushMessage("http://exemplo:8084/TestServer/webresources/test/return", message);
             while (this.getStatus() == STATUS_LISTENING) {
                 if(!serverSocket.isBound()){
                     serverSocket = new ServerSocket(port);
-                    this.getInterfaceConfigurations().put("ipv4Address",this.serverSocket.getInetAddress().getHostAddress());
+                    this.getInterfaceConfigurations().put("ipv4Address",InetAddress.getLocalHost().getHostAddress());
                     super.communicationManager.updateInputCommunicationInterfaceConfiguration(this,this.getInterfaceConfigurations());
                 }
                 try (Socket accept = this.serverSocket.accept()) {
@@ -84,8 +85,8 @@ public class SocketPushServiceReceiver extends PushServiceReceiver {
     @Override
     public void addressDiscovery() throws IOException {
         this.serverSocket = new ServerSocket(port);
-        this.getInterfaceConfigurations().put("ipv4Address",this.serverSocket.getInetAddress().getHostAddress());
-        this.getInterfaceConfigurations().put("port", port.toString());
+        this.getInterfaceConfigurations().put("ipv4Address",InetAddress.getLocalHost().getHostAddress());
+        this.getInterfaceConfigurations().put("port", String.valueOf(serverSocket.getLocalPort()));
     }
 
 }

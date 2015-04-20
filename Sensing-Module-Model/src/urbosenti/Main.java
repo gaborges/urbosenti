@@ -5,6 +5,8 @@
 package urbosenti;
 
 import java.io.File;
+import java.io.IOException;
+import java.sql.SQLException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import urbosenti.core.communication.PushServiceReceiver;
@@ -13,7 +15,6 @@ import urbosenti.core.communication.interfaces.MobileDataCommunicationInterface;
 import urbosenti.core.communication.interfaces.WiredCommunicationInterface;
 import urbosenti.core.communication.interfaces.WirelessCommunicationInterface;
 import urbosenti.core.communication.receivers.SocketPushServiceReceiver;
-import urbosenti.core.device.model.Agent;
 import urbosenti.core.device.DeviceManager;
 import urbosenti.core.device.model.Service;
 import urbosenti.test.ConcreteApplicationHandler;
@@ -68,7 +69,34 @@ public class Main {
         // Processo de Descoberta, executa todos os onCreate's de todos os Componentes habilidatos do módudo de sensoriamento
         deviceManager.onCreate();
       
-        /***** Processo de inicialização dos serviços *****/
+        try {
+            /***** Processo de inicialização dos serviços *****/
+            automaticStartup(deviceManager);
+        } catch (IOException ex) {
+            Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+            System.exit(-1);
+        }
+        
+        //manualStartup(deviceManager, teste);
+        
+        /***** Inicio das funções e aplicação de sensoriamento *****/
+        // Aplicação de sensoriamento blablabla
+        
+        // Testes
+        TestCommunication tc = new TestCommunication(deviceManager);
+        tc.test1();
+        
+        
+        try {
+            Thread.sleep(120000);
+        } catch (InterruptedException ex) {
+            Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        deviceManager.stopUrboSentiServices();
+        System.exit(0);
+    }
+    
+    public static void manualStartup(DeviceManager deviceManager, PushServiceReceiver teste){
         deviceManager.getAdaptationManager().start(); 
                
         // Inicia o serviço de upload -- Testar em breve
@@ -88,25 +116,21 @@ public class Main {
         // Servidor ainda não criado - pegar direto do banco de dados ou a mão
         Service backendServer = deviceManager.getRemoteServices().get(0);
         
-        // Registrar no Servidor Backend
-        deviceManager.registerSensingModule(backendServer);
+        try {
+            // Registrar no Servidor Backend
+            deviceManager.registerSensingModule(backendServer);
+        } catch (IOException ex) {
+            Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+            System.exit(-1);
+        }
         
         // Adicionar o servidor da aplicação como servidor para upload
         deviceManager.getCommunicationManager().addUploadServer(backendServer);
         
-        /***** Inicio das funções e aplicação de sensoriamento *****/
-        // Aplicação de sensoriamento blablabla
-        
-        
-        // Testes
-        TestCommunication tc = new TestCommunication(deviceManager);
-        tc.test1();
-        try {
-            Thread.sleep(120000);
-        } catch (InterruptedException ex) {
-            Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
-        }
-    }
-      
+    }      
+    
+    public static void automaticStartup(DeviceManager deviceManager) throws IOException{
+        deviceManager.startUrboSentiServices();
+    } 
     
 }

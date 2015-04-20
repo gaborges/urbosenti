@@ -17,6 +17,7 @@ import urbosenti.core.device.model.TargetOrigin;
 import urbosenti.core.events.Action;
 import urbosenti.core.events.ApplicationEvent;
 import urbosenti.core.events.Event;
+import urbosenti.util.DeveloperSettings;
 
 /**
  *
@@ -107,7 +108,9 @@ public class UserManager extends ComponentManager {
         // Carregar dados e configurações que serão utilizados para execução em memória
         // Preparar configurações inicias para execução
         // Para tanto utilizar o DataManager para acesso aos dados.
-        System.out.println("Activating: " + getClass());
+        if(DeveloperSettings.SHOW_FUNCTION_DEBUG_ACTIVITY){
+            System.out.println("Activating: " + getClass());
+        }
     }
 
     /**

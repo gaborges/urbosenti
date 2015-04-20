@@ -128,7 +128,7 @@ public class MessageWrapper {
             // Criar o documento e com verte a String em DOC
             Document doc = builder.newDocument();
             Element root = doc.createElement("message"),
-                    content = doc.createElement("conteudo"),
+                    content = doc.createElement("content"),
                     header = doc.createElement("header"),
                     origin = doc.createElement("origin"),
                     target = doc.createElement("target"),
@@ -216,6 +216,10 @@ public class MessageWrapper {
 
     public void setServiceProcessingTime(long serviceProcessingTime) {
         this.serviceProcessingTime = serviceProcessingTime;
+    }
+    
+    public String getTargetAddress(){
+        return message.getTarget().getAddress();
     }
     
 }

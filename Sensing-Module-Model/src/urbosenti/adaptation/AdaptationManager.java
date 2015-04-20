@@ -21,6 +21,7 @@ import urbosenti.core.events.Event;
 import urbosenti.core.events.EventManager;
 import urbosenti.core.events.SystemHandler;
 import urbosenti.user.UserManager;
+import urbosenti.util.DeveloperSettings;
 
 /**
  *
@@ -141,7 +142,7 @@ public class AdaptationManager extends ComponentManager implements Runnable, Sys
     public void run() {
         /* At first, the adaptation manager discovers the environment to rum*/
         this.discovery(deviceManager, contextManager, userManager);
-        discoveryAdapter.discovery(deviceManager);
+       // discoveryAdapter.discovery(deviceManager);
         /* It begin the monitoring process of events */
         try {
             monitoring();
@@ -180,20 +181,22 @@ public class AdaptationManager extends ComponentManager implements Runnable, Sys
                 }
                 /* Execute */
                 System.out.println("Event: "+event.toString());
-                System.out.println("Message: "+ event.getValue().toString() );
+                //System.out.println("Message: "+ event.getValue().toString() );
             }
         }
     }
 
     @Override
     public void onCreate() {
+        if(DeveloperSettings.SHOW_FUNCTION_DEBUG_ACTIVITY){
+            System.out.println("Activating: " + getClass());
+        }
         // Carregar dados e configurações que serão utilizados para execução em memória
         // Preparar configurações inicias para execução
         if(this.discoveryAdapter == null){
             this.discoveryAdapter = new UrboSentiDiscoveryAdapter();
         }
         // Para tanto utilizar o DataManager para acesso aos dados.
-        System.out.println("Activating: " + getClass());
     }
 
     @Override

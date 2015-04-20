@@ -39,7 +39,7 @@ public class Message {
         this.createdTime = new Date();
         this.anonymousUpload = false;
         this.subject = Message.SUBJECT_APPLICATION_DEFINED;
-        this.contentType = "text/plain";
+        this.contentType = "text/xml";
         this.requireResponse = false;
     }   
          
@@ -48,7 +48,7 @@ public class Message {
     }
 
     public void setContent(String content) {
-        this.content = content;
+        this.content = removeXMLheader(content);
         this.measureContentSize();
     }
 
@@ -135,5 +135,37 @@ public class Message {
     
     public int getContentSize() {
         return contentSize;
+    }
+    
+    public static String removeXMLheader(String xml){
+        // remove a representação do caracter para adicionar o caractere
+        xml = xml.replace("&gt;", ">");
+        xml = xml.replace("&lt;", "<");
+        char[] characters = xml.toCharArray();
+        String newXml = "";
+        boolean flagEscreve = true;
+        // Busca o header
+        for (int i = 0;i < characters.length;i++) {
+            // verifica se é o início do header XML, se sim pula todos caracterers até o fim do header
+            if(characters[i] == '<'){
+                if(characters[i+1] == '?'){
+                    if(characters[i+2] == 'x' && characters[i+3] == 'm' && characters[i+4] == 'l'){
+                        flagEscreve = false;
+                    }
+                }
+            }
+            // escreve na variável
+            if(flagEscreve){
+                newXml += characters[i];
+            }
+            // verifica se chegou no fim do header XML
+            if(!flagEscreve && characters[i]== '?'){
+                if(characters[i+1]== '>'){
+                    i++;
+                    flagEscreve = true;
+                }
+            }
+        }
+        return newXml;
     }
 }

@@ -31,10 +31,10 @@ public class TestCommunication {
         // testaEnvioMensagemSemRetorno(); // OK
         
         // Envio de mensagem com retorno
-        testaEnvioMensagemComRetorno();
+        // testaEnvioMensagemComRetorno();
          
         // Teste do serviço de upload - ok
-        //testaUploadServer();
+        testaUploadServer();
                 
     }
     
@@ -90,28 +90,28 @@ public class TestCommunication {
     }
     
     public void testaUploadServer(){
-        // Serviço do report
-        Service service = new Service();
-        service.setServiceUID("666");
-        service.setApplicationUID("333");
-        service.setAddress("http://localhost:8090/Test2Server/webresources/generic");
-        // adiciona o serviço       
-        deviceManager.getCommunicationManager().addUploadServer(service);
-        
+//        // Serviço do report
+//        Service service = new Service();
+//        service.setServiceUID("666");
+//        service.setApplicationUID("333");
+//        service.setAddress("http://localhost:8090/Test2Server/webresources/generic");
+//        // adiciona o serviço       
+//        deviceManager.getCommunicationManager().addUploadServer(service);
+//        
         // Inicia o serviço de envio de mensagens
         Thread t = new Thread(deviceManager.getCommunicationManager());
         t.start();        
         
         // Adiciona a origem, e é somente necessário se for uma mensagem de 
         // sistema, caso não seja somente a mensagem é necessária
-        Address origin = new Address();
-        origin.setLayer(Address.LAYER_SYSTEM);
+//        Address origin = new Address();
+//        origin.setLayer(Address.LAYER_SYSTEM);
         
         // Cria a mensagem
         Message m = new Message();
-        m.setOrigin(origin);
-        m.setSubject(Message.SUBJECT_UPLOAD_REPORT);
-        m.setContentType("application/xml");
+        //m.setOrigin(origin);
+        //m.setSubject(Message.SUBJECT_UPLOAD_REPORT);
+        //m.setContentType("application/xml");
         m.setContent("oiiiiii");
         
         // Envia o relato

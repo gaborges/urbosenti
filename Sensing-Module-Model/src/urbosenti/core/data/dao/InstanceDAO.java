@@ -102,7 +102,7 @@ public class InstanceDAO {
     }
 
     public void insertPossibleStateContents(State state, Instance instance) throws SQLException {
-        String sql = "INSERT INTO possible_action_contents (possible_value, default_value, instance_state_id) "
+        String sql = "INSERT INTO possible_instance_contents (possible_value, default_value, instance_state_id) "
                 + " VALUES (?,?,?);";
         PreparedStatement statement;
         if (state.getPossibleContents() != null) {
@@ -121,7 +121,7 @@ public class InstanceDAO {
                 }
                 statement.close();
                 if (DeveloperSettings.SHOW_DAO_SQL) {
-                    System.out.println("INSERT INTO possible_action_contents (id,possible_value, default_value, instance_state_id) "
+                    System.out.println("INSERT INTO possible_instance_contents (id,possible_value, default_value, instance_state_id) "
                             + " VALUES (" + possibleContent.getId() + "," + Content.parseContent(state.getDataType(), possibleContent.getValue()) + "," + possibleContent.isIsDefault() + "," + state.getId() + ");");
                 }
             }
@@ -167,7 +167,7 @@ public class InstanceDAO {
         if (DeveloperSettings.SHOW_DAO_SQL) {
             System.out.println("INSERT INTO instance_state_contents (id,reading_value,reading_time,instance_state_id) "
                     + " VALUES (" + state.getContent().getId() + ",'" + Content.parseContent(state.getDataType(), state.getContent().getValue()) + "',"
-                    + ",'" + state.getContent().getTime().getTime() + "'," + "," + state.getId() + ");");
+                    + "'" + state.getContent().getTime().getTime() + "'," + state.getId() + ");");
         }
     }
 

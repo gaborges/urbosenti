@@ -50,6 +50,7 @@ import urbosenti.core.device.ComponentManager;
 import urbosenti.core.device.DeviceManager;
 import urbosenti.core.device.model.FeedbackAnswer;
 import urbosenti.core.events.Action;
+import urbosenti.util.DeveloperSettings;
 
 /**
  *
@@ -99,7 +100,10 @@ public class DataManager extends ComponentManager {
     }
     
     @Override
-    public void onCreate() {        
+    public void onCreate() {
+        if(DeveloperSettings.SHOW_FUNCTION_DEBUG_ACTIVITY){
+            System.out.println("Activating: " + getClass());
+        }
         // Conecta ao banco
         Connection connection = null;
         try {
@@ -215,7 +219,6 @@ public class DataManager extends ComponentManager {
         }
         // Preparar configurações inicias para execução
         // Para tanto utilizar o DataManager para acesso aos dados.
-        System.out.println("Activating: " + getClass());
         // Descobrir todo o conhecimento e criar o banco
     }
     

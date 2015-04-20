@@ -51,14 +51,15 @@ public abstract class PushServiceReceiver implements Runnable {
     }
 
     public void stop() {
-        try {
-            synchronized (flag) {
-                this.t.wait();
-            }
-        } catch (InterruptedException ex) {
-            Logger.getLogger(PushServiceReceiver.class.getName()).log(Level.SEVERE, null, ex);
-        }
+//        try {
+//            synchronized (flag) {
+//                this.t.wait();
+//            }
+//        } catch (InterruptedException ex) {
+//            Logger.getLogger(PushServiceReceiver.class.getName()).log(Level.SEVERE, null, ex);
+//        }
         this.status = STATUS_STOPPED;
+        t.interrupt();
     }
 
     public void resume() {

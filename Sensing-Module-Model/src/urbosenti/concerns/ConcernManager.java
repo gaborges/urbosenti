@@ -9,6 +9,7 @@ import urbosenti.core.device.ComponentManager;
 import urbosenti.core.device.DeviceManager;
 import urbosenti.core.device.model.FeedbackAnswer;
 import urbosenti.core.events.Action;
+import urbosenti.util.DeveloperSettings;
 
 /**
  *
@@ -22,10 +23,12 @@ public class ConcernManager extends ComponentManager {
     
     @Override
     public void onCreate() {
+        if(DeveloperSettings.SHOW_FUNCTION_DEBUG_ACTIVITY){
+            System.out.println("Activating: " + getClass());
+        }
         // Carregar dados e configurações que serão utilizados para execução em memória
         // Preparar configurações inicias para execução
         // Para tanto utilizar o DataManager para acesso aos dados.
-        System.out.println("Activating: " + getClass());
     }
 
     @Override
