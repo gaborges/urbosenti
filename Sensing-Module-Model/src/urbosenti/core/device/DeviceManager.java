@@ -385,7 +385,9 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
             throw new Error(ex);
         }
         this.enabledComponentManagers.add(this);
-        System.out.println("onCreate Process Finished");
+        if(DeveloperSettings.SHOW_FUNCTION_DEBUG_ACTIVITY){
+            System.out.println("onCreate Process Finished");
+        }
     }
 
     /**
@@ -1092,18 +1094,20 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
     public void addComponentManager(ComponentManager componentManager) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
-
+    /**
+     * Inicia todos os serviços da UrboSenti
+     * @throws IOException 
+     */
     public void startUrboSentiServices() throws IOException {
         // Cria as threads
         Thread systemHandler = new Thread(adaptationManager);
-        Thread uploader = new Thread(communicationManager);
         
         /***** Configurações necessárias para os componentes *****/
         // tratador de eventos do sistema
         this.getAdaptationManager().start(); 
         // Registrar do nó de sensoriamento movel no backend server :
         // 1 - busca o servidor backend cadastrado no conhecimento inicial
-        Service backendServer = this.getRemoteServices().get(0);
+        Service backendServer = this.getBackendService();
         // 2 - Registrar no Servidor Backend
         this.registerSensingModule(backendServer);
         // 3 - Adicionar o servidor da aplicação como servidor para upload
@@ -1117,13 +1121,23 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
         // tratador de eventos do sistema
         systemHandler.start();
         // serviço de upload de relatos
-        uploader.start();
+        this.communicationManager.startUploadService();
+        // Evento que os serviços estão em funcionamento
+        this.newInternalEvent(EVENT_DEVICE_SERVICES_INITIATED);
     }
-    
+    /**
+     * Para todos os serviços da UrboSenti
+     */
     public void stopUrboSentiServices(){
-        adaptationManager.stop();
+        // Para o adaptation Manager
+        this.adaptationManager.stop();
+        // Para  serviço de Upload
+        this.communicationManager.stopUploadService();
+        // Para os listeners
         for(PushServiceReceiver receivers : dataManager.getCommunicationDAO().getInputCommunicationInterfaces()){
             receivers.stop();
         }
+        // Evento que os serviços estão parados
+        this.newInternalEvent(EVENT_DEVICE_SERVICES_STOPPED);
     }
 }

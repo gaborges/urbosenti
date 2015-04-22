@@ -40,7 +40,6 @@ import urbosenti.core.device.ComponentManager;
 import urbosenti.core.device.DeviceManager;
 import urbosenti.core.device.model.FeedbackAnswer;
 import urbosenti.core.device.model.Service;
-import urbosenti.core.device.model.TargetOrigin;
 import urbosenti.core.events.Action;
 import urbosenti.core.events.ApplicationEvent;
 import urbosenti.core.events.Event;
@@ -153,6 +152,15 @@ public class CommunicationManager extends ComponentManager implements Runnable {
      *
      */
     private static final int EVENT_MESSAGE_STORED_REMOVED = 11;
+    /**
+     * int EVENT_NEW_INPUT_COMMUNICATION_INTERFACE_ADDRESS = 15;
+     *
+     * <ul><li>id: 15</li>
+     * <li>evento: Nova configuração de endereço de entrada</li>
+     * <li>parâmetros: Mensagem Wrapper</li></ul>
+     *
+     */
+    private static final int EVENT_NEW_INPUT_COMMUNICATION_INTERFACE_ADDRESS = 15;
     private int countPriorityMessage;
     private int countNormalMessage;
     private int limitPriorityMessage;
@@ -221,13 +229,16 @@ public class CommunicationManager extends ComponentManager implements Runnable {
     private ReconnectionService reconnectionService;
     private Service uploadServer;
     private boolean running; // indica se o servidor está rodando ou não
-    private List<PushServiceReceiver> pushServiceReveivers;
+    private final List<PushServiceReceiver> pushServiceReveivers;
+    private final Thread uploadServiceThread;
 
     public CommunicationManager(DeviceManager deviceManager) {
         super(deviceManager, CommunicationDAO.COMPONENT_ID);
         this.normalMessageQueue = new LinkedList();
         this.priorityMessageQueue = new LinkedList();
         this.pushServiceReveivers = new ArrayList();
+        this.uploadServiceThread = new Thread(this);
+        this.uploadServer = null;
     }
 
     // if do not setted then when the method onCreate was activated it creates automatically
@@ -1242,6 +1253,8 @@ public class CommunicationManager extends ComponentManager implements Runnable {
      * <li>CommunicationManager.EVENT_MESSAGE_STORED - Mensagem Armazenada</li>
      * <li>@see #CommunicationManager.EVENT_MESSAGE_STORED_REMOVED - Mensagem
      * Removida</li>
+     * <li>CommunicationManager.EVENT_NEW_INPUT_COMMUNICATION_INTERFACE_ADDRESS
+     * - novo endereço da interface de comunicação de entrada</li>
      * </ul>
      *
      * @param eventId
@@ -1257,6 +1270,7 @@ public class CommunicationManager extends ComponentManager implements Runnable {
      * @see #EVENT_REPORT_AWAITING_APPROVAL
      * @see #EVENT_MESSAGE_STORED
      * @see #EVENT_MESSAGE_STORED_REMOVED
+     * @see #EVENT_NEW_INPUT_COMMUNICATION_INTERFACE_ADDRESS
      */
     private synchronized void newInternalEvent(int eventId, Object... parameters) {
         Address address;
@@ -1493,6 +1507,25 @@ public class CommunicationManager extends ComponentManager implements Runnable {
                 // envia o evento
                 getEventManager().newEvent(event);
                 break;
+            case EVENT_NEW_INPUT_COMMUNICATION_INTERFACE_ADDRESS:
+                PushServiceReceiver receiver = (PushServiceReceiver) parameters[0];
+                HashMap<String,String> configurations = (HashMap<String,String>) parameters[1];
+
+                event = new SystemEvent(this);
+
+                // Adiciona os valores que serão passados para serem tratados
+                values = new HashMap<String, Object>();
+                values.put("interface", receiver);
+                values.put("configurations", configurations);
+
+                event.setId(15);
+                event.setName("The receiver's communication interfacer has changed the address configuration");
+                event.setTime(new Date());
+                event.setValue(values);
+
+                // envia o evento
+                getEventManager().newEvent(event);
+                break;
         }
         // inserir métricas e medidas no evento
     }
@@ -1717,7 +1750,9 @@ public class CommunicationManager extends ComponentManager implements Runnable {
             // Política de Armazenamento
             // [Aguarda Política de Reconexão]        
             if (!sent) {
-                System.out.println("Starting Reconection Service");
+                if(DeveloperSettings.SHOW_FUNCTION_DEBUG_ACTIVITY){
+                    System.out.println("Starting Reconection Service");
+                }
                 this.reconnectionService.reconectionProcess();
             }
         }
@@ -1819,8 +1854,25 @@ public class CommunicationManager extends ComponentManager implements Runnable {
         return null;
     }
 
-    public void updateInputCommunicationInterfaceConfiguration(SocketPushServiceReceiver aThis, HashMap<String, String> interfaceConfigurations) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    public void updateInputCommunicationInterfaceConfiguration(SocketPushServiceReceiver inputInterface, HashMap<String, String> interfaceConfigurations) {
+        this.newInternalEvent(EVENT_NEW_INPUT_COMMUNICATION_INTERFACE_ADDRESS, inputInterface, interfaceConfigurations);
     }
-
+    
+    /**
+     * Inicia o serviço de upload
+     */
+    public void startUploadService(){
+        if(uploadServer == null){
+            throw new Error("Upload server not specified! - Remember to use: deviceManager.getCommunicationManager().addUploadServer(uploadServer)");
+        }
+        this.running = true;
+        uploadServiceThread.start();
+    }
+    
+    /**
+     * Para o serviço de upload
+     */
+    public void stopUploadService(){
+        this.running = false;
+    }
 }

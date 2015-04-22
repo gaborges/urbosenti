@@ -65,7 +65,7 @@
             <!-- Pegar os uids dinâmicamente na descoberta, se não atribuído -->
             <serviceUID>d428f2f7-ae09-4ecf-b57a-b3eaf2362d38</serviceUID> <!-- dinâmicamente na descoberta -->
             <applicationUID>????</applicationUID> <!-- Idealmente dinâmico e deve ser maior que 6 caracteres -->
-            <address>http://ubicomp.ufgs.br/UrboSenti/webresources/backend</address>
+            <address>http://localhost:8084/UrboSenti/webresources/backend</address>
             <agent layer="2" type="1" address="/" addressType="2"></agent>
         </service>
     </generalDefinitions>
@@ -774,6 +774,21 @@
                     </parameter>
                     <parameter id="2" optional="false" dataType="9" label="message">
                         <description>Mensagem</description>
+                    </parameter>
+                </event>
+                <event id="15" synchronous="false" implementation="1" description="Nova configuração de endereço de entrada">
+                    <target mandatory="true">2</target>
+                    <parameter id="1" optional="false" dataType="10" label="interface">
+                        <description>Origem</description>
+                        <possibleValues>
+                            <value>urbosenti.core.communication.PushServiceReceiver</value>
+                        </possibleValues>
+                    </parameter>
+                    <parameter id="2" optional="false" dataType="10" label="configurations">
+                        <description>Informações de endereço</description>
+                        <possibleValues>
+                            <value>java.util.HashMap</value>
+                        </possibleValues>
                     </parameter>
                 </event>
                 <!-- actions -->

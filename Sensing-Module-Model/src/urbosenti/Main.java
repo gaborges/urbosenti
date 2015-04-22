@@ -113,8 +113,8 @@ public class Main {
         
         /***** Registro do nó de sensoriamento móvel no servidor de aplicação - falta fazer a função e o servidor *****/
         
-        // Servidor ainda não criado - pegar direto do banco de dados ou a mão
-        Service backendServer = deviceManager.getRemoteServices().get(0);
+        // busca o servidor backend cadastrado no conhecimento inicial
+        Service backendServer = deviceManager.getBackendService();
         
         try {
             // Registrar no Servidor Backend
@@ -126,7 +126,8 @@ public class Main {
         
         // Adicionar o servidor da aplicação como servidor para upload
         deviceManager.getCommunicationManager().addUploadServer(backendServer);
-        
+        // Iniciar serviço de upload
+        deviceManager.getCommunicationManager().startUploadService();
     }      
     
     public static void automaticStartup(DeviceManager deviceManager) throws IOException{
