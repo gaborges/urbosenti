@@ -141,7 +141,7 @@ public class AdaptationManager extends ComponentManager implements Runnable, Sys
     @Override
     public void run() {
         /* At first, the adaptation manager discovers the environment to rum*/
-        this.discovery(deviceManager, contextManager, userManager);
+        this.discovery(deviceManager);
        // discoveryAdapter.discovery(deviceManager);
         /* It begin the monitoring process of events */
         try {
@@ -173,7 +173,7 @@ public class AdaptationManager extends ComponentManager implements Runnable, Sys
                         /* Analysis -- Diagnosis */
                         /* Planning -- Plan */
                         break;
-                    case Event.INTERNAL_COMPONENT_EVENT:
+                    case Event.COMPONENT_EVENT:
                         //ContextEvent
                         /* Analysis -- Diagnosis */
                         /* Planning -- Plan */

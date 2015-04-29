@@ -448,7 +448,7 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
                     event.setId(1);
                     event.setName("Registro efetuado com sucesso");
                     event.setTime(new Date());
-                    event.setValue(values);
+                    event.setParameters(values);
 
                     // envia o evento
                     getEventManager().newEvent(event);
@@ -459,7 +459,7 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
                 event.setId(1);
                 event.setName("Registro efetuado com sucesso");
                 event.setTime(new Date());
-                event.setValue(values);
+                event.setParameters(values);
 
                 // envia o evento
                 getEventManager().newEvent(event);
@@ -478,7 +478,7 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
                     event.setId(2);
                     event.setName("Erro ao registrar ao servidor");
                     event.setTime(new Date());
-                    event.setValue(values);
+                    event.setParameters(values);
 
                     // envia o evento
                     getEventManager().newEvent(event);
@@ -489,7 +489,7 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
                 event.setId(2);
                 event.setName("Erro ao registrar ao servidor");
                 event.setTime(new Date());
-                event.setValue(values);
+                event.setParameters(values);
 
                 // envia o evento
                 getEventManager().newEvent(event);
@@ -531,7 +531,7 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
                 event.setId(5);
                 event.setName("Informações do dispositivo coletadas com sucesso");
                 event.setTime(new Date());
-                event.setValue(values);
+                event.setParameters(values);
 
                 // envia o evento
                 getEventManager().newEvent(event);
@@ -548,7 +548,7 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
                 event.setId(6);
                 event.setName("Não foi possível acessar as informações");
                 event.setTime(new Date());
-                event.setValue(values);
+                event.setParameters(values);
 
                 // envia o evento
                 getEventManager().newEvent(event);

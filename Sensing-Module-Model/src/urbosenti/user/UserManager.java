@@ -176,7 +176,7 @@ public class UserManager extends ComponentManager {
                 event.setId(1);
                 event.setName("Usuário incluído");
                 event.setTime(new Date());
-                event.setValue(values);
+                event.setParameters(values);
 
                 // envia o evento
                 getEventManager().newEvent(event);
@@ -194,7 +194,7 @@ public class UserManager extends ComponentManager {
                 event.setId(2);
                 event.setName("Usuário alterado");
                 event.setTime(new Date());
-                event.setValue(values);
+                event.setParameters(values);
 
                 // envia o evento
                 getEventManager().newEvent(event);
@@ -211,7 +211,7 @@ public class UserManager extends ComponentManager {
                 event.setId(3);
                 event.setName("Usuário excluído");
                 event.setTime(new Date());
-                event.setValue(values);
+                event.setParameters(values);
 
                 // envia o evento
                 getEventManager().newEvent(event);
@@ -228,7 +228,7 @@ public class UserManager extends ComponentManager {
                 event.setId(4);
                 event.setName("Usuário acessado para leitura");
                 event.setTime(new Date());
-                event.setValue(values);
+                event.setParameters(values);
 
                 // envia o evento
                 getEventManager().newEvent(event);
@@ -245,7 +245,7 @@ public class UserManager extends ComponentManager {
                 event.setId(5);
                 event.setName("Perfil escolhido de usuário a ser monitorado");
                 event.setTime(new Date());
-                event.setValue(values);
+                event.setParameters(values);
 
                 // envia o evento
                 getEventManager().newEvent(event);
@@ -262,7 +262,7 @@ public class UserManager extends ComponentManager {
                 event.setId(6);
                 event.setName("Usuário Executou Login");
                 event.setTime(new Date());
-                event.setValue(values);
+                event.setParameters(values);
 
                 // envia o evento
                 getEventManager().newEvent(event);
@@ -279,7 +279,7 @@ public class UserManager extends ComponentManager {
                 event.setId(7);
                 event.setName("Usuário Executou Logoff");
                 event.setTime(new Date());
-                event.setValue(values);
+                event.setParameters(values);
 
                 // envia o evento
                 getEventManager().newEvent(event);
@@ -300,7 +300,7 @@ public class UserManager extends ComponentManager {
                 event.setId(8);
                 event.setName("Configuração de sistema alterada pelo usuário");
                 event.setTime(new Date());
-                event.setValue(values);
+                event.setParameters(values);
 
                 // envia o evento
                 getEventManager().newEvent(event);
@@ -319,7 +319,7 @@ public class UserManager extends ComponentManager {
                 event.setId(9);
                 event.setName("Configuração de privacidade alterada");
                 event.setTime(new Date());
-                event.setValue(values);
+                event.setParameters(values);
 
                 // envia o evento
                 getEventManager().newEvent(event);

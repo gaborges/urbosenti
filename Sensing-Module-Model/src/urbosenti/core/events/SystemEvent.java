@@ -4,7 +4,6 @@
  */
 package urbosenti.core.events;
 
-import urbosenti.core.device.model.Agent;
 import urbosenti.core.device.ComponentManager;
 
 /**
@@ -13,14 +12,6 @@ import urbosenti.core.device.ComponentManager;
  */
 public class SystemEvent extends Event{
 
-    public SystemEvent(Object origin) {
-        super(origin, Event.SYSTEM_EVENT);
-    }
-    
-    public SystemEvent(Agent origin) {
-        super(origin, Event.SYSTEM_EVENT);
-    }
-    
     public SystemEvent(ComponentManager origin) {
         super(origin, Event.SYSTEM_EVENT);
     }

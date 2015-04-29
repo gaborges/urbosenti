@@ -5,6 +5,8 @@
 package urbosenti.core.events;
 
 import java.util.Date;
+import java.util.HashMap;
+import urbosenti.core.device.ComponentManager;
 
 /**
  *
@@ -13,17 +15,15 @@ import java.util.Date;
 public abstract class Event {
     /*
      * Types of event:
-     * * INTERNAL_COMPONENT_EVENT is used in events of an internal component of the  sensing module
-     * * EXTERAL_COMPONENT_EVENT is used in custom events built in the sensing application components that use the sensing module API
+     * * COMPONENT_EVENT is used in events from components
      * * INTERATION_EVENT is used in social interactions with other agents
      */
 
-    public static final int INTERNAL_COMPONENT_EVENT = 0;
-    public static final int EXTERAL_COMPONENT_EVENT = 1;
-    public static final int INTERATION_EVENT = 2;
+    public static final int COMPONENT_EVENT = 0;
+    public static final int INTERATION_EVENT = 1;
 
     /*
-     * Types of origin:
+     * Types of component:
      * * SYSTEM_EVENT  is a event to be handled by the system automaticaly, if the adaptation component was activated
      * * APPLICATION_EVENT is a event to be handled by the sensing application
      */
@@ -35,20 +35,20 @@ public abstract class Event {
     private boolean synchronous;
     private int eventType;
     private int originType;
-    private Object origin; // for internal events is a ComponentManager otherwise is a Agent
-    private Object value;  // it is a value used to handle the event, if necessary.
-
+    private int entityId;
+    private ComponentManager component; // for internal events is a ComponentManager otherwise is a Agent
+    private HashMap<String, Object> parameters;  // it is a value used to handle the event, if necessary.
     private boolean hasTimeout;
     private int timeout; // in ms
     private Date time;
 
-    public Event(Object origin, int originType) {
+    public Event(ComponentManager component, int originType) {
         this.synchronous = false;
-        this.eventType = Event.INTERNAL_COMPONENT_EVENT;
+        this.eventType = Event.COMPONENT_EVENT;
         this.hasTimeout = false;
         this.time = new Date();
         this.timeout = 1000;
-        this.origin = origin;
+        this.component = component;
         this.originType = originType;
     }
 
@@ -85,10 +85,7 @@ public abstract class Event {
     /**
      * @return Types of event:
      * <ul>
-     * <li> Event.INTERNAL_COMPONENT_EVENT is used in events of an internal
-     * component of the sensing module</li>
-     * <li> Event.EXTERAL_COMPONENT_EVENT is used in custom events built in the
-     * sensing application components that use the sensing module API</li>
+     * <li> Event.COMPONENT_EVENT is used in events from components</li>
      * <li> Event.INTERATION_EVENT is used in social interactions with other
      * agents </li>
      * </ul>
@@ -98,12 +95,9 @@ public abstract class Event {
     }
 
     /**
-     * @param Types of origin:
+     * @param eventType of component:
      * <ul>
-     * <li> Event.INTERNAL_COMPONENT_EVENT is used in events of an internal
-     * component of the sensing module</li>
-     * <li> Event.EXTERAL_COMPONENT_EVENT is used in custom events built in the
-     * sensing application components that use the sensing module API</li>
+     * <li> Event.COMPONENT_EVENT is used in events from components</li>
      * <li> Event.INTERATION_EVENT is used in social interactions with other
      * agents </li>
      * </ul>
@@ -112,31 +106,20 @@ public abstract class Event {
         this.eventType = eventType;
     }
 
-    /**
-     * @return Types of origin:
-     * <ul>
-     * <li> Event.INTERNAL_COMPONENT_EVENT is used in events of an internal
-     * component of the sensing module</li>
-     * <li> Event.EXTERAL_COMPONENT_EVENT is used in custom events built in the
-     * sensing application components that use the sensing module API</li>
-     * <li> Event.INTERATION_EVENT is used in social interactions with other
-     * agents </li>
-     * </ul>
-     */
-    public Object getOrigin() {
-        return origin;
+    public ComponentManager getComponentManager() {
+        return component;
     }
 
-    public void setOrigin(Object origin) {
-        this.origin = origin;
+    public void setComponentManager(ComponentManager origin) {
+        this.component = origin;
     }
 
-    public Object getValue() {
-        return value;
+    public HashMap<String, Object> getParameters() {
+        return parameters;
     }
 
-    public void setValue(Object value) {
-        this.value = value;
+    public void setParameters(HashMap<String, Object> parameters) {
+        this.parameters = parameters;
     }
 
     public boolean isHasTimeout() {
@@ -164,7 +147,7 @@ public abstract class Event {
     }
 
     /**
-     * @param Types of origin:
+     * @param destiny of component:
      * <ul>
      * <li>Event.SYSTEM_EVENT is a event to be handled by the system
      * automaticaly, if the adaptation component was activated</li>
@@ -172,12 +155,12 @@ public abstract class Event {
      * application</li>
      * </ul>
      */
-    public void setOriginType(int originType) {
-        this.originType = originType;
+    public void setDestiny(int destiny) {
+        this.originType = destiny;
     }
 
     /**
-     * @return Types of origin:
+     * @return Types of component:
      * <ul>
      * <li>Event.SYSTEM_EVENT is a event to be handled by the system
      * automaticaly, if the adaptation component was activated</li>
@@ -189,9 +172,17 @@ public abstract class Event {
         return originType;
     }
 
+    public int getEntityId() {
+        return entityId;
+    }
+
+    public void setEntityId(int entityId) {
+        this.entityId = entityId;
+    }
+
     @Override
     public String toString() {
-        return "Event{" + "id=" + id + ", name=" + name + ", synchronous=" + synchronous + ", eventType=" + eventType + ", originType=" + originType + ", origin=" + origin + ", value=" + value + ", hasTimeout=" + hasTimeout + ", timeout=" + timeout + ", time=" + time + '}';
+        return "Event{" + "id=" + id + ", name=" + name + ", synchronous=" + synchronous + ", eventType=" + eventType + ", originType=" + originType + ", origin=" + component + ", value=" + parameters + ", hasTimeout=" + hasTimeout + ", timeout=" + timeout + ", time=" + time + '}';
     }
 
     /**

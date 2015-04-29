@@ -907,7 +907,9 @@ public class CommunicationManager extends ComponentManager implements Runnable {
             // <content> - conteúdo da mensagem
             msg.setContent(response.getElementsByTagName("content").item(0).getTextContent());
 
-            System.out.println("Layer: " + msg.getTarget().getLayer());
+            if(DeveloperSettings.SHOW_FUNCTION_DEBUG_ACTIVITY){
+                System.out.println("Reveived message layer: " + msg.getTarget().getLayer());
+            }
             // Evento - Mensagem Recebida
             this.newInternalEvent(EVENT_MESSAGE_RECEIVED, msg.getOrigin(), msg);
 
@@ -1293,7 +1295,7 @@ public class CommunicationManager extends ComponentManager implements Runnable {
                 event.setId(1);
                 event.setName("Desconexão");
                 event.setTime(new Date());
-                event.setValue(values);
+                event.setParameters(values);
 
                 // envia o evento
                 getEventManager().newEvent(event);
@@ -1315,7 +1317,7 @@ public class CommunicationManager extends ComponentManager implements Runnable {
                 event.setId(2);
                 event.setName("Mensagem entregue");
                 event.setTime(new Date());
-                event.setValue(values);
+                event.setParameters(values);
 
                 // envia o evento
                 getEventManager().newEvent(event);
@@ -1335,7 +1337,7 @@ public class CommunicationManager extends ComponentManager implements Runnable {
                 event.setId(3);
                 event.setName("Mensagem não entregue");
                 event.setTime(new Date());
-                event.setValue(values);
+                event.setParameters(values);
 
                 // Se foi enviado para aplicação avisa também a aplicação
                 if (mw.getMessage().getOrigin().getLayer() == Address.LAYER_APPLICATION) {
@@ -1344,7 +1346,7 @@ public class CommunicationManager extends ComponentManager implements Runnable {
                     event.setId(3);
                     event.setName("Mensagem não entregue");
                     event.setTime(new Date());
-                    event.setValue(values);
+                    event.setParameters(values);
                 }
 
                 // envia o evento
@@ -1358,6 +1360,8 @@ public class CommunicationManager extends ComponentManager implements Runnable {
                 if (msg != null) {
                     if (msg.getTarget().getLayer() == Address.LAYER_SYSTEM) { // if the target is the system
                         event = new SystemEvent(this);
+                        // adiciona no evento que ele é um evento de interação
+                        event.setEventType(Event.INTERATION_EVENT);
                     } else if (msg.getTarget().getLayer() == Address.LAYER_APPLICATION) { // if the target is the application
                         event = new ApplicationEvent(this);
                     }
@@ -1372,7 +1376,7 @@ public class CommunicationManager extends ComponentManager implements Runnable {
                         event.setId(4);
                         event.setName("new message");
                         event.setTime(new Date());
-                        event.setValue(values);
+                        event.setParameters(values);
 
                         // envia o evento
                         getEventManager().newEvent(event);
@@ -1395,7 +1399,7 @@ public class CommunicationManager extends ComponentManager implements Runnable {
                 event.setId(5);
                 event.setName("Message received with invalid format");
                 event.setTime(new Date());
-                event.setValue(values);
+                event.setParameters(values);
 
                 // envia o evento
                 getEventManager().newEvent(event);
@@ -1421,7 +1425,7 @@ public class CommunicationManager extends ComponentManager implements Runnable {
                 event.setId(6);
                 event.setName("Address not reachable");
                 event.setTime(new Date());
-                event.setValue(values);
+                event.setParameters(values);
 
                 // envia o evento
                 getEventManager().newEvent(event);
@@ -1451,7 +1455,7 @@ public class CommunicationManager extends ComponentManager implements Runnable {
                 event.setId(8);
                 event.setName("The interface connection was restored");
                 event.setTime(new Date());
-                event.setValue(values);
+                event.setParameters(values);
 
                 // envia o evento
                 getEventManager().newEvent(event);
@@ -1468,7 +1472,7 @@ public class CommunicationManager extends ComponentManager implements Runnable {
                 event.setId(9);
                 event.setName("Report awaiting approval");
                 event.setTime(new Date());
-                event.setValue(values);
+                event.setParameters(values);
 
                 // envia o evento
                 getEventManager().newEvent(event);
@@ -1485,7 +1489,7 @@ public class CommunicationManager extends ComponentManager implements Runnable {
                 event.setId(10);
                 event.setName("Message Stored");
                 event.setTime(new Date());
-                event.setValue(values);
+                event.setParameters(values);
 
                 // envia o evento
                 getEventManager().newEvent(event);
@@ -1502,7 +1506,7 @@ public class CommunicationManager extends ComponentManager implements Runnable {
                 event.setId(11);
                 event.setName("Stored message was removed");
                 event.setTime(new Date());
-                event.setValue(values);
+                event.setParameters(values);
 
                 // envia o evento
                 getEventManager().newEvent(event);
@@ -1521,7 +1525,7 @@ public class CommunicationManager extends ComponentManager implements Runnable {
                 event.setId(15);
                 event.setName("The receiver's communication interfacer has changed the address configuration");
                 event.setTime(new Date());
-                event.setValue(values);
+                event.setParameters(values);
 
                 // envia o evento
                 getEventManager().newEvent(event);

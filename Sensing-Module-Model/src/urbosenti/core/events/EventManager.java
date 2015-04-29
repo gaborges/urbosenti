@@ -229,7 +229,7 @@ public class EventManager extends ComponentManager {
                     event.setId(1);
                     event.setName("Evento agendado");
                     event.setTime(new Date());
-                    event.setValue(values);
+                    event.setParameters(values);
 
                     // Envia o evento para o tratador de sistema
                     ((SystemHandler) tr.getHandler()).newEvent(event);
@@ -242,7 +242,7 @@ public class EventManager extends ComponentManager {
                     event.setId(1);
                     event.setName("Evento agendado");
                     event.setTime(new Date());
-                    event.setValue(values);
+                    event.setParameters(values);
 
                     // Envia o evento para o tratador da aplicação
                     ((ApplicationHandler) tr.getHandler()).newEvent(event);
