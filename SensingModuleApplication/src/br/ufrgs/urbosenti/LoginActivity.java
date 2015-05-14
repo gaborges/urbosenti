@@ -6,7 +6,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 
-public class MainActivity extends Activity {
+public class LoginActivity extends Activity {
 
 	public static final int NOVO = 0;
 	public static final int SAIR = 1;
@@ -15,7 +15,7 @@ public class MainActivity extends Activity {
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		setContentView(R.layout.activity_main);
+		setContentView(R.layout.activity_login);
 		
 		Button buttonOk = (Button) findViewById(R.id.btnLogin);
 		buttonOk.setOnClickListener(new View.OnClickListener() {

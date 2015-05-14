@@ -2,4 +2,62 @@
 
     <string name="app_name">SensingModuleApplication</string>
 
+    <string name="privacyAndUseTermTitle">Term of use and privacy</string>
+
+    <string name="privacyAndUseTermText">This application is made only for academic ends.
+        The identity of each volunteer is not collected only data about the functions of the application and application data. 
+        All collected data will be used in experiments and not will be shared in a public way.
+        
+        If the user accepting this agreement, then he must known that are sharing the follow data:
+		the model of the device, the CPU cores, the CPU architecture, the battery usage, Wi-Fi access points, 
+		bluetooth access points, battery capacity and baterry level.
+
+ 		OBS.: The user location is not collected.</string>
+
+    <string name="accept">Accept</string>
+
+    <string name="reject">Reject</string>
+
+    <string name="menuTitle">Menu</string>
+
+    <string name="generalInformationTitle">General information:</string>
+
+    <string name="ServiceStatusTitle">Service Status: </string>
+
+    <string name="applicationStatusTitle">Application Status: </string>
+    
+    <string name="DefaultServiceStatus">Stopped</string>
+    
+    <string name="applicationEnvironmentTitle">Application Environment</string>
+    
+    <string name="exitTitle">Exit</string>
+    
+    <string name="aboutTitle">About</string>
+    
+    <string name="back">Back</string>
+    
+    <string name="aboutDescription">This application is made for the project UrboSenti. ....</string>
+    
+    <string name="ApplicationUIDTitle">Application UID: </string>
+    
+    <string name="remoteServerStatusTitle">Remote Server Status: </string>
+    
+    <string name="collectedDataTitle">Collected Data: </string>
+    
+    <string name="dataSentTitle">Data sent: </string>
+    
+    <string name="scannedAccessPointsTitle">Scanned access points: </string>
+    
+    <string name="countScannedHoursTitle">Count scanned hours: </string>
+    
+    <string name="wifiScanTitle">Wi-Fi access points scanned</string>
+    
+    <string name="bluetoothScanTitle">Bluetooth access points scanned</string>
+    
+    <string name="startStopService">Start/Stop Service</string>
+    
+    <string name="statusOnline">Online</string>
+    
+    <string name="statusOffline">Offline</string>
+
 </resources>
