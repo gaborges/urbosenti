@@ -20,6 +20,7 @@ import urbosenti.core.device.model.Device;
  * @author Guilherme
  */
 public class ComponentDAO {
+
     private final Connection connection;
     private PreparedStatement stmt;
 
@@ -30,25 +31,23 @@ public class ComponentDAO {
     public void insert(Component component) throws SQLException {
         String sql = "INSERT INTO components (description,code_class,device_id) "
                 + " VALUES (?,?,?);";
-        this.stmt = this.connection.prepareStatement(sql,Statement.RETURN_GENERATED_KEYS);
+        this.stmt = this.connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
         stmt.setString(1, component.getDescription());
         stmt.setString(2, component.getReferedClass());
         stmt.setInt(3, component.getDevice().getId());
         stmt.execute();
-        try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
-            if (generatedKeys.next()) {
-                component.setId(generatedKeys.getInt(1));
-            }
-            else {
-                throw new SQLException("Creating user failed, no ID obtained.");
-            }
+        ResultSet generatedKeys = stmt.getGeneratedKeys();
+        if (generatedKeys.next()) {
+            component.setId(generatedKeys.getInt(1));
+        } else {
+            throw new SQLException("Creating user failed, no ID obtained.");
         }
         stmt.close();
         System.out.println("INSERT INTO components (id,description,code_class,device_id) "
-                + " VALUES ("+component.getId()+",'"+component.getDescription()+"','"+component.getReferedClass()+"',"+component.getDevice().getId()+");");
+                + " VALUES (" + component.getId() + ",'" + component.getDescription() + "','" + component.getReferedClass() + "'," + component.getDevice().getId() + ");");
     }
-    
-    public List<Component> getDeviceComponents(Device device) throws SQLException{
+
+    public List<Component> getDeviceComponents(Device device) throws SQLException {
         List<Component> components = new ArrayList();
         String sql = " SELECT id, description, code_class "
                 + " FROM components\n"
@@ -66,11 +65,11 @@ public class ComponentDAO {
         rs.close();
         stmt.close();
         return components;
-  
+
     }
-    
-    public Component getComponent(int id) throws SQLException{
-        Component component  = null;
+
+    public Component getComponent(int id) throws SQLException {
+        Component component = null;
         String sql = " SELECT id, description, code_class "
                 + " FROM components\n"
                 + " WHERE id = ?;";
@@ -78,8 +77,8 @@ public class ComponentDAO {
         stmt.setInt(1, id);
         ResultSet rs = stmt.executeQuery();
         if (rs.next()) {
-            component =
-                    new Component(
+            component
+                    = new Component(
                             rs.getInt("id"),
                             rs.getString("possible_value"),
                             rs.getString("default_value"));
@@ -87,6 +86,6 @@ public class ComponentDAO {
         rs.close();
         stmt.close();
         return component;
-  
+
     }
 }

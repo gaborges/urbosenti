@@ -51,12 +51,11 @@ public class EntityStateDAO {
         this.stmt.setObject(8, state.getInitialValue());
         this.stmt.setInt(9, state.getId());
         this.stmt.execute();
-        try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
-            if (generatedKeys.next()) {
-                state.setId(generatedKeys.getInt(1));
-            } else {
-                throw new SQLException("Creating user failed, no ID obtained.");
-            }
+        ResultSet generatedKeys = stmt.getGeneratedKeys();
+        if (generatedKeys.next()) {
+            state.setId(generatedKeys.getInt(1));
+        } else {
+            throw new SQLException("Creating user failed, no ID obtained.");
         }
         stmt.close();
         if (DeveloperSettings.SHOW_DAO_SQL) {
@@ -76,12 +75,11 @@ public class EntityStateDAO {
             statement.setBoolean(2, possibleContent.isIsDefault());
             statement.setInt(3, state.getId());
             statement.execute();
-            try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
-                if (generatedKeys.next()) {
-                    possibleContent.setId(generatedKeys.getInt(1));
-                } else {
-                    throw new SQLException("Creating user failed, no ID obtained.");
-                }
+            ResultSet generatedKeys = statement.getGeneratedKeys();
+            if (generatedKeys.next()) {
+                possibleContent.setId(generatedKeys.getInt(1));
+            } else {
+                throw new SQLException("Creating user failed, no ID obtained.");
             }
             statement.close();
             if (DeveloperSettings.SHOW_DAO_SQL) {
@@ -121,7 +119,7 @@ public class EntityStateDAO {
             state.setPossibleContent(this.getPossibleStateContents(state));
             // pegar o valor atual
             Content c = this.getCurrentContentValue(state);
-            if (c != null) { // se c for nulo deve usar os valores iniciais, senão adiciona o conteúdo no estado
+            if (c != null) { // se c for nulo deve usar os valores iniciais, senÃ£o adiciona o conteÃºdo no estado
                 state.setContent(c);
             }
             states.add(state);
@@ -161,7 +159,7 @@ public class EntityStateDAO {
             state.setPossibleContent(this.getPossibleStateContents(state));
             // pegar o valor atual
             Content c = this.getCurrentContentValue(state);
-            if (c != null) { // se c for nulo deve usar os valores iniciais, senão adiciona o conteúdo no estado
+            if (c != null) { // se c for nulo deve usar os valores iniciais, senÃ£o adiciona o conteÃºdo no estado
                 state.setContent(c);
             }
             states.add(state);
@@ -201,7 +199,7 @@ public class EntityStateDAO {
             state.setPossibleContent(this.getPossibleStateContents(state));
             // pegar o valor atual
             Content c = this.getCurrentContentValue(state);
-            if (c != null) { // se c for nulo deve usar os valores iniciais, senão adiciona o conteúdo no estado
+            if (c != null) { // se c for nulo deve usar os valores iniciais, senÃ£o adiciona o conteÃºdo no estado
                 state.setContent(c);
             }
             states.add(state);
@@ -243,7 +241,7 @@ public class EntityStateDAO {
             content = new Content();
             // pegar o valor atual
             content.setId(rs.getInt("id"));
-            content.setTime(rs.getObject("reading_time", Date.class));
+            content.setTime(rs.getDate("reading_time"));
             content.setValue(Content.parseContent(state.getDataType(), (rs.getObject("reading_value"))));
             if (rs.getInt("monitored_user_instance_id") > 0) {
                 Instance i = new Instance();
@@ -267,12 +265,11 @@ public class EntityStateDAO {
         }
         this.stmt.setInt(4, state.getId());
         this.stmt.execute();
-        try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
-            if (generatedKeys.next()) {
-                state.getContent().setId(generatedKeys.getInt(1));
-            } else {
-                throw new SQLException("Creating user failed, no ID obtained.");
-            }
+        ResultSet generatedKeys = stmt.getGeneratedKeys();
+        if (generatedKeys.next()) {
+            state.getContent().setId(generatedKeys.getInt(1));
+        } else {
+            throw new SQLException("Creating user failed, no ID obtained.");
         }
         stmt.close();
         if (DeveloperSettings.SHOW_DAO_SQL) {
@@ -312,7 +309,7 @@ public class EntityStateDAO {
             state.setPossibleContent(this.getPossibleStateContents(state));
             // pegar o valor atual
             Content c = this.getCurrentContentValue(state);
-            if (c != null) { // se c for nulo deve usar os valores iniciais, senão adiciona o conteúdo no estado
+            if (c != null) { // se c for nulo deve usar os valores iniciais, senÃ£o adiciona o conteÃºdo no estado
                 state.setContent(c);
             }
         }
@@ -353,7 +350,7 @@ public class EntityStateDAO {
             state.setPossibleContent(this.getPossibleStateContents(state));
             // pegar o valor atual
             Content c = this.getCurrentContentValue(state);
-            if (c != null) { // se c for nulo deve usar os valores iniciais, senão adiciona o conteúdo no estado
+            if (c != null) { // se c for nulo deve usar os valores iniciais, senÃ£o adiciona o conteÃºdo no estado
                 state.setContent(c);
             }
         }
@@ -363,11 +360,11 @@ public class EntityStateDAO {
     }
 
     /**
-     * Recebe por parâmetro uma instância de usuário e retorna todos os estados
-     * que podem ser alterados pelo usuário que não são de instâncias. Esses
-     * estados retornam com o valor atual da última vez que o usuário alterou o
-     * conteúdo. Caso este não exista retorna o valor inicial. OBS.: Retorna
-     * todos os dados até os componentes a partir da visão do estado.
+     * Recebe por parÃ¢metro uma instÃ¢ncia de usuÃ¡rio e retorna todos os estados
+     * que podem ser alterados pelo usuÃ¡rio que nÃ£o sÃ£o de instÃ¢ncias. Esses
+     * estados retornam com o valor atual da Ãºltima vez que o usuÃ¡rio alterou o
+     * conteÃºdo. Caso este nÃ£o exista retorna o valor inicial. OBS.: Retorna
+     * todos os dados atÃ© os componentes a partir da visÃ£o do estado.
      *
      * @param instance
      * @return
@@ -410,7 +407,7 @@ public class EntityStateDAO {
             state.setPossibleContent(this.getPossibleStateContents(state));
             // pegar o valor atual
             Content c = this.getCurrentInstanceContentValue(state,instance);
-            if (c != null) { // se c for nulo deve usar os valores iniciais, senão adiciona o conteúdo no estado
+            if (c != null) { // se c for nulo deve usar os valores iniciais, senÃ£o adiciona o conteÃºdo no estado
                 state.setContent(c);
             }
             states.add(state);
@@ -435,7 +432,7 @@ public class EntityStateDAO {
             content = new Content();
             // pegar o valor atual
             content.setId(rs.getInt("id"));
-            content.setTime(rs.getObject("reading_time", Date.class));
+            content.setTime(rs.getDate("reading_time"));
             content.setValue(Content.parseContent(state.getDataType(), (rs.getObject("reading_value"))));
             content.setMonitoredInstance(instance);
         }

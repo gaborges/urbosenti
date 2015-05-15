@@ -50,12 +50,11 @@ public class EventModelDAO {
         this.stmt.setInt(4, event.getImplementation().getId());
         this.stmt.setInt(5, event.getEntity().getId());
         this.stmt.execute();
-        try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
-            if (generatedKeys.next()) {
-                event.setId(generatedKeys.getInt(1));
-            } else {
-                throw new SQLException("Creating user failed, no ID obtained.");
-            }
+        ResultSet generatedKeys = stmt.getGeneratedKeys();
+        if (generatedKeys.next()) {
+            event.setId(generatedKeys.getInt(1));
+        } else {
+            throw new SQLException("Creating user failed, no ID obtained.");
         }
         stmt.close();
         if (DeveloperSettings.SHOW_DAO_SQL) {
@@ -86,12 +85,11 @@ public class EventModelDAO {
                 statement.setInt(8, parameter.getDataType().getId());
                 statement.setInt(9, event.getId());
                 statement.execute();
-                try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
-                    if (generatedKeys.next()) {
-                        parameter.setId(generatedKeys.getInt(1));
-                    } else {
-                        throw new SQLException("Creating user failed, no ID obtained.");
-                    }
+                ResultSet generatedKeys = statement.getGeneratedKeys();
+                if (generatedKeys.next()) {
+                    parameter.setId(generatedKeys.getInt(1));
+                } else {
+                    throw new SQLException("Creating user failed, no ID obtained.");
                 }
                 statement.close();
                 if (DeveloperSettings.SHOW_DAO_SQL) {
@@ -121,12 +119,11 @@ public class EventModelDAO {
                 statement.setBoolean(2, possibleContent.isIsDefault());
                 statement.setInt(3, parameter.getId());
                 statement.execute();
-                try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
-                    if (generatedKeys.next()) {
-                        possibleContent.setId(generatedKeys.getInt(1));
-                    } else {
-                        throw new SQLException("Creating user failed, no ID obtained.");
-                    }
+                ResultSet generatedKeys = statement.getGeneratedKeys();
+                if (generatedKeys.next()) {
+                    possibleContent.setId(generatedKeys.getInt(1));
+                } else {
+                    throw new SQLException("Creating user failed, no ID obtained.");
                 }
                 statement.close();
                 if (DeveloperSettings.SHOW_DAO_SQL) {
@@ -167,7 +164,7 @@ public class EventModelDAO {
             content = new Content();
             // pegar o valor atual
             content.setId(rs.getInt("id"));
-            content.setTime(rs.getObject("reading_time", Date.class));
+            content.setTime(rs.getDate("reading_time"));
             content.setValue(Content.parseContent(parameter.getDataType(),rs.getObject("reading_value")));
         }
         rs.close();
@@ -183,12 +180,11 @@ public class EventModelDAO {
         this.stmt.setObject(2, parameter.getContent().getTime());
         this.stmt.setInt(3, parameter.getId());
         this.stmt.execute();
-        try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
-            if (generatedKeys.next()) {
-                parameter.getContent().setId(generatedKeys.getInt(1));
-            } else {
-                throw new SQLException("Creating user failed, no ID obtained.");
-            }
+        ResultSet generatedKeys = stmt.getGeneratedKeys();
+        if (generatedKeys.next()) {
+            parameter.getContent().setId(generatedKeys.getInt(1));
+        } else {
+            throw new SQLException("Creating user failed, no ID obtained.");
         }
         stmt.close();
         if (DeveloperSettings.SHOW_DAO_SQL) {
@@ -278,7 +274,7 @@ public class EventModelDAO {
             }
             // pegar o valor atual
             Content c = this.getCurrentContentValue(parameter);
-            if (c != null) { // se c for nulo deve usar os valores iniciais, senão adiciona o conteúdo no estado
+            if (c != null) { // se c for nulo deve usar os valores iniciais, senÃ£o adiciona o conteÃºdo no estado
                 parameter.setContent(c);
             }
             parameters.add(parameter);

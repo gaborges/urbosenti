@@ -71,11 +71,10 @@ public class SocketPushServiceReceiver extends PushServiceReceiver {
                     this.getInterfaceConfigurations().put("ipv4Address",InetAddress.getLocalHost().getHostAddress());
                     super.communicationManager.updateInputCommunicationInterfaceConfiguration(this,this.getInterfaceConfigurations());
                 }
-                try (Socket accept = this.serverSocket.accept()) {
-                    DataInputStream dataInputStream = new DataInputStream(accept.getInputStream());
-                    message = dataInputStream.readUTF();
-                    super.communicationManager.newPushMessage(accept.getInetAddress().getHostAddress(), message);
-                }
+                Socket accept = this.serverSocket.accept();
+                DataInputStream dataInputStream = new DataInputStream(accept.getInputStream());
+                message = dataInputStream.readUTF();
+                super.communicationManager.newPushMessage(accept.getInetAddress().getHostAddress(), message);
             }
         } catch (IOException ex) {
             Logger.getLogger(SocketPushServiceReceiver.class.getName()).log(Level.SEVERE, null, ex);

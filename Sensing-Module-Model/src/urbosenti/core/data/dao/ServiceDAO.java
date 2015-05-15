@@ -43,12 +43,11 @@ public class ServiceDAO {
         stmt.setInt(5, service.getServiceType().getId());
         stmt.setInt(6, service.getDevice().getId());
         stmt.execute();
-        try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
-            if (generatedKeys.next()) {
-                service.setId(generatedKeys.getInt(1));
-            } else {
-                throw new SQLException("Creating user failed, no ID obtained.");
-            }
+        ResultSet generatedKeys = stmt.getGeneratedKeys();
+        if (generatedKeys.next()) {
+            service.setId(generatedKeys.getInt(1));
+        } else {
+            throw new SQLException("Creating user failed, no ID obtained.");
         }
         stmt.close();
         if (DeveloperSettings.SHOW_DAO_SQL) {
@@ -75,7 +74,7 @@ public class ServiceDAO {
             service.setDescription(rs.getString("service_description"));
             service.setAddress(rs.getString("address"));
             service.setServiceUID(rs.getString("service_uid"));
-            service.setApplicationUID((rs.getString("application_uid").length() <= 6)? "" : rs.getString("application_uid"));
+            service.setApplicationUID((rs.getString("application_uid").length() <= 6) ? "" : rs.getString("application_uid"));
             service.setServiceType(new ServiceType(rs.getInt("service_type_id"), rs.getString("type_description")));
             service.setAgent(this.getServiceAgent(service));
             services.add(service);
@@ -84,7 +83,7 @@ public class ServiceDAO {
         stmt.close();
         return services;
     }
-    
+
     public List<Service> getDeviceServices() throws SQLException {
         List<Service> services = new ArrayList();
         Service service = null;
@@ -100,7 +99,7 @@ public class ServiceDAO {
             service.setDescription(rs.getString("service_description"));
             service.setAddress(rs.getString("address"));
             service.setServiceUID(rs.getString("service_uid"));
-            service.setApplicationUID((rs.getString("application_uid").length() <= 6)? "" : rs.getString("application_uid"));
+            service.setApplicationUID((rs.getString("application_uid").length() <= 6) ? "" : rs.getString("application_uid"));
             service.setServiceType(new ServiceType(rs.getInt("service_type_id"), rs.getString("type_description")));
             service.setAgent(this.getServiceAgent(service));
             services.add(service);
@@ -109,7 +108,7 @@ public class ServiceDAO {
         stmt.close();
         return services;
     }
-    
+
     public Service getService(int id) throws SQLException {
         Service service = null;
         String sql = "SELECT services.id as service_id, services.description as service_description, service_uid, application_uid, address, "
@@ -125,7 +124,7 @@ public class ServiceDAO {
             service.setDescription(rs.getString("service_description"));
             service.setAddress(rs.getString("address"));
             service.setServiceUID(rs.getString("service_uid"));
-            service.setApplicationUID((rs.getString("application_uid").length() <= 6)? "" : rs.getString("application_uid"));
+            service.setApplicationUID((rs.getString("application_uid").length() <= 6) ? "" : rs.getString("application_uid"));
             service.setServiceType(new ServiceType(rs.getInt("service_type_id"), rs.getString("type_description")));
             service.setAgent(this.getServiceAgent(service));
         }

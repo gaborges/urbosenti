@@ -35,17 +35,16 @@ public class AgentDAO {
         stmt.setInt(3, agent.getService().getId());
         stmt.setInt(4, agent.getLayer());
         stmt.execute();
-        try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
-            if (generatedKeys.next()) {
-                agent.setId(generatedKeys.getInt(1));
-            } else {
-                throw new SQLException("Creating user failed, no ID obtained.");
-            }
+        ResultSet generatedKeys = stmt.getGeneratedKeys();
+        if (generatedKeys.next()) {
+            agent.setId(generatedKeys.getInt(1));
+        } else {
+            throw new SQLException("Creating user failed, no ID obtained.");
         }
         stmt.close();
         if (DeveloperSettings.SHOW_DAO_SQL) {
             System.out.println("INSERT INTO agents (id, address, agent_type_id, service_id, layer)  "
-                    + " VALUES (" + agent.getId() + ",'" + agent.getAddress() + "'," + agent.getAgentType().getId() + "," + agent.getService().getId() +","+ agent.getLayer() +");");
+                    + " VALUES (" + agent.getId() + ",'" + agent.getAddress() + "'," + agent.getAgentType().getId() + "," + agent.getService().getId() + "," + agent.getLayer() + ");");
         }
     }
 

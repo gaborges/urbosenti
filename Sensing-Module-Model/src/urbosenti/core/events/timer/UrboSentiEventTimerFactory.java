@@ -26,9 +26,8 @@ public class UrboSentiEventTimerFactory extends EventTimerFactory{
      */    
     @Override
     public EventTimer getEventTimer(String objectName, TriggerRequest tr, EventManager em){
-        switch(objectName){
-            case "UrboSentiNativeEventTimer":
-                    return new UrboSentiNativeEventTimer(tr, em);
+        if(objectName.equals("UrboSentiNativeEventTimer")){
+            return new UrboSentiNativeEventTimer(tr, em);
         }
         return null;
     }

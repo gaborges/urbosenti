@@ -103,12 +103,11 @@ public class AgentTypeDAO {
                 statement.setBoolean(2, possibleContent.isIsDefault());
                 statement.setInt(3, state.getId());
                 statement.execute();
-                try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
-                    if (generatedKeys.next()) {
-                        possibleContent.setId(generatedKeys.getInt(1));
-                    } else {
-                        throw new SQLException("Creating user failed, no ID obtained.");
-                    }
+                ResultSet generatedKeys = statement.getGeneratedKeys();
+                if (generatedKeys.next()) {
+                    possibleContent.setId(generatedKeys.getInt(1));
+                } else {
+                    throw new SQLException("Creating user failed, no ID obtained.");
                 }
                 statement.close();
                 System.out.println("INSERT INTO possible_agent_state_contents (id,possible_value, default_value, agent_state_id) "
@@ -160,12 +159,11 @@ public class AgentTypeDAO {
                 statement.setInt(8, parameter.getDataType().getId());
                 statement.setInt(9, interaction.getId());
                 statement.execute();
-                try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
-                    if (generatedKeys.next()) {
-                        parameter.setId(generatedKeys.getInt(1));
-                    } else {
-                        throw new SQLException("Creating user failed, no ID obtained.");
-                    }
+                ResultSet generatedKeys = statement.getGeneratedKeys();
+                if (generatedKeys.next()) {
+                    parameter.setId(generatedKeys.getInt(1));
+                } else {
+                    throw new SQLException("Creating user failed, no ID obtained.");
                 }
                 statement.close();
                 System.out.println("INSERT INTO interaction_parameters (description,optional,label,superior_limit,inferior_limit,initial_value,agent_state_id,data_type_id,interaction_id) "
@@ -188,12 +186,11 @@ public class AgentTypeDAO {
                 statement.setBoolean(2, possibleContent.isIsDefault());
                 statement.setInt(3, parameter.getId());
                 statement.execute();
-                try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
-                    if (generatedKeys.next()) {
-                        possibleContent.setId(generatedKeys.getInt(1));
-                    } else {
-                        throw new SQLException("Creating user failed, no ID obtained.");
-                    }
+                ResultSet generatedKeys = statement.getGeneratedKeys();
+                if (generatedKeys.next()) {
+                    possibleContent.setId(generatedKeys.getInt(1));
+                } else {
+                    throw new SQLException("Creating user failed, no ID obtained.");
                 }
                 statement.close();
                 System.out.println("INSERT INTO possible_interaction_contents (id,possible_value, default_value, interaction_parameter_id) "
@@ -214,7 +211,7 @@ public class AgentTypeDAO {
             content = new Content();
             // pegar o valor atual
             content.setId(rs.getInt("id"));
-            content.setTime(rs.getObject("reading_time", Date.class));
+            content.setTime(rs.getDate("reading_time"));
             content.setValue(Content.parseContent(state.getDataType(), rs.getObject("reading_value")));
         }
         rs.close();
@@ -230,12 +227,11 @@ public class AgentTypeDAO {
         this.stmt.setObject(2, state.getContent().getTime());
         this.stmt.setInt(3, state.getId());
         this.stmt.execute();
-        try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
-            if (generatedKeys.next()) {
-                state.getContent().setId(generatedKeys.getInt(1));
-            } else {
-                throw new SQLException("Creating user failed, no ID obtained.");
-            }
+        ResultSet generatedKeys = stmt.getGeneratedKeys();
+        if (generatedKeys.next()) {
+            state.getContent().setId(generatedKeys.getInt(1));
+        } else {
+            throw new SQLException("Creating user failed, no ID obtained.");
         }
         stmt.close();
         if (DeveloperSettings.SHOW_DAO_SQL) {
@@ -259,7 +255,7 @@ public class AgentTypeDAO {
             content = new Content();
             // pegar o valor atual
             content.setId(rs.getInt("content_id"));
-            content.setTime(rs.getObject("reading_time", Date.class));
+            content.setTime(rs.getDate("reading_time"));
             content.setValue(Content.parseContent(parameter.getDataType(), rs.getObject("reading_value")));
             content.setScore(rs.getDouble("score"));
             content.setMessage(new AgentMessage());
@@ -280,12 +276,11 @@ public class AgentTypeDAO {
         this.stmt.setInt(3, parameter.getId());
         this.stmt.setInt(4, parameter.getContent().getMessage().getId());
         this.stmt.execute();
-        try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
+        ResultSet generatedKeys = stmt.getGeneratedKeys();
             if (generatedKeys.next()) {
                 parameter.getContent().setId(generatedKeys.getInt(1));
             } else {
                 throw new SQLException("Creating user failed, no ID obtained.");
-            }
         }
         stmt.close();
         if (DeveloperSettings.SHOW_DAO_SQL) {
@@ -359,7 +354,7 @@ public class AgentTypeDAO {
             state.setPossibleContent(this.getPossibleStateContents(state));
             // pegar o valor atual
             Content c = this.getCurrentContentValue(state);
-            if (c != null) { // se c for nulo deve usar os valores iniciais, senão adiciona o conteúdo no estado
+            if (c != null) { // se c for nulo deve usar os valores iniciais, senÃ£o adiciona o conteÃºdo no estado
                 state.setContent(c);
             }
             states.add(state);
@@ -431,7 +426,7 @@ public class AgentTypeDAO {
             
             // pegar o valor atual
             Content c = this.getCurrentContentValue(parameter);
-            if (c != null) { // se c for nulo deve usar os valores iniciais, senão adiciona o conteúdo no estado
+            if (c != null) { // se c for nulo deve usar os valores iniciais, senÃ£o adiciona o conteÃºdo no estado
                 parameter.setContent(c);
             }
             parameters.add(parameter);
@@ -468,7 +463,7 @@ public class AgentTypeDAO {
             state.setPossibleContent(this.getPossibleStateContents(state));
             // pegar o valor atual
             Content c = this.getCurrentContentValue(state);
-            if (c != null) { // se c for nulo deve usar os valores iniciais, senão adiciona o conteúdo no estado
+            if (c != null) { // se c for nulo deve usar os valores iniciais, senÃ£o adiciona o conteÃºdo no estado
                 state.setContent(c);
             }
         }

@@ -27,7 +27,6 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
-import urbosenti.Main;
 import urbosenti.adaptation.AdaptationManager;
 import urbosenti.concerns.ConcernManager;
 import urbosenti.context.ContextManager;
@@ -137,7 +136,7 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
     private String UID;
     private OperatingSystemDiscovery OSDiscovery = null;
     private List<ComponentManager> enabledComponentManagers;
-
+    private Boolean isRunning;
     /**
      *
      * @return
@@ -169,6 +168,7 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
         this.dataManager.setComponentId(DATA_COMPONENT_ID);
         this.communicationManager.setComponentId(COMMUNICATION_COMPONENT_ID);
         this.eventManager.setComponentId(EVENTS_COMPONENT_ID);
+        this.isRunning = false;
     }
 
     public CommunicationManager getCommunicationManager() {
@@ -1095,35 +1095,40 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
     /**
-     * Inicia todos os serviços da UrboSenti
+     * Inicia todos os serviços da UrboSenti. Se estes já estiverem inicializados não faz nada.
      * @throws IOException 
      */
     public void startUrboSentiServices() throws IOException {
-        // Cria as threads
-        Thread systemHandler = new Thread(adaptationManager);
-        
-        /***** Configurações necessárias para os componentes *****/
-        // tratador de eventos do sistema
-        this.getAdaptationManager().start(); 
-        // Registrar do nó de sensoriamento movel no backend server :
-        // 1 - busca o servidor backend cadastrado no conhecimento inicial
-        Service backendServer = this.getBackendService();
-        // 2 - Registrar no Servidor Backend
-        this.registerSensingModule(backendServer);
-        // 3 - Adicionar o servidor da aplicação como servidor para upload
-        communicationManager.addUploadServer(backendServer);
-        
-        /**************** Iniciar os serviços **************/
-        // interfaces de comunicação de entrada
-        for(PushServiceReceiver receivers : dataManager.getCommunicationDAO().getInputCommunicationInterfaces()){
-            receivers.start();
+        // if is not running execute all threads
+        if(!isRunning){
+            // Cria as threads
+            Thread systemHandler = new Thread(adaptationManager);
+
+            /***** Configurações necessárias para os componentes *****/
+            // tratador de eventos do sistema
+            this.getAdaptationManager().start(); 
+            // Registrar do nó de sensoriamento movel no backend server :
+            // 1 - busca o servidor backend cadastrado no conhecimento inicial
+            Service backendServer = this.getBackendService();
+            // 2 - Registrar no Servidor Backend
+            this.registerSensingModule(backendServer);
+            // 3 - Adicionar o servidor da aplicação como servidor para upload
+            communicationManager.addUploadServer(backendServer);
+
+            /**************** Iniciar os serviços **************/
+            // interfaces de comunicação de entrada
+            for(PushServiceReceiver receivers : dataManager.getCommunicationDAO().getInputCommunicationInterfaces()){
+                receivers.start();
+            }
+            // tratador de eventos do sistema
+            systemHandler.start();
+            // serviço de upload de relatos
+            this.communicationManager.startUploadService();
+            // Evento que os serviços estão em funcionamento
+            this.newInternalEvent(EVENT_DEVICE_SERVICES_INITIATED);
+            // Service now is running
+            this.isRunning = true;
         }
-        // tratador de eventos do sistema
-        systemHandler.start();
-        // serviço de upload de relatos
-        this.communicationManager.startUploadService();
-        // Evento que os serviços estão em funcionamento
-        this.newInternalEvent(EVENT_DEVICE_SERVICES_INITIATED);
     }
     /**
      * Para todos os serviços da UrboSenti
@@ -1137,7 +1142,13 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
         for(PushServiceReceiver receivers : dataManager.getCommunicationDAO().getInputCommunicationInterfaces()){
             receivers.stop();
         }
+        this.isRunning = false;
         // Evento que os serviços estão parados
         this.newInternalEvent(EVENT_DEVICE_SERVICES_STOPPED);
     }
+
+    public Boolean isRunning() {
+        return isRunning;
+    }
+    
 }

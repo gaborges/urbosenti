@@ -53,7 +53,7 @@ public class DeviceDAO {
     public static final int STATE_ID_OF_BASIC_DEVICE_INFORMATIONS_ABOUT_MEMORY_RAM = 6;
     public static final int STATE_ID_OF_BASIC_DEVICE_INFORMATIONS_ABOUT_DEVICE_MODEL = 7;
     public static final int STATE_ID_OF_BASIC_DEVICE_INFORMATIONS_ABOUT_BATTERY_CAPACITY = 8;
-    
+
     public static final int DEVICE_DB_ID = 1;
     private final Connection connection;
     private PreparedStatement stmt;
@@ -73,17 +73,16 @@ public class DeviceDAO {
         stmt.setDouble(3, device.getGeneralDefinitionsVersion());
         stmt.setDouble(4, device.getAgentModelVersion());
         stmt.execute();
-        try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
-            if (generatedKeys.next()) {
-                device.setId(generatedKeys.getInt(1));
-            } else {
-                throw new SQLException("Creating user failed, no ID obtained.");
-            }
+        ResultSet generatedKeys = stmt.getGeneratedKeys();
+        if (generatedKeys.next()) {
+            device.setId(generatedKeys.getInt(1));
+        } else {
+            throw new SQLException("Creating user failed, no ID obtained.");
         }
         stmt.close();
         if (DeveloperSettings.SHOW_DAO_SQL) {
             System.out.println("INSERT INTO devices (id,description, generalDefinitionsVersion, deviceVersion, agentModelVersion) "
-                + " VALUES ("+device.getId()+",'"+device.getDescription()+"',"+device.getDeviceVersion()+","+device.getGeneralDefinitionsVersion()+","+device.getAgentModelVersion()+");");
+                    + " VALUES (" + device.getId() + ",'" + device.getDescription() + "'," + device.getDeviceVersion() + "," + device.getGeneralDefinitionsVersion() + "," + device.getAgentModelVersion() + ");");
             //System.out.println("INSERT INTO devices (id,description)  VALUES ("+device.getId()+",'"+device.getDescription()+"');");
         }
     }
@@ -93,12 +92,11 @@ public class DeviceDAO {
         String sql = "SELECT count(*) FROM devices;";
         stmt = this.connection.prepareStatement(sql);
         stmt.execute();
-        try (ResultSet res = stmt.getResultSet()) {
-            if (res.next()) {
-                count = res.getInt(1);
-            } else {
-                throw new SQLException("Creating user failed, no ID obtained.");
-            }
+        ResultSet res = stmt.getResultSet();
+        if (res.next()) {
+            count = res.getInt(1);
+        } else {
+            throw new SQLException("Creating user failed, no ID obtained.");
         }
         stmt.close();
         return count;
@@ -110,12 +108,11 @@ public class DeviceDAO {
         stmt = this.connection.prepareStatement(sql);
         stmt.setInt(1, (device.getId() > 0) ? device.getId() : 1);
         stmt.execute();
-        try (ResultSet res = stmt.getResultSet()) {
-            if (res.next()) {
-                count = res.getDouble(1);
-            } else {
-                count = 0.0;
-            }
+        ResultSet res = stmt.getResultSet();
+        if (res.next()) {
+            count = res.getDouble(1);
+        } else {
+            count = 0.0;
         }
         stmt.close();
         return count;
@@ -127,12 +124,11 @@ public class DeviceDAO {
         stmt = this.connection.prepareStatement(sql);
         stmt.setInt(1, (device.getId() > 0) ? device.getId() : 1);
         stmt.execute();
-        try (ResultSet res = stmt.getResultSet()) {
-            if (res.next()) {
-                count = res.getDouble(1);
-            } else {
-                count = 0.0;
-            }
+        ResultSet res = stmt.getResultSet();
+        if (res.next()) {
+            count = res.getDouble(1);
+        } else {
+            count = 0.0;
         }
         stmt.close();
         return count;
@@ -144,12 +140,11 @@ public class DeviceDAO {
         stmt = this.connection.prepareStatement(sql);
         stmt.setInt(1, (device.getId() > 0) ? device.getId() : 1);
         stmt.execute();
-        try (ResultSet res = stmt.getResultSet()) {
-            if (res.next()) {
-                count = res.getDouble(1);
-            } else {
-                count = 0.0;
-            }
+        ResultSet res = stmt.getResultSet();
+        if (res.next()) {
+            count = res.getDouble(1);
+        } else {
+            count = 0.0;
         }
         stmt.close();
         return count;
@@ -161,26 +156,25 @@ public class DeviceDAO {
         stmt = this.connection.prepareStatement(sql);
         stmt.setInt(1, DEVICE_DB_ID);
         stmt.execute();
-        try (ResultSet rs = stmt.getResultSet()) {
-            if (rs.next()) {
-                device = new Device();
-                device.setId(DEVICE_DB_ID);
-                device.setDescription(rs.getString("description"));
-                device.setAgentModelVersion(rs.getDouble("agentModelVersion"));
-                device.setDeviceVersion(rs.getDouble("deviceVersion"));
-                device.setGeneralDefinitionsVersion(rs.getDouble("generalDefinitionsVersion"));
-            } 
+        ResultSet rs = stmt.getResultSet();
+        if (rs.next()) {
+            device = new Device();
+            device.setId(DEVICE_DB_ID);
+            device.setDescription(rs.getString("description"));
+            device.setAgentModelVersion(rs.getDouble("agentModelVersion"));
+            device.setDeviceVersion(rs.getDouble("deviceVersion"));
+            device.setGeneralDefinitionsVersion(rs.getDouble("generalDefinitionsVersion"));
         }
         stmt.close();
         return device;
     }
-    
+
     public Device getDeviceModel(DataManager dataManager) throws SQLException {
         Device device = getDevice();
         device.setComponents(dataManager.getComponentDAO().getDeviceComponents(device));
-        for(Component component :device.getComponents()){
+        for (Component component : device.getComponents()) {
             component.setEntities(dataManager.getEntityDAO().getComponentEntities(component));
-            for(Entity entity : component.getEntities()){
+            for (Entity entity : component.getEntities()) {
                 entity.setActions(dataManager.getActionModelDAO().getEntityActions(entity));
                 entity.setEvents(dataManager.getEventModelDAO().getEntityEvents(entity));
                 entity.setInstaces(dataManager.getInstanceDAO().getEntityInstances(entity));
@@ -188,7 +182,7 @@ public class DeviceDAO {
             }
         }
         device.setServices(dataManager.getServiceDAO().getDeviceServices(device));
-        for(Service service : device.getServices()){
+        for (Service service : device.getServices()) {
             service.getAgent().getAgentType().setInteraction(dataManager.getAgentTypeDAO().getAgentInteractions(service.getAgent().getAgentType()));
             service.getAgent().getAgentType().setStates(dataManager.getAgentTypeDAO().getAgentStates(service.getAgent().getAgentType()));
             service.getAgent().setConversations(dataManager.getAgentTypeDAO().getAgentConversations(service.getAgent()));
@@ -206,8 +200,8 @@ public class DeviceDAO {
         stmt = this.connection.prepareStatement(sql);
         stmt.setInt(1, COMPONENT_ID);
         ResultSet rs = stmt.executeQuery();
-        while(rs.next()){
-            if(deviceComponent == null){
+        while (rs.next()) {
+            if (deviceComponent == null) {
                 deviceComponent = new Component();
                 deviceComponent.setId(COMPONENT_ID);
                 deviceComponent.setDescription(rs.getString("component_desc"));
@@ -216,7 +210,7 @@ public class DeviceDAO {
             Entity entity = new Entity();
             entity.setId(rs.getInt("entity_id"));
             entity.setDescription(rs.getString("entity_desc"));
-            EntityType type = new EntityType(rs.getInt("entity_type_id"),rs.getString("type_desc"));
+            EntityType type = new EntityType(rs.getInt("entity_type_id"), rs.getString("type_desc"));
             entity.setEntityType(type);
             entity.setStates(stateDAO.getEntityStates(entity));
             deviceComponent.getEntities().add(entity);

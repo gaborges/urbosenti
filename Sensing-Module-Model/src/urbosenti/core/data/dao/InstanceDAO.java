@@ -48,12 +48,11 @@ public class InstanceDAO {
             this.stmt.setInt(4, instance.getId());
         }
         this.stmt.execute();
-        try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
-            if (generatedKeys.next()) {
-                instance.setId(generatedKeys.getInt(1));
-            } else {
-                throw new SQLException("Creating user failed, no ID obtained.");
-            }
+        ResultSet generatedKeys = stmt.getGeneratedKeys();
+        if (generatedKeys.next()) {
+            instance.setId(generatedKeys.getInt(1));
+        } else {
+            throw new SQLException("Creating user failed, no ID obtained.");
         }
         stmt.close();
         if (DeveloperSettings.SHOW_DAO_SQL) {
@@ -86,12 +85,11 @@ public class InstanceDAO {
         this.stmt.setObject(7, state.getInitialValue());
         this.stmt.setInt(8, state.getModelId());
         this.stmt.execute();
-        try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
-            if (generatedKeys.next()) {
-                state.setId(generatedKeys.getInt(1));
-            } else {
-                throw new SQLException("Creating user failed, no ID obtained.");
-            }
+        ResultSet generatedKeys = stmt.getGeneratedKeys();
+        if (generatedKeys.next()) {
+            state.setId(generatedKeys.getInt(1));
+        } else {
+            throw new SQLException("Creating user failed, no ID obtained.");
         }
         stmt.close();
         if (DeveloperSettings.SHOW_DAO_SQL) {
@@ -112,12 +110,11 @@ public class InstanceDAO {
                 statement.setBoolean(2, possibleContent.isIsDefault());
                 statement.setInt(3, state.getId());
                 statement.execute();
-                try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
-                    if (generatedKeys.next()) {
-                        possibleContent.setId(generatedKeys.getInt(1));
-                    } else {
-                        throw new SQLException("Creating user failed, no ID obtained.");
-                    }
+                ResultSet generatedKeys = statement.getGeneratedKeys();
+                if (generatedKeys.next()) {
+                    possibleContent.setId(generatedKeys.getInt(1));
+                } else {
+                    throw new SQLException("Creating user failed, no ID obtained.");
                 }
                 statement.close();
                 if (DeveloperSettings.SHOW_DAO_SQL) {
@@ -140,7 +137,7 @@ public class InstanceDAO {
             content = new Content();
             // pegar o valor atual
             content.setId(rs.getInt("id"));
-            content.setTime(rs.getObject("reading_time", Date.class));
+            content.setTime(rs.getDate("reading_time"));
             content.setValue(Content.parseContent(state.getDataType(), rs.getObject("reading_value")));
         }
         rs.close();
@@ -156,12 +153,11 @@ public class InstanceDAO {
         this.stmt.setObject(2, state.getContent().getTime());
         this.stmt.setInt(3, state.getId());
         this.stmt.execute();
-        try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
-            if (generatedKeys.next()) {
-                state.getContent().setId(generatedKeys.getInt(1));
-            } else {
-                throw new SQLException("Creating user failed, no ID obtained.");
-            }
+        ResultSet generatedKeys = stmt.getGeneratedKeys();
+        if (generatedKeys.next()) {
+            state.getContent().setId(generatedKeys.getInt(1));
+        } else {
+            throw new SQLException("Creating user failed, no ID obtained.");
         }
         stmt.close();
         if (DeveloperSettings.SHOW_DAO_SQL) {
@@ -226,7 +222,7 @@ public class InstanceDAO {
             state.setPossibleContent(this.getPossibleStateContents(state));
             // pegar o valor atual
             Content c = this.getCurrentContentValue(state);
-            if (c != null) { // se c for nulo deve usar os valores iniciais, senão adiciona o conteúdo no estado
+            if (c != null) { // se c for nulo deve usar os valores iniciais, senÃ£o adiciona o conteÃºdo no estado
                 state.setContent(c);
             }
             states.add(state);
@@ -324,12 +320,11 @@ public class InstanceDAO {
         String sql = "SELECT count(*) FROM instances WHERE entity_id = ?;";
         stmt = this.connection.prepareStatement(sql);
         stmt.execute();
-        try (ResultSet res = stmt.getResultSet()) {
-            if (res.next()) {
-                count = res.getInt(1);
-            } else {
-                throw new SQLException("Creating user failed, no ID obtained.");
-            }
+        ResultSet res = stmt.getResultSet();
+        if (res.next()) {
+            count = res.getInt(1);
+        } else {
+            throw new SQLException("Creating user failed, no ID obtained.");
         }
         stmt.close();
         return count;
@@ -373,11 +368,11 @@ public class InstanceDAO {
     }
 
     /**
-     * Recebe por parâmetro uma instância de usuário e retorna todos os estados
-     * que podem ser alterados pelo usuário em cada interface. Esses estados
-     * retornam com o valor atual da última vez que o usuário alterou o
-     * conteúdo. Caso este não exista retorna o valor inicial. OBS.: Retorna
-     * todos os dados até os componentes a partir da visão do estado.
+     * Recebe por parÃ¢metro uma instÃ¢ncia de usuÃ¡rio e retorna todos os estados
+     * que podem ser alterados pelo usuÃ¡rio em cada interface. Esses estados
+     * retornam com o valor atual da Ãºltima vez que o usuÃ¡rio alterou o
+     * conteÃºdo. Caso este nÃ£o exista retorna o valor inicial. OBS.: Retorna
+     * todos os dados atÃ© os componentes a partir da visÃ£o do estado.
      *
      * @param instance
      * @return
@@ -410,7 +405,7 @@ public class InstanceDAO {
             state.setPossibleContent(this.getPossibleStateContents(state));
             // pegar o valor atual
             Content c = this.getCurrentUserInstanceContentValue(state, userInstance);
-            if (c != null) { // se c for nulo deve usar os valores iniciais, senão adiciona o conteúdo no estado
+            if (c != null) { // se c for nulo deve usar os valores iniciais, senÃ£o adiciona o conteÃºdo no estado
                 state.setContent(c);
             }
             states.add(state);
@@ -421,12 +416,12 @@ public class InstanceDAO {
     }
 
     /**
-     * Recebe por parâmetro uma instância de usuário e retorna todas as
-     * instâncias que possuem estados que podem ser alterados pelo usuário,
-     * juntamente com esses estados e seu valor atual em relação ao usuário.
-     * Esses estados retornam com o valor atual da última vez que o usuário
-     * alterou o conteúdo. Caso este não exista retorna o valor inicial. OBS.:
-     * Retorna todos os dados até os componentes a partir da visão do estado.
+     * Recebe por parÃ¢metro uma instÃ¢ncia de usuÃ¡rio e retorna todas as
+     * instÃ¢ncias que possuem estados que podem ser alterados pelo usuÃ¡rio,
+     * juntamente com esses estados e seu valor atual em relaÃ§Ã£o ao usuÃ¡rio.
+     * Esses estados retornam com o valor atual da Ãºltima vez que o usuÃ¡rio
+     * alterou o conteÃºdo. Caso este nÃ£o exista retorna o valor inicial. OBS.:
+     * Retorna todos os dados atÃ© os componentes a partir da visÃ£o do estado.
      *
      * @param userInstance
      * @return
@@ -434,7 +429,7 @@ public class InstanceDAO {
     public List<Instance> getUserInstances(Instance userInstance) throws SQLException {
         List<Instance> instances = new ArrayList();
         Instance instance = null;
-        // Buscar todas as instâncias que possuam algum estado que pode ser alterado pelo usuário
+        // Buscar todas as instÃ¢ncias que possuam algum estado que pode ser alterado pelo usuÃ¡rio
         String sql = "SELECT instances.id as instance_id,  instances.description as instance_desc, instances.model_id as instance_model_id, "
                 + " representative_class, (SELECT count(*) FROM instance_states WHERE user_can_change == 1  AND instance_id = instances.id) as count, "
                 + " entity_id, entities.description as entity_desc, component_id, components.description as component_desc, code_class, "
@@ -481,7 +476,7 @@ public class InstanceDAO {
             content = new Content();
             // pegar o valor atual
             content.setId(rs.getInt("id"));
-            content.setTime(rs.getObject("reading_time", Date.class));
+            content.setTime(rs.getDate("reading_time"));
             content.setValue(Content.parseContent(state.getDataType(), (rs.getObject("reading_value"))));
             content.setMonitoredInstance(userInstance);
         }
