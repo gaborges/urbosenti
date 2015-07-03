@@ -50,7 +50,7 @@ public class TestCommunication {
         Message m = new Message();
         m.setTarget(target);
         m.setOrigin(origin);
-        m.setSubject(Message.SUBJECT_APPLICATION_DEFINED);
+        m.setSubject(Message.SUBJECT_APPLICATION_MESSAGE);
         m.setContentType("application/xml");
         m.setContent("oiiiiii");
         try {
@@ -74,7 +74,7 @@ public class TestCommunication {
         Message m = new Message();
         m.setTarget(target);
         m.setOrigin(origin);
-        m.setSubject(Message.SUBJECT_APPLICATION_DEFINED);
+        m.setSubject(Message.SUBJECT_APPLICATION_MESSAGE);
         m.setContentType("application/xml");
         m.setContent("oi22222");
         
@@ -99,8 +99,8 @@ public class TestCommunication {
 //        deviceManager.getCommunicationManager().addUploadServer(service);
 //        
         // Inicia o serviço de envio de mensagens
-        Thread t = new Thread(deviceManager.getCommunicationManager());
-        t.start();        
+//        Thread t = new Thread(deviceManager.getCommunicationManager());
+//        t.start();        
         
         // Adiciona a origem, e é somente necessário se for uma mensagem de 
         // sistema, caso não seja somente a mensagem é necessária

@@ -25,6 +25,7 @@ public class Agent {
 
     public Agent() {
         layer = TargetOrigin.APPLICATION_LAYER;
+        service = null;
     }
     
     /**

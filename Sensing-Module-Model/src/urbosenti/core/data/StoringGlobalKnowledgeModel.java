@@ -1577,6 +1577,28 @@ public class StoringGlobalKnowledgeModel {
                 + "	interaction_parameter_id integer not null,\n"
                 + "	foreign key (interaction_parameter_id) references interaction_parameters (id),\n"
                 + "	foreign key (message_id) references messages (id)\n"
+                + ");\n"
+                + "CREATE TABLE IF NOT EXISTS reports (\n"
+                + "	id integer not null primary key autoincrement,\n"
+                + "     subject integer not null,\n"
+                + "	content_type varchar(100) not null,\n"
+                + "     priority integer not null,\n"
+                + "	content text not null ,\n"
+                + "	anonymous_upload boolean not null,\n"
+                + "	created_time varchar(100) not null,\n"
+                + "	uses_urbosenti_xml_envelope boolean not null,\n"
+                + "     content_size integer,\n"
+                + "	target_uid varchar(100) not null,\n"
+                + "	target_layer integer not null,\n"
+                + "	target_address varchar(100),\n"
+                + "	origin_uid varchar(100) not null,\n"
+                + "	origin_layer integer not null,\n"
+                + "	origin_address varchar(100),\n"
+                + "	checked boolean not null,\n"
+                + "	sent boolean not null,\n"
+                + "	timeout integer,\n"
+                + "	service_id integer not null,\n"
+                + "	foreign key (service_id) references services (id)\n"
                 + ");";
         stmt.executeUpdate(sql);
         stmt.close();
@@ -1626,7 +1648,8 @@ public class StoringGlobalKnowledgeModel {
                 + "DROP TABLE \"main\".\"interaction_parameters\";\n"
                 + "DROP TABLE \"main\".\"agent_state_contents\";\n"
                 + "DROP TABLE \"main\".\"agent_states\";\n"
-                + "DROP TABLE \"main\".\"interactions\";";
+                + "DROP TABLE \"main\".\"interactions\";\n"
+                + "DROP TABLE \"main\".\"reports\";";
         stmt.executeUpdate(sql);
         stmt.close();
     }

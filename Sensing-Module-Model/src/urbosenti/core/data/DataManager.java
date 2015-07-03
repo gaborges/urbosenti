@@ -43,6 +43,7 @@ import urbosenti.core.data.dao.ServiceDAO;
 import urbosenti.core.data.dao.EntityStateDAO;
 import urbosenti.core.data.dao.EventDAO;
 import urbosenti.core.data.dao.LocationDAO;
+import urbosenti.core.data.dao.MessageReportDAO;
 import urbosenti.core.data.dao.ResourcesDAO;
 import urbosenti.core.data.dao.ServiceTypeDAO;
 import urbosenti.core.data.dao.TargetOriginDAO;
@@ -91,6 +92,7 @@ public class DataManager extends ComponentManager {
     private ConcernsDAO concernsDAO;
     private ServiceTypeDAO serviceTypeDAO;
     private DataDAO dataDAO;
+    private MessageReportDAO reportDAO;
     
     public DataManager(DeviceManager deviceManager) {
         super(deviceManager,DataDAO.COMPONENT_ID);
@@ -157,6 +159,8 @@ public class DataManager extends ComponentManager {
         this.eventModelDAO = new EventModelDAO(connection);
         this.actionModelDAO = new ActionModelDAO(connection);
         this.instanceDAO = new InstanceDAO(connection);
+        // Communication DAO
+        this.reportDAO = new MessageReportDAO(connection);
         // Carrega interfaces de comunicação disponíveis (testa disponibilidade antes de executar - lookback)
         for(CommunicationInterface ci : supportedCommunicationInterfaces){
             try {
@@ -351,6 +355,10 @@ public class DataManager extends ComponentManager {
 
     public EntityStateDAO getStateDAO() {
         return stateDAO;
+    }
+    
+    public MessageReportDAO getReportDAO() {
+        return reportDAO;
     }
 
     public void addSupportedInputCommunicationInterface(PushServiceReceiver inputCommunicationInterface) {

@@ -12,13 +12,13 @@ import java.util.Date;
  */
 public class Message {
     
-    public static final int NORMAL_PRIORITY = 0;
-    public static final int PREFERENTIAL_PRIORITY = 1;  
+    public static final int NORMAL_PRIORITY = 1;
+    public static final int PREFERENTIAL_PRIORITY = 2;  
     public static final int SUBJECT_REGISTRATION = 1;
     public static final int SUBJECT_CANCEL_REGISTRATION = 2;
     public static final int SUBJECT_UPLOAD_REPORT = 3;
-    public static final int SUBJECT_SYSTEM_INTERACTION = 4;
-    public static final int SUBJECT_APPLICATION_DEFINED = 5;
+    public static final int SUBJECT_SYSTEM_MESSAGE = 4;
+    public static final int SUBJECT_APPLICATION_MESSAGE = 5;
     
     private Address origin;
     private Address target;
@@ -28,7 +28,7 @@ public class Message {
     private int priority;
     private Boolean anonymousUpload;
     private String content;
-    private final Date createdTime;
+    private Date createdTime;
     private Boolean usesUrboSentiXMLEnvelope;    
     private boolean requireResponse;
     private int contentSize;
@@ -38,7 +38,7 @@ public class Message {
         this.usesUrboSentiXMLEnvelope = true;
         this.createdTime = new Date();
         this.anonymousUpload = false;
-        this.subject = Message.SUBJECT_APPLICATION_DEFINED;
+        this.subject = Message.SUBJECT_APPLICATION_MESSAGE;
         this.contentType = "text/xml";
         this.requireResponse = false;
     }   
@@ -168,4 +168,9 @@ public class Message {
         }
         return newXml;
     }
+    
+        public void setCreatedTime(Date createdTime) {
+        this.createdTime = createdTime;
+    }
+
 }

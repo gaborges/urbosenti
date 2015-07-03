@@ -5,7 +5,6 @@
  */
 package urbosenti.core.events.timer;
 
-import java.util.Objects;
 import urbosenti.core.events.ApplicationHandler;
 import urbosenti.core.events.EventManager;
 import urbosenti.core.events.SystemHandler;
@@ -37,8 +36,8 @@ public abstract class EventTimer {
     public boolean equalsTriggerRequest(TriggerRequest triggerRequest) {
         if (triggerRequest.getEvent().getId() == request.getEvent().getId()
                 && triggerRequest.getTime().getTime() == request.getTime().getTime()
-                && Objects.equals(triggerRequest.getInterval(), request.getInterval())
-                && Objects.equals(triggerRequest.getMethod(), request.getMethod())) {
+                && triggerRequest.getInterval().equals(request.getInterval())
+                && triggerRequest.getMethod().equals(request.getMethod())) {
             if (triggerRequest.getHandler() instanceof ApplicationHandler 
                     && request.getHandler() instanceof ApplicationHandler
                     || triggerRequest.getHandler() instanceof SystemHandler 

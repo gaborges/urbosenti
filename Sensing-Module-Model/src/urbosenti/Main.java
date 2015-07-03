@@ -86,7 +86,7 @@ public class Main {
         TestCommunication tc = new TestCommunication(deviceManager);
         tc.test1();
         
-        
+        System.out.println("Teste finalizado");
         try {
             Thread.sleep(120000);
         } catch (InterruptedException ex) {

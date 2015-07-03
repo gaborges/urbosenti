@@ -18,7 +18,6 @@ import urbosenti.core.device.model.AgentCommunicationLanguage;
 import urbosenti.core.device.model.AgentMessage;
 import urbosenti.core.device.model.AgentType;
 import urbosenti.core.device.model.CommunicativeAct;
-import urbosenti.core.device.model.Component;
 import urbosenti.core.device.model.Content;
 import urbosenti.core.device.model.Conversation;
 import urbosenti.core.device.model.DataType;
@@ -211,7 +210,7 @@ public class AgentTypeDAO {
             content = new Content();
             // pegar o valor atual
             content.setId(rs.getInt("id"));
-            content.setTime(rs.getDate("reading_time"));
+            content.setTime(new Date(Long.parseLong(rs.getString("reading_time"))));
             content.setValue(Content.parseContent(state.getDataType(), rs.getObject("reading_value")));
         }
         rs.close();
@@ -224,7 +223,7 @@ public class AgentTypeDAO {
                 + " VALUES (?,?,?);";
         this.stmt = this.connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
         this.stmt.setObject(1, Content.parseContent(state.getDataType(), state.getContent().getValue()));
-        this.stmt.setObject(2, state.getContent().getTime());
+        this.stmt.setObject(2, state.getContent().getTime().getTime());
         this.stmt.setInt(3, state.getId());
         this.stmt.execute();
         ResultSet generatedKeys = stmt.getGeneratedKeys();
@@ -255,12 +254,12 @@ public class AgentTypeDAO {
             content = new Content();
             // pegar o valor atual
             content.setId(rs.getInt("content_id"));
-            content.setTime(rs.getDate("reading_time"));
+            content.setTime(new Date(Long.parseLong(rs.getString("reading_time"))));
             content.setValue(Content.parseContent(parameter.getDataType(), rs.getObject("reading_value")));
             content.setScore(rs.getDouble("score"));
             content.setMessage(new AgentMessage());
             content.getMessage().setId(rs.getInt("message_id"));
-            content.getMessage().setTime(rs.getDate("message_time"));
+            content.getMessage().setTime(new Date(Long.parseLong(rs.getString("message_time"))));
         }
         rs.close();
         stmt.close();
@@ -272,7 +271,7 @@ public class AgentTypeDAO {
                 + " VALUES (?,?,?,?);";
         this.stmt = this.connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
         this.stmt.setObject(1, Content.parseContent(parameter.getDataType(), parameter.getContent().getValue()));
-        this.stmt.setObject(2, parameter.getContent().getTime());
+        this.stmt.setObject(2, parameter.getContent().getTime().getTime());
         this.stmt.setInt(3, parameter.getId());
         this.stmt.setInt(4, parameter.getContent().getMessage().getId());
         this.stmt.execute();
@@ -505,7 +504,7 @@ public class AgentTypeDAO {
             conversation = new Conversation();
             conversation.setId(rs.getInt("id"));
             if (rs.getDate("finished_time") != null) {
-                conversation.setFinishedTime(rs.getDate("finished_time"));
+                conversation.setFinishedTime( new Date(Long.parseLong(rs.getString("finished_time"))));
             }
             conversation.setMessages(this.getAgentMessages(conversation));
             conversations.add(conversation);
@@ -527,7 +526,7 @@ public class AgentTypeDAO {
         while (rs.next()) {
             message = new AgentMessage();
             message.setId(rs.getInt("id"));
-            message.setTime(rs.getDate("message_time"));
+            message.setTime(new Date(Long.parseLong(rs.getString("message_time"))));
             if (rs.getInt("interaction_id") > 0) {
                 message.setPreviousInteraction(this.getInteraction(rs.getInt("interaction_id")));
             }
@@ -585,7 +584,7 @@ public class AgentTypeDAO {
             content = new Content();
             content.setId(rs.getInt("id"));
             if (rs.getDate("reading_time") != null) {
-                content.setTime(rs.getDate("reading_time"));
+                content.setTime(new Date(Long.parseLong(rs.getString("reading_time"))));
             }
             content.setParameter(this.getParameter(content));
             content.setValue(rs.getObject("reading_value"));

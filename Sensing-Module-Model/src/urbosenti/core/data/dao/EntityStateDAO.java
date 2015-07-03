@@ -241,7 +241,7 @@ public class EntityStateDAO {
             content = new Content();
             // pegar o valor atual
             content.setId(rs.getInt("id"));
-            content.setTime(rs.getDate("reading_time"));
+            content.setTime(new Date(Long.parseLong(rs.getString("reading_time"))));
             content.setValue(Content.parseContent(state.getDataType(), (rs.getObject("reading_value"))));
             if (rs.getInt("monitored_user_instance_id") > 0) {
                 Instance i = new Instance();
@@ -259,7 +259,7 @@ public class EntityStateDAO {
                 + " VALUES (?,?,?,?);";
         this.stmt = this.connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
         this.stmt.setObject(1, state.getContent().getValue());
-        this.stmt.setObject(2, (state.getContent().getTime() == null) ? new Date() : state.getContent().getTime());
+        this.stmt.setObject(2, (state.getContent().getTime() == null) ? System.currentTimeMillis() : state.getContent().getTime().getTime());
         if (state.getContent().getMonitoredInstance() != null) {
             this.stmt.setInt(3, state.getContent().getMonitoredInstance().getId());
         }
@@ -432,7 +432,7 @@ public class EntityStateDAO {
             content = new Content();
             // pegar o valor atual
             content.setId(rs.getInt("id"));
-            content.setTime(rs.getDate("reading_time"));
+            content.setTime(new Date(Long.parseLong(rs.getString("reading_time"))));
             content.setValue(Content.parseContent(state.getDataType(), (rs.getObject("reading_value"))));
             content.setMonitoredInstance(instance);
         }

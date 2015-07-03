@@ -12,11 +12,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.Queue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.xml.parsers.DocumentBuilder;
@@ -165,9 +161,9 @@ public class CommunicationManager extends ComponentManager implements Runnable {
     private int countNormalMessage;
     private int limitPriorityMessage;
     private int limitNormalMessage;
-    private List<MessageWrapper> messagesNotChecked;
-    private final Queue<MessageWrapper> normalMessageQueue;
-    private final Queue<MessageWrapper> priorityMessageQueue;
+//    private List<MessageWrapper> messagesNotChecked;
+//    private final Queue<MessageWrapper> normalMessageQueue;
+//    private final Queue<MessageWrapper> priorityMessageQueue;
     private double mobileDataQuota; // em bytes
     private double usedMobileData; // em bytes
     private double mobileDataPriorityQuota; // em bytes
@@ -234,8 +230,8 @@ public class CommunicationManager extends ComponentManager implements Runnable {
 
     public CommunicationManager(DeviceManager deviceManager) {
         super(deviceManager, CommunicationDAO.COMPONENT_ID);
-        this.normalMessageQueue = new LinkedList();
-        this.priorityMessageQueue = new LinkedList();
+//        this.normalMessageQueue = new LinkedList();
+//        this.priorityMessageQueue = new LinkedList();
         this.pushServiceReveivers = new ArrayList();
         this.uploadServiceThread = new Thread(this);
         this.uploadServer = null;
@@ -391,16 +387,22 @@ public class CommunicationManager extends ComponentManager implements Runnable {
                 // Parâmetro
                 Integer reportId = (Integer) action.getParameters().get("reportId");
                 // Remover da fila de upload
-                MessageWrapper mw = this.removeMessage(reportId);
-                // Remover do banco de dados
-                super.getDeviceManager().getDataManager().getCommunicationDAO().removeReport(reportId);
-                // Caso o mw esteja vaziu adicionar o reportId nele
-                if (mw == null) {
-                    mw = new MessageWrapper(null);
-                    mw.setId(reportId);
+                try {
+                    MessageWrapper mw = super.getDeviceManager().getDataManager().getReportDAO().get(reportId);
+                    // Remover do banco de dados
+                    super.getDeviceManager().getDataManager().getReportDAO().delete(reportId);
+                    // Caso o mw esteja vazio adicionar o reportId nele
+                    if (mw == null) {
+                        mw = new MessageWrapper(null);
+                        mw.setId(reportId);
+                    }
+                    // Evento de mensagem removida
+                    this.newInternalEvent(EVENT_MESSAGE_STORED_REMOVED, mw);
+                    // retorno sucesso
+                } catch (SQLException ex) {
+                    Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+                    // retorno erro
                 }
-                // Evento de mensagem removida
-                this.newInternalEvent(EVENT_MESSAGE_STORED_REMOVED, mw);
                 break;
             case 2: // Alterar limite de relatos armazenados *** tais estados são mantidos no módulo de adaptação, depois implementar
 
@@ -605,7 +607,7 @@ public class CommunicationManager extends ComponentManager implements Runnable {
             Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
         }
         // 3 - Verifica se alguma interface de comunicação está disponível
-        CommunicationInterface ci = this.getCommunicationInterface(); // Método traz a interface de comunicação atual
+        CommunicationInterface ci = this.getCommunicationInterfaceWithConnection(); // Método traz a interface de comunicação atual
         // 4 - [Nenhuma disponível]    
         if (ci == null) {
             // Evento desconexão
@@ -672,7 +674,7 @@ public class CommunicationManager extends ComponentManager implements Runnable {
             Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
         }
         // 3 - Verifica se alguma interface de comunicação está disponível
-        CommunicationInterface ci = this.getCommunicationInterface(); // Método traz a interface de comunicação atual
+        CommunicationInterface ci = this.getCommunicationInterfaceWithConnection(); // Método traz a interface de comunicação atual
         // 4 - [Nenhuma disponível]    
         if (ci == null) {
             // Evento desconexão
@@ -740,7 +742,7 @@ public class CommunicationManager extends ComponentManager implements Runnable {
             Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
         }
         // 3 - Verifica se alguma interface de comunicação está disponível
-        CommunicationInterface ci = this.getCommunicationInterface(); // Método traz a interface de comunicação atual
+        CommunicationInterface ci = this.getCommunicationInterfaceWithConnection(); // Método traz a interface de comunicação atual
         // 4 - [Nenhuma disponível]    
         if (ci == null) {
             // Evento desconexão
@@ -788,7 +790,7 @@ public class CommunicationManager extends ComponentManager implements Runnable {
      *
      * @param message Adiciona um report para envio ao servidor.
      */
-    public void sendReport(Message message) {
+    public void sendReport(Message message) throws SQLException {
         // recebe o report para envio
         // cria envelope
         if (message.getOrigin() == null) {
@@ -907,7 +909,7 @@ public class CommunicationManager extends ComponentManager implements Runnable {
             // <content> - conteúdo da mensagem
             msg.setContent(response.getElementsByTagName("content").item(0).getTextContent());
 
-            if(DeveloperSettings.SHOW_FUNCTION_DEBUG_ACTIVITY){
+            if (DeveloperSettings.SHOW_FUNCTION_DEBUG_ACTIVITY) {
                 System.out.println("Reveived message layer: " + msg.getTarget().getLayer());
             }
             // Evento - Mensagem Recebida
@@ -938,34 +940,35 @@ public class CommunicationManager extends ComponentManager implements Runnable {
      * 4) Dinâmico (Exige componente de adaptação). Dá poder ao mecanismo
      * decidir quando apagar uma mensagem armazenada. O usuário pode especificar
      * uma quantidade ou um tempo.
+     * @throws java.sql.SQLException
      */
-    protected void storagePolice(MessageWrapper messageWrapper) {
+    protected void storagePolice(MessageWrapper messageWrapper) throws SQLException {
         switch (messageStoragePolicy) {
             case 1: // Não armazenar nenhuma
                 break;
             case 2: // Apagar todas que foram enviadas com sucesso e armazenar as que não foram enviadas. Opção padrão.
                 if (messageWrapper.isSent()) { // Não foi enviada. Armazenar
-                    getDeviceManager().getDataManager().getCommunicationDAO().removeReport(messageWrapper);
+                    getDeviceManager().getDataManager().getReportDAO().delete(messageWrapper);
                 } else { // senão foi enviada. Armazenar
                     if (messageWrapper.getId() > 0) {
-                        getDeviceManager().getDataManager().getCommunicationDAO().updateReport(messageWrapper);
+                        getDeviceManager().getDataManager().getReportDAO().update(messageWrapper);
                     } else {
-                        getDeviceManager().getDataManager().getCommunicationDAO().insertReport(messageWrapper);
+                        getDeviceManager().getDataManager().getReportDAO().insert(messageWrapper, this.uploadServer);
                     }
                 }
                 break;
             case 3: // Armazenar todas e deixar a aplicação decidir quais apagar.
                 if (messageWrapper.getId() > 0) {
-                    getDeviceManager().getDataManager().getCommunicationDAO().updateReport(messageWrapper);
+                    getDeviceManager().getDataManager().getReportDAO().update(messageWrapper);
                 } else {
-                    getDeviceManager().getDataManager().getCommunicationDAO().insertReport(messageWrapper);
+                    getDeviceManager().getDataManager().getReportDAO().insert(messageWrapper, this.uploadServer);
                 }
                 break;
             case 4: // Dinâmico (Exige componente de adaptação). Dá poder ao mecanismo decidir quando apagar uma mensagem armazenada. O usuário pode especificar uma quantidade ou um tempo.
                 if (messageWrapper.getId() > 0) {
-                    getDeviceManager().getDataManager().getCommunicationDAO().updateReport(messageWrapper);
+                    getDeviceManager().getDataManager().getReportDAO().update(messageWrapper);
                 } else {
-                    getDeviceManager().getDataManager().getCommunicationDAO().insertReport(messageWrapper);
+                    getDeviceManager().getDataManager().getReportDAO().insert(messageWrapper, this.uploadServer);
                     // Gerar evento -- Mensagem armazenada.
                     this.newInternalEvent(EVENT_MESSAGE_STORED, messageWrapper);
                 }
@@ -979,21 +982,20 @@ public class CommunicationManager extends ComponentManager implements Runnable {
      * espera e um evento avisando a aplicação que o relato está esperando sua
      * aprovação.
      */
-    private synchronized void addReport(MessageWrapper messageWrapper) {
+    private synchronized void addReport(MessageWrapper messageWrapper) throws SQLException {
         // Verifica política de upload de relatos
         // se 3 gera adiciona na fila para aprovação da aplicação e utiliza política de armazenamento
         if (this.uploadMessagingPolicy == 3 && !messageWrapper.isChecked()) {
-            this.messagesNotChecked.add(messageWrapper);
+            //this.messagesNotChecked.add(messageWrapper);
+            messageWrapper.setUnChecked();
             this.storagePolice(messageWrapper); // depois vejo se uso ou não
             this.newInternalEvent(EVENT_REPORT_AWAITING_APPROVAL, messageWrapper.getMessage());
-        }
-        // Dependendo da prioriade
-        if (messageWrapper.getMessage().getPriority() == Message.PREFERENTIAL_PRIORITY) {
-            this.priorityMessageQueue.add(messageWrapper);
         } else {
-            this.normalMessageQueue.add(messageWrapper);
+            // mensagem pode ser enviada
+            messageWrapper.setChecked();
+            this.storagePolice(messageWrapper);
+            notifyAll();
         }
-        notifyAll();
     }
 
     /**
@@ -1002,11 +1004,13 @@ public class CommunicationManager extends ComponentManager implements Runnable {
      * OBS.: SOmente utilizado pelo método de upload dinâmico, pois tem um loop
      * infinito dentro.
      * @throws InterruptedException
+     * @throws java.sql.SQLException
      */
-    protected synchronized MessageWrapper getNormalReport() throws InterruptedException {
+    protected synchronized MessageWrapper getNormalReport() throws InterruptedException, SQLException {
         MessageWrapper mw;
         while (true) {
-            mw = this.normalMessageQueue.peek();
+            mw = super.getDeviceManager().getDataManager().getReportDAO()
+                    .getOldestCheckedNotSent(Message.NORMAL_PRIORITY, this.uploadServer);
             if (mw == null) {
                 wait();
             } else {
@@ -1022,11 +1026,13 @@ public class CommunicationManager extends ComponentManager implements Runnable {
      * continua da fila. OBS.: SOmente utilizado pelo método de upload dinâmico,
      * pois tem um loop infinito dentro.
      * @throws InterruptedException
+     * @throws java.sql.SQLException
      */
-    protected synchronized MessageWrapper getPriorityMessage() throws InterruptedException {
+    protected synchronized MessageWrapper getPriorityReport() throws InterruptedException, SQLException {
         MessageWrapper mw;
         while (true) {
-            mw = this.priorityMessageQueue.peek();
+            mw = super.getDeviceManager().getDataManager().getReportDAO()
+                    .getOldest(false, true, Message.PREFERENTIAL_PRIORITY, this.uploadServer);
             if (mw == null) {
                 wait();
             } else {
@@ -1034,90 +1040,6 @@ public class CommunicationManager extends ComponentManager implements Runnable {
             }
         }
         return mw;
-    }
-
-    /**
-     * @return retorna e remove a primeira MessageWrapper da fila <b>normal</b>
-     * contendo um relato com prioridade <b>normal</b>. Esse relato é removido
-     * da fila. OBS.: SOmente utilizado pelo método de upload dinâmico, pois tem
-     * um loop infinito dentro.
-     * @throws InterruptedException
-     */
-    protected synchronized MessageWrapper pollNormalMessage() throws InterruptedException {
-        MessageWrapper mw;
-        while (true) {
-            mw = this.normalMessageQueue.poll();
-            if (mw == null) {
-                wait();
-            } else {
-                break;
-            }
-        }
-        return mw;
-    }
-
-    /**
-     * @return retorna e remove a primeira MessageWrapper da fila
-     * <b>prioritária</b> contendo um relato com prioridade <b>prioritária</b>.
-     * Esse relato é removido da fila. OBS.: SOmente utilizado pelo método de
-     * upload dinâmico, pois tem um loop infinito dentro.
-     * @throws InterruptedException
-     */
-    protected synchronized MessageWrapper pollPriorityMessage() throws InterruptedException {
-        MessageWrapper mw;
-        while (true) {
-            mw = this.priorityMessageQueue.poll();
-            if (mw == null) {
-                wait();
-            } else {
-                break;
-            }
-        }
-        return mw;
-    }
-
-    /**
-     * @return retorna e remove a primeira MessageWrapper de uma das duas filas
-     * <b>prioritária</b> ou <b>normal</b> conforme o escalonamento dinâmico
-     * pré-configurado no método OnCreate. Esse relato escolhido é removido da
-     * fila. OBS.: SOmente utilizado pelo método de upload dinâmico, pois tem um
-     * loop infinito dentro.
-     * @throws InterruptedException
-     */
-    protected synchronized MessageWrapper pollMessage() throws InterruptedException {
-        MessageWrapper mwp, mwn;
-        while (true) {
-            /*
-             * Fazer um escalonamento dinâmico entre prioridades;
-             * // Se a outra fila está vazia faz a atual e zera os contadores
-             // obedece os dois limites priorizando os prioritários
-             */
-
-            // Pega primeiras mensagens
-            mwp = this.priorityMessageQueue.peek();
-            mwn = this.normalMessageQueue.peek();
-            // Se ambas estão vazias, zera as contagens e espera
-            if (mwn == null && mwp == null) {
-                countNormalMessage = 0;
-                countPriorityMessage = 0;
-                wait();
-            }
-            // Se houver mensagens prioritárias pega elas até o limite
-            if (mwp != null && countPriorityMessage < limitPriorityMessage) {
-                countPriorityMessage++;
-                return this.priorityMessageQueue.poll();
-            }
-            // se houver mensagens normais depois de atingido o limite das prioritárias então pega as mensagens normais até atingir seu limite.
-            // Atingido o limite normal a contagem é zerada de ambas as filas é zerada
-            if (mwn != null && countNormalMessage < limitNormalMessage) {
-                countNormalMessage++;
-            }
-            if (countNormalMessage >= limitNormalMessage) {
-                countNormalMessage = 0;
-                countPriorityMessage = 0;
-            }
-            return this.normalMessageQueue.poll();
-        }
     }
 
     /**
@@ -1127,8 +1049,9 @@ public class CommunicationManager extends ComponentManager implements Runnable {
      * da fila. OBS.: SOmente utilizado pelo método de upload dinâmico, pois tem
      * um loop infinito dentro.
      * @throws InterruptedException
+     * @throws java.sql.SQLException
      */
-    protected synchronized MessageWrapper getMessage() throws InterruptedException {
+    protected synchronized MessageWrapper getReport() throws InterruptedException, SQLException {
         MessageWrapper mwp, mwn;
         while (true) {
             /*
@@ -1138,8 +1061,10 @@ public class CommunicationManager extends ComponentManager implements Runnable {
              */
 
             // Pega primeiras mensagens
-            mwp = this.priorityMessageQueue.peek();
-            mwn = this.normalMessageQueue.peek();
+            mwp = super.getDeviceManager().getDataManager().getReportDAO()
+                    .getOldestCheckedNotSent(Message.PREFERENTIAL_PRIORITY, this.uploadServer);
+            mwn = super.getDeviceManager().getDataManager().getReportDAO()
+                    .getOldestCheckedNotSent(Message.NORMAL_PRIORITY, this.uploadServer);
             // Se ambas estão vazias, zera as contagens e espera
             if (mwn == null && mwp == null) {
                 countNormalMessage = 0;
@@ -1148,13 +1073,21 @@ public class CommunicationManager extends ComponentManager implements Runnable {
             }
             // Se houver mensagens prioritárias pega elas até o limite
             if (mwp != null && countPriorityMessage < limitPriorityMessage) {
-                countPriorityMessage++;
+                if (countNormalMessage == 0) {
+                    countPriorityMessage = 0;
+                } else {
+                    countPriorityMessage++;
+                }
                 return mwp;
             }
             // se houver mensagens normais depois de atingido o limite das prioritárias então pega as mensagens normais até atingir seu limite.
             // Atingido o limite normal a contagem é zerada de ambas as filas é zerada
             if (mwn != null && countNormalMessage < limitNormalMessage) {
-                countNormalMessage++;
+                if (countPriorityMessage == 0) {
+                    countNormalMessage = 0;
+                } else {
+                    countNormalMessage++;
+                }
                 return mwn;
             }
         }
@@ -1162,73 +1095,17 @@ public class CommunicationManager extends ComponentManager implements Runnable {
 
     /**
      *
-     * @param mw
-     * @return remove o report da fila e retorna true se teve sucesso.
-     */
-    protected synchronized boolean removeMessage(MessageWrapper mw) {
-        if (mw.getMessage().getPriority() == Message.PREFERENTIAL_PRIORITY) {
-            try {
-                this.priorityMessageQueue.remove(mw);
-            } catch (NoSuchElementException ex) {
-                return false;
-            }
-        } else {
-            try {
-                this.normalMessageQueue.remove(mw);
-            } catch (NoSuchElementException ex) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    /**
-     *
-     * @param reportId -- Id do MessageWrapper
-     * @return remove o report da fila produrando o ID e retorna o
-     * MessageWrapper mw se teve sucesso, senão null.
-     */
-    protected synchronized MessageWrapper removeMessage(int reportId) {
-        try {
-            Iterator<MessageWrapper> iterator = this.priorityMessageQueue.iterator();
-            while (iterator.hasNext()) {
-                MessageWrapper mw = iterator.next();
-                if (mw.getId() == reportId) {
-                    this.priorityMessageQueue.remove(mw);
-                    return mw;
-                }
-            }
-            iterator = this.normalMessageQueue.iterator();
-            while (iterator.hasNext()) {
-                MessageWrapper mw = iterator.next();
-                if (mw.getId() == reportId) {
-                    this.normalMessageQueue.remove(mw);
-                    return mw;
-                }
-            }
-        } catch (NoSuchElementException ex) {
-            return null;
-        }
-        return null;
-    }
-
-    /**
-     *
      * @param message - Mensagem aprovada
      * @return return true se a mensagem foi atualizada com sucesso. Caso ela
      * não esteja mais na lista o der algum erro será retornado false
+     * @throws java.sql.SQLException
      */
-    public synchronized boolean approvalReport(Message message) {
-        // primeiro busca pelo tempo;
-        for (MessageWrapper temp : messagesNotChecked) {
-            if (message.getCreatedTime().getTime() == temp.getMessage().getCreatedTime().getTime()) {
-                temp.setChecked();
-                messagesNotChecked.remove(temp);
-                addReport(temp);
-                return true;
-            }
-        }
-        return false;
+    public synchronized boolean approvalReport(Message message) throws SQLException {
+        // buscar relato
+        MessageWrapper report = super.getDeviceManager().getDataManager().getReportDAO().get(message.getCreatedTime());
+        // atualizar para checado
+        super.getDeviceManager().getDataManager().getReportDAO().updateChecked(report);
+        return true;
     }
 
     /**
@@ -1513,7 +1390,7 @@ public class CommunicationManager extends ComponentManager implements Runnable {
                 break;
             case EVENT_NEW_INPUT_COMMUNICATION_INTERFACE_ADDRESS:
                 PushServiceReceiver receiver = (PushServiceReceiver) parameters[0];
-                HashMap<String,String> configurations = (HashMap<String,String>) parameters[1];
+                HashMap<String, String> configurations = (HashMap<String, String>) parameters[1];
 
                 event = new SystemEvent(this);
 
@@ -1582,7 +1459,7 @@ public class CommunicationManager extends ComponentManager implements Runnable {
      *
      * @return CommunicationInterface or null if no one interface is available
      */
-    private synchronized CommunicationInterface getCommunicationInterface() {
+    private synchronized CommunicationInterface getCommunicationInterfaceWithConnection() {
         // Se há uma interface atual testa se ela possuí conexão
         if (currentCommunicationInterface != null) {
             if (currentCommunicationInterface.getStatus() != CommunicationInterface.STATUS_UNAVAILABLE) {
@@ -1658,7 +1535,6 @@ public class CommunicationManager extends ComponentManager implements Runnable {
     private void uploadService(Service server) throws InterruptedException {
         this.running = true;
         final Integer waitUpload = 0;
-        boolean sent;
         while (isUploadServerRunning()) {
             // [Início Loop]
             // Aguarda condição da política de upload ser atendida
@@ -1709,55 +1585,66 @@ public class CommunicationManager extends ComponentManager implements Runnable {
                     break;
             }
             // Busca uma mensagem da fila para a upload
-            // Aguarda condições de dados móveis [Implementar outra hora] - Serviço compartilhado entre os servers
-            MessageWrapper mw = this.mobileDataPolicy();
-            // 3 - Verifica se alguma interface de comunicação está disponível
-            CommunicationInterface ci = this.getCommunicationInterface(); // Método traz a interface de comunicação atual
-            // 4 - [disponível]
-            if (ci != null) {
-                try {
-                    // Executa função SendMessage
-                    ci.sendMessage(this, mw);
-                    // Remove a mensagem da fila
-                    this.removeMessage(mw);
-                    // Evento: Mensagem Entregue
-                    this.newInternalEvent(EVENT_MESSAGE_DELIVERED, mw, mw.getMessage().getTarget(), currentCommunicationInterface);
-                    // Política de Armazenamento
-                    this.storagePolice(mw);
-                    sent = true;
-                } catch (java.net.ConnectException ex) {
-                    // Evento: Timeout
-                    // thows Timeout exception   
-                    this.newInternalEvent(EVENT_ADDRESS_NOT_REACHABLE, mw, mw.getMessage().getTarget(), currentCommunicationInterface);
-                    Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
-                    sent = false;
-                } catch (SocketTimeoutException ex) {
-                    //[Timeout]
-                    // Evento: Timeout
-                    this.newInternalEvent(EVENT_ADDRESS_NOT_REACHABLE, mw, mw.getMessage().getTarget(), currentCommunicationInterface);
-                    Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
-                    sent = false;
-                } catch (IOException ex) {
-                    //[Erro de IO]
-                    // Evento: Mensagem não entregue
-                    this.newInternalEvent(EVENT_MESSAGE_NOT_DELIVERED, mw, mw.getMessage().getTarget());
-                    Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
-                    sent = false;
+            // Aguarda condições de dados móveis [To do - implement the mobile data policy] - Serviço compartilhado entre os servers
+            MessageWrapper mw;
+            try {
+                mw = this.getReportByMobileDataPolicyCriteria();
+                // construir a mensagem
+                mw.build();
+                // 3 - Verifica se alguma interface de comunicação está disponível
+                CommunicationInterface ci = this.getCommunicationInterfaceWithConnection(); // Método traz a interface de comunicação atual
+                // 4 - [disponível]
+                if (ci != null) {
+                    try {
+                        // Tempo inicial de envio
+                        Date initialTime = new Date();
+                        // Executa função SendMessage
+                        ci.sendMessage(this, mw);
+                        // Marca como mensagem enviada e algumas métricas
+                        ci.updateEvaluationMetrics(mw, initialTime);
+                        // Evento: Mensagem Entregue
+                        this.newInternalEvent(EVENT_MESSAGE_DELIVERED, mw, mw.getMessage().getTarget(), currentCommunicationInterface);
+                        // Política de Armazenamento
+                        this.storagePolice(mw);
+                        // confirmação do funcionamento sem erros
+                        // this.newInternalEvent(EVENT_SERVICE_FUNCTIONS_END, CommunicationDAO.UPLOAD_MESSAGING_POLICY, uploadServer);
+                    } catch (java.net.ConnectException ex) {
+                        // Evento: Timeout
+                        // thows Timeout exception   
+                        this.newInternalEvent(EVENT_ADDRESS_NOT_REACHABLE, mw, mw.getMessage().getTarget(), currentCommunicationInterface);
+                        Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+                    } catch (SocketTimeoutException ex) {
+                        //[Timeout]
+                        // Evento: Timeout
+                        this.newInternalEvent(EVENT_ADDRESS_NOT_REACHABLE, mw, mw.getMessage().getTarget(), currentCommunicationInterface);
+                        Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+                    } catch (IOException ex) {
+                        //[Erro de IO]
+                        // Evento: Mensagem não entregue
+                        this.newInternalEvent(EVENT_MESSAGE_NOT_DELIVERED, mw, mw.getMessage().getTarget());
+                        Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                } else {
+                    // Evento desconexão
+                    this.newInternalEvent(EVENT_DISCONNECTION);
+                    // [Sem sucesso] [IO Exception] [Timeout]
+                    // [Aguarda Política de Reconexão]        
+                    System.out.println("All functions communication interfaces are disconnected. Starting Reconection Service");
+                    //this.reconnectionService.setReconnectionMethodAllByOnce();
+                    this.reconnectionService.reconectionProcess();
                 }
-            } else {
-                // Evento desconexão
-                this.newInternalEvent(EVENT_DISCONNECTION);
-                sent = false;
-            }
-
-            // [Sem sucesso] [IO Exception] [Timeout]
-            // Política de Armazenamento
-            // [Aguarda Política de Reconexão]        
-            if (!sent) {
-                if(DeveloperSettings.SHOW_FUNCTION_DEBUG_ACTIVITY){
-                    System.out.println("Starting Reconection Service");
-                }
-                this.reconnectionService.reconectionProcess();
+            } catch (SQLException ex) {
+                Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+                // criar
+                // this.newInternalEvent(EVENT_SERVICE_FUNCTION_ERROR, CommunicationDAO.UPLOAD_MESSAGING_POLICY, ex ,uploadServer);// fazer depois
+            } catch (ParserConfigurationException ex) {
+                Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+                // criar
+                // this.newInternalEvent(EVENT_SERVICE_FUNCTION_ERROR, CommunicationDAO.UPLOAD_MESSAGING_POLICY, ex ,uploadServer);// fazer depois
+            } catch (TransformerException ex) {
+                Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+                // criar
+                // this.newInternalEvent(EVENT_SERVICE_FUNCTION_ERROR, CommunicationDAO.UPLOAD_MESSAGING_POLICY, ex ,uploadServer);// fazer depois
             }
         }
         // [Fim Loop]
@@ -1770,44 +1657,23 @@ public class CommunicationManager extends ComponentManager implements Runnable {
      * @return
      * @throws InterruptedException
      */
-    private MessageWrapper mobileDataPolicy() throws InterruptedException {
+    private MessageWrapper getReportByMobileDataPolicyCriteria() throws InterruptedException, SQLException {
         // Política de dados móveis, se a interface usa dados móveis
         MessageWrapper mw = null;
         switch (mobileDataPolicy) {
             case 1: // Sem mobilidade. Configuração default. Nenhuma ação.
-                mw = this.getMessage();
+                mw = this.getReport();
                 break;
             case 2: // Fazer o uso sempre que possível. Nenhuma ação adicional.
-                mw = this.getMessage();
+                mw = this.getReport();
                 break;
             case 3: // Somente fazer uso com mensagens de alta prioridade.
                 if (currentCommunicationInterface.isUsesMobileData()) {
-                    mw = this.getPriorityMessage();
+                    mw = this.getPriorityReport();
                 } else {
-                    mw = this.getMessage();
-                }
-                throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-            // break;
-            case 4: // Utiliza cota por ciclo de uso: Até X todos os tipos de mensagens, após até Y somente de alta prioridade.
-                mw = this.getMessage();
-                if (mw.getMessage().getPriority() == Message.PREFERENTIAL_PRIORITY) {
-                    if ((mw.getEnvelopedMessage().length() * Character.SIZE) + usedMobileData >= mobileDataPriorityQuota) {
-                        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-                    }
-                } else {
-                    if ((mw.getEnvelopedMessage().length() * Character.SIZE) + usedMobileData >= mobileDataQuota) {
-                        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-                    }
+                    mw = this.getReport();
                 }
                 break;
-            case 5: // Utiliza cota por ciclo de uso: Até X todos os tipos de mensagens para mensagens de alta prioridade o uso é liberado.
-                mw = this.getMessage();
-                if ((mw.getEnvelopedMessage().length() * Character.SIZE) + usedMobileData >= mobileDataQuota) {
-                    throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-                }
-                break;
-            case 6: // Não utilizar dados móveis.
-                throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
         }
         return mw;
     }
@@ -1861,22 +1727,22 @@ public class CommunicationManager extends ComponentManager implements Runnable {
     public void updateInputCommunicationInterfaceConfiguration(SocketPushServiceReceiver inputInterface, HashMap<String, String> interfaceConfigurations) {
         this.newInternalEvent(EVENT_NEW_INPUT_COMMUNICATION_INTERFACE_ADDRESS, inputInterface, interfaceConfigurations);
     }
-    
+
     /**
      * Inicia o serviço de upload
      */
-    public void startUploadService(){
-        if(uploadServer == null){
+    public void startUploadService() {
+        if (uploadServer == null) {
             throw new Error("Upload server not specified! - Remember to use: deviceManager.getCommunicationManager().addUploadServer(uploadServer)");
         }
         this.running = true;
         uploadServiceThread.start();
     }
-    
+
     /**
      * Para o serviço de upload
      */
-    public void stopUploadService(){
+    public void stopUploadService() {
         this.running = false;
     }
 }

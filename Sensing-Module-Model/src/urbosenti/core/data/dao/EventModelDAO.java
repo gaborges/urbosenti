@@ -13,11 +13,9 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import urbosenti.core.device.model.Component;
 import urbosenti.core.device.model.Content;
 import urbosenti.core.device.model.DataType;
 import urbosenti.core.device.model.Entity;
-import urbosenti.core.device.model.EntityType;
 import urbosenti.core.device.model.EventModel;
 import urbosenti.core.device.model.EventTarget;
 import urbosenti.core.device.model.Implementation;
@@ -164,7 +162,7 @@ public class EventModelDAO {
             content = new Content();
             // pegar o valor atual
             content.setId(rs.getInt("id"));
-            content.setTime(rs.getDate("reading_time"));
+            content.setTime(new Date(Long.parseLong(rs.getString("reading_time"))));
             content.setValue(Content.parseContent(parameter.getDataType(),rs.getObject("reading_value")));
         }
         rs.close();
@@ -177,7 +175,7 @@ public class EventModelDAO {
                 + " VALUES (?,?,?);";
         this.stmt = this.connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
         this.stmt.setObject(1, Content.parseContent(parameter.getDataType(),parameter.getContent().getValue()));
-        this.stmt.setObject(2, parameter.getContent().getTime());
+        this.stmt.setObject(2, parameter.getContent().getTime().getTime());
         this.stmt.setInt(3, parameter.getId());
         this.stmt.execute();
         ResultSet generatedKeys = stmt.getGeneratedKeys();

@@ -11,6 +11,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import urbosenti.core.device.model.ActionModel;
 import urbosenti.core.device.model.Content;
@@ -248,7 +249,7 @@ public class ActionModelDAO {
             content = new Content();
             // pegar o valor atual
             content.setId(rs.getInt("id"));
-            content.setTime(rs.getDate("reading_time"));
+            content.setTime(new Date(Long.parseLong(rs.getString("reading_time"))));
             content.setValue(Content.parseContent(parameter.getDataType(),
                     rs.getObject("reading_value")));
             content.setScore(rs.getDouble("score"));
@@ -264,7 +265,7 @@ public class ActionModelDAO {
         this.stmt = this.connection.prepareStatement(sql,
                 Statement.RETURN_GENERATED_KEYS);
         this.stmt.setObject(1, parameter.getContent().getValue());
-        this.stmt.setObject(2, parameter.getContent().getTime());
+        this.stmt.setObject(2, parameter.getContent().getTime().getTime());
         this.stmt.setInt(3, parameter.getId());
         this.stmt.setDouble(4, parameter.getContent().getScore());
         this.stmt.execute();

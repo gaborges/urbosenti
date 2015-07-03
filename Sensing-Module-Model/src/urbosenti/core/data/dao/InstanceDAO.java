@@ -137,7 +137,7 @@ public class InstanceDAO {
             content = new Content();
             // pegar o valor atual
             content.setId(rs.getInt("id"));
-            content.setTime(rs.getDate("reading_time"));
+            content.setTime(new Date(Long.parseLong(rs.getString("reading_time"))));
             content.setValue(Content.parseContent(state.getDataType(), rs.getObject("reading_value")));
         }
         rs.close();
@@ -150,7 +150,7 @@ public class InstanceDAO {
                 + " VALUES (?,?,?);";
         this.stmt = this.connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
         this.stmt.setObject(1, Content.parseContent(state.getDataType(), state.getContent().getValue()));
-        this.stmt.setObject(2, state.getContent().getTime());
+        this.stmt.setObject(2, state.getContent().getTime().getTime());
         this.stmt.setInt(3, state.getId());
         this.stmt.execute();
         ResultSet generatedKeys = stmt.getGeneratedKeys();
@@ -476,7 +476,7 @@ public class InstanceDAO {
             content = new Content();
             // pegar o valor atual
             content.setId(rs.getInt("id"));
-            content.setTime(rs.getDate("reading_time"));
+            content.setTime(new Date(Long.parseLong(rs.getString("reading_time"))));
             content.setValue(Content.parseContent(state.getDataType(), (rs.getObject("reading_value"))));
             content.setMonitoredInstance(userInstance);
         }

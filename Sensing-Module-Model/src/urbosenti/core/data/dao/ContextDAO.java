@@ -10,7 +10,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import urbosenti.core.data.DataManager;
-import static urbosenti.core.data.dao.AdaptationDAO.COMPONENT_ID;
 import urbosenti.core.device.model.Component;
 import urbosenti.core.device.model.Entity;
 import urbosenti.core.device.model.EntityType;

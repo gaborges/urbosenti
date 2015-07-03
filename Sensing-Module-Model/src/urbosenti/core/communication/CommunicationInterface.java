@@ -29,16 +29,14 @@ public abstract class CommunicationInterface<Object> {
     private Instance instance;
     private String name;
     private double mobileDataUse; // only for Mobile data Interface
-    private double averageLatency;
-    private double averageThroughput;
+    private double averageResponseTime;
     private int status; // connected, disconected, disabled (not able to use)  able (able to use, but not tested)
     private int score;
     private int timeout; // ms
     private boolean usesMobileData;
 
     public CommunicationInterface() {
-        averageLatency = 0;
-        averageThroughput = 0;
+        averageResponseTime = 0;
         mobileDataUse = 0;
         score = 0;
         timeout = 0;
@@ -77,20 +75,12 @@ public abstract class CommunicationInterface<Object> {
         this.mobileDataUse = mobileDataUse;
     }
 
-    public double getAverageLatency() {
-        return averageLatency;
+    public double getAverageResponseTime() {
+        return averageResponseTime;
     }
 
-    public void setAverageLatency(double averageLatency) {
-        this.averageLatency = averageLatency;
-    }
-
-    public double getAverageThroughput() {
-        return averageThroughput;
-    }
-
-    public void setAverageThroughput(double averageThroughput) {
-        this.averageThroughput = averageThroughput;
+    public void setAverageResponseTime(double averageLatency) {
+        this.averageResponseTime = averageLatency;
     }
     
     public void updateEvaluationMetrics(MessageWrapper messageWrapper, Date initialTime, Date finalTime){
@@ -99,16 +89,10 @@ public abstract class CommunicationInterface<Object> {
         messageWrapper.setSent(true);
         messageWrapper.setUsedCommunicationInterface(this);
         // Adiciona a latência média se naõ for a primeira vez
-        if(this.getAverageLatency() > 0){
-            this.setAverageLatency((this.getAverageLatency() + messageWrapper.getResponseTime())/2);
+        if(this.getAverageResponseTime() > 0){
+            this.setAverageResponseTime((this.getAverageResponseTime() + messageWrapper.getResponseTime())/2);
         }else{
-            this.setAverageLatency(messageWrapper.getResponseTime());
-        }  
-        // Adiciona a troughput médio se não for a primeira vez
-        if(this.getAverageThroughput()> 0){
-            this.setAverageThroughput((this.getAverageThroughput() + messageWrapper.getSize())/2);
-        }else{
-            this.setAverageThroughput(messageWrapper.getSize());
+            this.setAverageResponseTime(messageWrapper.getResponseTime());
         }  
     }
     
@@ -118,16 +102,10 @@ public abstract class CommunicationInterface<Object> {
         messageWrapper.setSent(true);
         messageWrapper.setUsedCommunicationInterface(this);
         // Adiciona a latência média se naõ for a primeira vez
-        if(this.getAverageLatency() > 0){
-            this.setAverageLatency((this.getAverageLatency() + messageWrapper.getResponseTime())/2);
+        if(this.getAverageResponseTime() > 0){
+            this.setAverageResponseTime((this.getAverageResponseTime() + messageWrapper.getResponseTime())/2);
         }else{
-            this.setAverageLatency(messageWrapper.getResponseTime());
-        }  
-        // Adiciona a troughput médio se não for a primeira vez
-        if(this.getAverageThroughput()> 0){
-            this.setAverageThroughput((this.getAverageThroughput() + messageWrapper.getSize())/2);
-        }else{
-            this.setAverageThroughput(messageWrapper.getSize());
+            this.setAverageResponseTime(messageWrapper.getResponseTime());
         }  
     }
     
@@ -137,16 +115,10 @@ public abstract class CommunicationInterface<Object> {
         messageWrapper.setSent(true);
         messageWrapper.setUsedCommunicationInterface(this);
         // Adiciona a latência média se naõ for a primeira vez
-        if(this.getAverageLatency() > 0){
-            this.setAverageLatency((this.getAverageLatency() + messageWrapper.getResponseTime())/2);
+        if(this.getAverageResponseTime() > 0){
+            this.setAverageResponseTime((this.getAverageResponseTime() + messageWrapper.getResponseTime())/2);
         }else{
-            this.setAverageLatency(messageWrapper.getResponseTime());
-        }  
-        // Adiciona a troughput médio se não for a primeira vez
-        if(this.getAverageThroughput()> 0){
-            this.setAverageThroughput((this.getAverageThroughput() + messageWrapper.getSize())/2);
-        }else{
-            this.setAverageThroughput(messageWrapper.getSize());
+            this.setAverageResponseTime(messageWrapper.getResponseTime());
         }  
     }
 
