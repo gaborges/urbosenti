@@ -7,7 +7,10 @@ package urbosenti.core.data.dao;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import urbosenti.core.device.model.AgentCommunicationLanguage;
 import urbosenti.core.device.model.CommunicativeAct;
 import urbosenti.util.DeveloperSettings;
 
@@ -38,5 +41,19 @@ public class CommunicativeActDAO {
                     + " VALUES (" + type.getId() + ",'" + type.getDescription() + "'," + type.getAgentCommunicationLanguage().getId() + ");");
         }
     }
-
+    
+    public ArrayList<CommunicativeAct> getCommunicativeActs(AgentCommunicationLanguage acl) throws SQLException {
+        ArrayList<CommunicativeAct> communicativeActs = new ArrayList();
+        CommunicativeAct communicativeAct;
+        String sql = "SELECT id,description FROM agent_communication_languages; "; 
+        this.stmt = this.connection.prepareStatement(sql);
+        ResultSet rs = this.stmt.executeQuery();
+        while (rs.next()) {
+            communicativeAct = new CommunicativeAct(rs.getInt("id"), rs.getString("description"), acl);
+            communicativeActs.add(communicativeAct);
+        }
+        rs.close();
+        stmt.close();
+        return communicativeActs;
+    }
 }

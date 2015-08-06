@@ -39,7 +39,7 @@ import urbosenti.core.device.model.InteractionType;
 import urbosenti.core.device.model.EntityType;
 import urbosenti.core.device.model.EventModel;
 import urbosenti.core.device.model.EventTarget;
-import urbosenti.core.device.model.Interaction;
+import urbosenti.core.device.model.InteractionModel;
 import urbosenti.core.device.model.Parameter;
 import urbosenti.core.device.model.PossibleContent;
 import urbosenti.core.device.model.Service;
@@ -834,7 +834,7 @@ public class StoringGlobalKnowledgeModel {
             nListElements = eAgentModel.getElementsByTagName("interaction");
             for (int j = 0; j < nListElements.getLength(); j++) {
                 eElement = (Element) nListElements.item(j);
-                Interaction interaction = new Interaction();
+                InteractionModel interaction = new InteractionModel();
                 // id - obrigatório
                 interaction.setId(Integer.parseInt(eElement.getAttribute("id")));
                 // type - obrigatório
@@ -856,7 +856,7 @@ public class StoringGlobalKnowledgeModel {
                 // primaryInteraction - obbrigatório se typo secundária
                 if (eElement.hasAttribute("primaryInteraction")) {
                     boolean flag = true;
-                    for (Interaction interact : this.agentTypes.get(baseAgentType).getInteraction()) {
+                    for (InteractionModel interact : this.agentTypes.get(baseAgentType).getInteraction()) {
                         if (interact.getId() == Integer.parseInt(eElement.getAttribute("primaryInteraction"))) {
                             interaction.setPrimaryInteraction(interact);
                             flag = false;
@@ -1178,7 +1178,7 @@ public class StoringGlobalKnowledgeModel {
                     }
                 }
                 /// interaction
-                for (Interaction interaction : agentModel.getInteraction()) {
+                for (InteractionModel interaction : agentModel.getInteraction()) {
                     interaction.setAgentType(agentModel);
                     this.dataManager.getAgentTypeDAO().insertInteraction(interaction);
                     //// parameter
@@ -1389,6 +1389,7 @@ public class StoringGlobalKnowledgeModel {
                 + "	model_id integer not null,\n"
                 + "	description varchar(100) not null, \n"
                 + "	synchronous boolean not null default false,\n"
+                + "     store boolean not null default false, "
                 + "	implementation_type_id integer not null,\n"
                 + "	entity_id integer not null,\n"
                 + "	foreign key (implementation_type_id) references implementation_types (id), \n"
@@ -1433,6 +1434,8 @@ public class StoringGlobalKnowledgeModel {
                 + "	reading_value varchar(100) not null,\n"
                 + "	reading_time varchar(100) not null ,\n"
                 + "	event_parameter_id integer not null,\n"
+                + "     generated_event_id integer not null, \n"
+                + "     foreign key (generated_event_id) references generated_events (id),"
                 + "	foreign key (event_parameter_id) references event_parameters (id)\n"
                 + ");\n"
                 + "\n"
@@ -1599,6 +1602,31 @@ public class StoringGlobalKnowledgeModel {
                 + "	timeout integer,\n"
                 + "	service_id integer not null,\n"
                 + "	foreign key (service_id) references services (id)\n"
+                + ");"
+                + " CREATE TABLE IF NOT EXISTS generated_events (\n"
+                + "   id integer not null primary key autoincrement,\n"
+                + "   event_id integer not null,\n"
+                + "   entity_id integer,\n"
+                + "   component_id integer,\n"
+                + "   time varchar(100) not null,\n"
+                + "   timeout integer not null,\n"
+                + "   foreign key (event_id) references events (id)\n"
+                + ");\n"
+                + " CREATE TABLE IF NOT EXISTS generated_actions (\n"
+                + "   id integer not null primary key autoincrement,\n"
+                + "   action_model_id integer not null,\n"
+                + "   entity_id integer not null,\n"
+                + "   component_id integer not null,\n"
+                + "   action_type integer not null,\n"
+                + "   parameters text,\n"
+                + "   response_time varchar (100),\n"
+                + "   feedback_id integer,\n"
+                + "   feedback_description text,\n"
+                + "   execution_plan_id int,\n"
+                + "   event_id int not null,\n"
+                + "   event_type int not null,\n"
+                + "   foreign key (action_model_id) references actions (id),\n"
+                + "   foreign key (event_id) references generated_events (id)\n"
                 + ");";
         stmt.executeUpdate(sql);
         stmt.close();
@@ -1649,7 +1677,9 @@ public class StoringGlobalKnowledgeModel {
                 + "DROP TABLE \"main\".\"agent_state_contents\";\n"
                 + "DROP TABLE \"main\".\"agent_states\";\n"
                 + "DROP TABLE \"main\".\"interactions\";\n"
-                + "DROP TABLE \"main\".\"reports\";";
+                + "DROP TABLE \"main\".\"reports\";\n"
+                + "DROP TABLE \"main\".\"generated_events\";\n"
+                + "DROP TABLE \"main\".\"generated_actions\";";
         stmt.executeUpdate(sql);
         stmt.close();
     }

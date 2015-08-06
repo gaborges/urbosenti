@@ -13,6 +13,7 @@ public class EventModel {
     private Implementation implementation;
     private List<Parameter> parameters;
     private Entity entity;
+    private boolean isNecessaryStore;
 
     public EventModel(int id, String description, Implementation implementation) {
         this();
@@ -20,6 +21,7 @@ public class EventModel {
         this.description = description;
         this.synchronous = false;
         this.implementation = implementation;
+        this.isNecessaryStore = true;
     }
 
     public EventModel() {
@@ -89,6 +91,14 @@ public class EventModel {
 
     public void setModelId(int modelId) {
         this.modelId = modelId;
+    }
+
+    public boolean isNecessaryStore() {
+        return isNecessaryStore;
+    }
+
+    public void setIsNecessaryStore(boolean isNecessaryStore) {
+        this.isNecessaryStore = isNecessaryStore;
     }
 
 }

@@ -165,4 +165,8 @@ public class ServiceDAO {
         stmt.executeUpdate();
         stmt.close();
     }
+
+    public Service getServiceByUid(String uid) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
 }

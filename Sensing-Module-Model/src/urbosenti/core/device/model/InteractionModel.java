@@ -1,26 +1,27 @@
 package urbosenti.core.device.model;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
-public class Interaction {
+public class InteractionModel {
 
     private int id;
     private String description;
     private List<Parameter> parameters;
     private InteractionType interactionType;
     private Direction direction;
-    private Interaction primaryInteraction;
+    private InteractionModel primaryInteraction;
     private CommunicativeAct communicativeAct;
     private AgentType agentType;
 
-    public Interaction(int id, String description) {
+    public InteractionModel(int id, String description) {
         this();
         this.id = id;
         this.description = description;
     }
 
-    public Interaction() {
+    public InteractionModel() {
         this.parameters = new ArrayList();
     }
 
@@ -72,11 +73,11 @@ public class Interaction {
         this.parameters = parameters;
     }
 
-    public Interaction getPrimaryInteraction() {
+    public InteractionModel getPrimaryInteraction() {
         return primaryInteraction;
     }
 
-    public void setPrimaryInteraction(Interaction primaryInteraction) {
+    public void setPrimaryInteraction(InteractionModel primaryInteraction) {
         this.primaryInteraction = primaryInteraction;
     }
 
@@ -88,4 +89,14 @@ public class Interaction {
         this.agentType = agentType;
     }
 
+    public void setContentToParameter(String label, Object value){
+        Content content = new Content();
+        content.setTime(new Date());
+        for(Parameter p : parameters){
+            if(p.getLabel().equals(label)){
+                content.setValue(Content.parseContent(p.getDataType(), value));
+                break;
+            }
+        }
+    }
 }

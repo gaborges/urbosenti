@@ -7,12 +7,14 @@ package urbosenti.core.communication;
 import java.io.IOException;
 import java.util.Date;
 import urbosenti.core.device.model.Instance;
+import urbosenti.core.device.model.InstanceRepresentative;
+import java.net.URL;
 
 /**
  *
  * @author Guilherme
  */
-public abstract class CommunicationInterface<Object> {
+public abstract class CommunicationInterface<Object> implements InstanceRepresentative {
     
     public final static int STATUS_DISCONNECTED = 0;
     public final static int STATUS_CONNECTED = 1;
@@ -146,6 +148,7 @@ public abstract class CommunicationInterface<Object> {
         this.score = score;
     }
 
+    @Override
     public Instance getInstance() {
         return instance;
     }
@@ -162,6 +165,7 @@ public abstract class CommunicationInterface<Object> {
      */    
     public abstract boolean isAvailable() throws UnsupportedOperationException,IOException;
     public abstract boolean testConnection() throws IOException, UnsupportedOperationException;
+    public abstract boolean testConnection(URL url) throws IOException, UnsupportedOperationException;
     public abstract boolean connect(String address) throws IOException, UnsupportedOperationException;
     public abstract boolean disconnect() throws IOException, UnsupportedOperationException;
     public abstract boolean sendMessage(CommunicationManager communicationManager, MessageWrapper messageWrapper) throws java.net.SocketTimeoutException,IOException;

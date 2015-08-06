@@ -389,12 +389,16 @@
                     </parameter>
                 </action>
             </entity>
-            <entity type="1" description="Reconexão" >
+            <entity type="3" description="Serviço de Reconexão" >
+                <!-- instances -->
+                <instances representativeClass="urbosenti.core.communication.ReconnectionService">
+                    <instance id="1" description="General service of reconnection"></instance>
+                </instances>
                 <!-- states -->
-                <state id="1" userCanChange="false" description="Intervalo de reconexão em ms">
+                <state id="1" userCanChange="false" description="Intervalo de reconexão em ms" instanceState="true">
                     <content dataType="4" inferiorLimit="1" initialValue="20000"></content>
                 </state>
-                <state id="2" userCanChange="false" description="Método de reconexão">
+                <state id="2" userCanChange="false" description="Método de reconexão" instanceState="true">
                     <content dataType="3" inferiorLimit="1" superiorLimit="2" initialValue="1">
                         <value>1</value>
                         <value>2</value>
@@ -415,6 +419,12 @@
                             <value>urbosenti.core.communication.CommunicationInterface</value>
                         </possibleValues>
                     </parameter>
+                    <parameter id="2" optional="true" dataType="10" label="reconnectionService" >
+                        <description>Instância de serviço de reconexão</description>
+                         <possibleValues>
+                            <value>urbosenti.core.communication.ReconnectionService</value>
+                        </possibleValues>
+                    </parameter>
                 </event>
                 <event id="1" synchronous="false" implementation="1" description="Interface Desconectada">
                     <target mandatory="true">2</target>
@@ -424,16 +434,37 @@
                             <value>urbosenti.core.communication.CommunicationInterface</value>
                         </possibleValues>
                     </parameter>
+                    <parameter id="2" optional="true" dataType="10" label="reconnectionService" >
+                        <description>Instância de serviço de reconexão</description>
+                         <possibleValues>
+                            <value>urbosenti.core.communication.ReconnectionService</value>
+                        </possibleValues>
+                    </parameter>
                 </event>
+                <event id="16" synchronous="false" implementation="1" description="Nova tentativa de reconexão">
+                    <target mandatory="true">2</target>
+                    <parameter id="2" optional="true" dataType="10" label="reconnectionService" >
+                        <description>Instância de serviço de reconexão</description>
+                         <possibleValues>
+                            <value>urbosenti.core.communication.ReconnectionService</value>
+                        </possibleValues>
+                    </parameter>
+                </event>                
                 <!-- actions -->
                 <action id="5"  description="Alterar intervalo de reconexão">
                     <parameter id="1" optional="false" dataType="3" label="interval" state="1">
                         <description>Nova intervalo de reconexão</description>
                     </parameter>
+                    <parameter id="1" optional="false" dataType="3" label="instanceId">
+                        <description>Id modelo do serviço de reconexão</description>
+                    </parameter>
                 </action>
                 <action id="6"  description="Alterar método">
                     <parameter id="1" optional="false" dataType="3" label="method" state="2">
                         <description>Novo método</description>
+                    </parameter>
+                    <parameter id="1" optional="false" dataType="3" label="instanceId">
+                        <description>Id modelo do serviço de reconexão</description>
                     </parameter>
                 </action>
                 <action id="7"  description="Alterar política">
@@ -442,21 +473,27 @@
                     </parameter>
                 </action>
             </entity>
-            <entity type="1" description="Upload Periódico de Relatos" >
+            <entity type="3" description="Serviço de Upload Periódico de Relatos" >
+                <!-- instances -->
+                <instances representativeClass="urbosenti.core.communication.UploadService">
+                    <instance id="1" description="Backend Upload Service">
+                        <state stateId="8" initialValue="1"></state>
+                    </instance>
+                </instances>
                 <!-- states -->
-                <state id="1" userCanChange="true" description="Número de mensagens para upload por ciclo">
+                <state id="1" userCanChange="true" description="Número de mensagens para upload por ciclo" instanceState="true">
                     <content dataType="3" inferiorLimit="1" initialValue="10"></content>
                 </state>
-                <state id="2" userCanChange="true" description="Intervalo entre uploads (em milissegundos)">
+                <state id="2" userCanChange="true" description="Intervalo entre uploads (em milissegundos)" instanceState="true">
                     <content dataType="4" inferiorLimit="1" initialValue="100"></content>
                 </state>
-                <state id="3" userCanChange="false" description="Taxa de upload (inicial 100%)">
+                <state id="3" userCanChange="false" description="Taxa de upload (inicial 100%)" instanceState="true">
                     <content dataType="6" inferiorLimit="0.0" superiorLimit="1.0" initialValue="1.0"></content>
                 </state>
-                <state id="4" userCanChange="false" description="Executando?">
+                <state id="4" userCanChange="false" description="Executando?" instanceState="true">
                     <content dataType="7" initialValue="false"></content>
                 </state>
-                <state id="5" userCanChange="false" description="Desconectado?">
+                <state id="5" userCanChange="false" description="Desconectado?" instanceState="false">
                     <content dataType="7" initialValue="true"></content>
                 </state>
                 <state id="6" userCanChange="true" description="Política" instaceState="false">
@@ -466,6 +503,12 @@
                         <value>3</value>
                         <value>4</value>
                     </content>
+                </state>
+                <state id="7" userCanChange="false" description="Realizar upload?" instanceState="true">
+                    <content dataType="7" initialValue="true"></content>
+                </state>
+                <state id="8" userCanChange="false" description="Id do serviço relacionado" instanceState="true">
+                    <content dataType="3" initialValue="0"></content>
                 </state>
                 <!-- events -->
                 <event id="9" synchronous="false" implementation="1" description="Relato esperando Aprovação">
@@ -558,15 +601,24 @@
                     <parameter id="1" optional="false" dataType="6" label="uploadRate" state="3">
                         <description>Nova Taxa</description>
                     </parameter>
+                    <parameter id="2" optional="false" dataType="3" label="instanceId" >
+                        <description>Id da instância de serviço de upload</description>
+                    </parameter>
                 </action>
                 <action id="10"  description="Alterar tempo do intervalo entre ciclos de upload">
                     <parameter id="1" optional="false" dataType="3" label="interval" state="2">
                         <description>Novo Intervalo</description>
                     </parameter>
+                    <parameter id="2" optional="false" dataType="3" label="instanceId">
+                        <description>Id da instância de serviço de upload</description>
+                    </parameter>
                 </action>
                 <action id="11"  description="Alterar quantidade de relatos enviados simultaneamente por ciclo">
                     <parameter id="1" optional="false" dataType="3" label="quantity" state="1">
                         <description>Nova quantidade</description>
+                    </parameter>
+                    <parameter id="2" optional="false" dataType="3" label="instanceId">
+                        <description>Id da instância de serviço de upload</description>
                     </parameter>
                 </action>
             </entity>
@@ -644,7 +696,35 @@
                         </possibleValues>
                     </parameter>
                 </event>
-                <!-- actions - Não possui -->
+                <!-- actions -->
+                <action id="22"  description="Enviar mensagem síncrona">
+                    <parameter id="1" optional="false" dataType="10" label="message">
+                        <description>Mensagem</description>
+                        <possibleValues>
+                            <value>urbosenti.core.communication.Message</value>
+                        </possibleValues>
+                    </parameter>
+                    <parameter id="2" optional="false" dataType="10" label="target">
+                        <description>Endereço de destino</description>
+                        <possibleValues>
+                            <value>urbosenti.core.communication.Message</value>
+                        </possibleValues>
+                    </parameter>
+                </action>
+                <action id="23"  description="Enviar mensagem assíncrona">
+                    <parameter id="1" optional="false" dataType="10" label="message">
+                        <description>Mensagem</description>
+                        <possibleValues>
+                            <value>urbosenti.core.communication.Message</value>
+                        </possibleValues>
+                    </parameter>
+                    <parameter id="2" optional="false" dataType="10" label="target">
+                        <description>Endereço de destino</description>
+                        <possibleValues>
+                            <value>urbosenti.core.communication.Message</value>
+                        </possibleValues>
+                    </parameter>
+                </action>
             </entity>
             <entity type="1" description="Uso de dados móveis" >
                 <!-- states - Não implementado -->

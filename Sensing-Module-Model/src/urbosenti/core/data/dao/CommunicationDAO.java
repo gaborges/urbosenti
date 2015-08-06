@@ -12,7 +12,9 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import urbosenti.core.communication.CommunicationInterface;
+import urbosenti.core.communication.CommunicationManager;
 import urbosenti.core.communication.PushServiceReceiver;
+import urbosenti.core.communication.UploadService;
 import urbosenti.core.data.DataManager;
 import urbosenti.core.device.model.Component;
 import urbosenti.core.device.model.Content;
@@ -25,13 +27,13 @@ import urbosenti.user.User;
  *
  * @author Guilherme
  */
-public class CommunicationDAO {
+public final class CommunicationDAO {
     
     private Connection connection;
     public final static int COMPONENT_ID = 4;
     public static final int ENTITY_ID_OF_REPORTS_STORAGE = 1;
     public static final int ENTITY_ID_OF_RECONNECTION = 2;
-    public static final int ENTITY_ID_OF_UPLOAD_PERIODIC_REPORTS = 3;
+    public static final int ENTITY_ID_OF_SERVICE_OF_UPLOAD_REPORTS = 3;
     public static final int ENTITY_ID_OF_SENDING_MESSAGES = 4;
     public static final int ENTITY_ID_OF_MOBILE_DATA_USAGE = 5;
     public static final int ENTITY_ID_OF_OUTPUT_COMMUNICATION_INTERFACES = 6;
@@ -49,6 +51,8 @@ public class CommunicationDAO {
     public static final int STATE_ID_OF_UPLOAD_PERIODIC_REPORTS_ABOUT_IS_EXECUTING = 4;
     public static final int STATE_ID_OF_UPLOAD_PERIODIC_REPORTS_ABOUT_IS_DESCONNECTED = 5;
     public static final int STATE_ID_OF_UPLOAD_PERIODIC_REPORTS_POLICY = 6;
+    public static final int STATE_ID_OF_UPLOAD_PERIODIC_REPORTS_ALLOWED_TO_PERFORM_UPLOAD = 7;
+    public static final int STATE_ID_OF_UPLOAD_PERIODIC_REPORTS_SERVICE_ID = 8;
     public static final int STATE_ID_OF_OUTPUT_COMMUNICATION_INTERFACE_POSITION = 1;
     public static final int STATE_ID_OF_OUTPUT_COMMUNICATION_INTERFACE_IS_ENABLED = 2;
     public static final int STATE_ID_OF_OUTPUT_COMMUNICATION_INTERFACE_TIMEOUT = 3;
@@ -98,8 +102,8 @@ public class CommunicationDAO {
                 return Integer.parseInt(this.dataManager.getEntityStateDAO().getEntityState(COMPONENT_ID, ENTITY_ID_OF_RECONNECTION,STATE_ID_OF_RECONNECTION_POLICY).getCurrentValue().toString());
                 //return reconnectionPolicy;
             case UPLOAD_REPORTS_POLICY:
-                return Integer.parseInt(this.dataManager.getEntityStateDAO().getEntityState(COMPONENT_ID, ENTITY_ID_OF_UPLOAD_PERIODIC_REPORTS,STATE_ID_OF_UPLOAD_PERIODIC_REPORTS_POLICY).getCurrentValue().toString());
-                //return uploadMessagingPolicy;
+                return Integer.parseInt(this.dataManager.getEntityStateDAO().getEntityState(COMPONENT_ID, ENTITY_ID_OF_SERVICE_OF_UPLOAD_REPORTS,STATE_ID_OF_UPLOAD_PERIODIC_REPORTS_POLICY).getCurrentValue().toString());
+                //return uploadMessagingPolicy;                //return uploadMessagingPolicy;
         }
         return 0;
     }
@@ -134,7 +138,7 @@ public class CommunicationDAO {
                 break;
             case UPLOAD_REPORTS_POLICY:
                 uploadMessagingPolicy = newValue;
-                state = this.dataManager.getEntityStateDAO().getEntityState(COMPONENT_ID, ENTITY_ID_OF_UPLOAD_PERIODIC_REPORTS,STATE_ID_OF_UPLOAD_PERIODIC_REPORTS_POLICY);
+                state = this.dataManager.getEntityStateDAO().getEntityState(COMPONENT_ID, ENTITY_ID_OF_SERVICE_OF_UPLOAD_REPORTS,STATE_ID_OF_UPLOAD_PERIODIC_REPORTS_POLICY);
                 content = new Content();
                 content.setValue(newValue);
                 content.setTime(new Date());
@@ -203,7 +207,11 @@ public class CommunicationDAO {
         return inputCommunicationInterfaces;
     }
 
-    void deleteUserReports(User user) {
+    public void deleteUserReports(User user) {
+        dataManager.getReportDAO().deleteAll(user);
+    }
+
+    public List<UploadService> getUploadServices(CommunicationManager communicationManager) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
     

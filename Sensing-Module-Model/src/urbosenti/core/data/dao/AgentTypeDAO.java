@@ -22,11 +22,12 @@ import urbosenti.core.device.model.Content;
 import urbosenti.core.device.model.Conversation;
 import urbosenti.core.device.model.DataType;
 import urbosenti.core.device.model.Direction;
-import urbosenti.core.device.model.Interaction;
+import urbosenti.core.device.model.InteractionModel;
 import urbosenti.core.device.model.InteractionType;
 import urbosenti.core.device.model.Parameter;
 import urbosenti.core.device.model.PossibleContent;
 import urbosenti.core.device.model.State;
+import urbosenti.core.events.Event;
 import urbosenti.util.DeveloperSettings;
 
 /**
@@ -72,7 +73,7 @@ public class AgentTypeDAO {
                 + " VALUES (" + type.getId() + ",'" + type.getDescription() + "');");
     }
 
-    public void insertInteraction(Interaction interaction) throws SQLException {
+    public void insertInteraction(InteractionModel interaction) throws SQLException {
         String sql = "INSERT INTO interactions (id,description,agent_type_id, communicative_act_id, interaction_type_id, direction_id, interaction_id) "
                 + " VALUES (?,?,?,?,?,?,?);";
         this.stmt = this.connection.prepareStatement(sql);
@@ -137,7 +138,7 @@ public class AgentTypeDAO {
                 + ",'" + state.getSuperiorLimit() + "','" + state.getInferiorLimit() + "','" + state.getInitialValue() + "');");
     }
 
-    public void insertParameters(Interaction interaction) throws SQLException {
+    public void insertParameters(InteractionModel interaction) throws SQLException {
         String sql = "INSERT INTO interaction_parameters (description,optional,label,superior_limit,inferior_limit,initial_value,agent_state_id,data_type_id,interaction_id) "
                 + " VALUES (?,?,?,?,?,?,?,?,?);";
         PreparedStatement statement;
@@ -289,9 +290,9 @@ public class AgentTypeDAO {
         }
     }
 
-    List<Interaction> getAgentInteractions(AgentType agentType) throws SQLException {
-        List<Interaction> interactions = new ArrayList();
-        Interaction interaction = null;
+    List<InteractionModel> getAgentInteractions(AgentType agentType) throws SQLException {
+        List<InteractionModel> interactions = new ArrayList();
+        InteractionModel interaction = null;
         String sql = "SELECT interactions.id as id, interactions.description as interaction_desc, communicative_act_id, communicative_acts.description as act_desc,  \n"
                 + "              interaction_type_id, interaction_types.description as type_desc, direction_id, interaction_directions.description as direction_desc, "
                 + "              interaction_id, agent_communication_language_id, agent_communication_languages.description as language_description\n"
@@ -302,7 +303,7 @@ public class AgentTypeDAO {
         stmt.setInt(1, agentType.getId());
         ResultSet rs = stmt.executeQuery();
         while (rs.next()) {
-            interaction = new Interaction();
+            interaction = new InteractionModel();
             interaction.setId(rs.getInt("id"));
             interaction.setDescription(rs.getString("interaction_desc"));
             interaction.setCommunicativeAct(
@@ -363,8 +364,8 @@ public class AgentTypeDAO {
         return states;
     }
 
-    private Interaction getPrimaryInteraction(int id) throws SQLException {
-        Interaction interaction = null;
+    private InteractionModel getPrimaryInteraction(int id) throws SQLException {
+        InteractionModel interaction = null;
         String sql = "SELECT agent_types.description as agent_type_description, interactions.description as interaction_desc, communicative_act_id, communicative_acts.description as act_desc,  \n"
                 + "              interaction_type_id, interaction_types.description as type_desc, direction_id, interaction_directions.description as direction_desc, "
                 + "              interaction_id, agent_communication_language_id, agent_communication_languages.description as language_description, agent_type_id\n"
@@ -375,7 +376,7 @@ public class AgentTypeDAO {
         stmt.setInt(1, id);
         ResultSet rs = stmt.executeQuery();
         if (rs.next()) {
-            interaction = new Interaction();
+            interaction = new InteractionModel();
             interaction.setId(id);
             interaction.setDescription(rs.getString("interaction_desc"));
             interaction.setCommunicativeAct(
@@ -393,7 +394,7 @@ public class AgentTypeDAO {
         return interaction;
     }
 
-    private List<Parameter> getInteractionParameters(Interaction interaction) throws SQLException {
+    private List<Parameter> getInteractionParameters(InteractionModel interaction) throws SQLException {
         List<Parameter> parameters = new ArrayList();
         Parameter parameter = null;
         String sql = "SELECT interaction_parameters.id as interation_id, label, interaction_parameters.description as parameter_desc, \n"
@@ -538,8 +539,8 @@ public class AgentTypeDAO {
         return messages;
     }
 
-    private Interaction getInteraction(int id) throws SQLException {
-        Interaction interaction = null;
+    private InteractionModel getInteraction(int id) throws SQLException {
+        InteractionModel interaction = null;
         String sql = "SELECT agent_types.description as agent_type_description, interactions.description as interaction_desc, communicative_act_id, communicative_acts.description as act_desc,  \n"
                 + "              interaction_type_id, interaction_types.description as type_desc, direction_id, interaction_directions.description as direction_desc, "
                 + "              interaction_id, agent_communication_language_id, agent_communication_languages.description as language_description, agent_type_id\n"
@@ -550,7 +551,7 @@ public class AgentTypeDAO {
         stmt.setInt(1, id);
         ResultSet rs = stmt.executeQuery();
         if (rs.next()) {
-            interaction = new Interaction();
+            interaction = new InteractionModel();
             interaction.setId(id);
             interaction.setDescription(rs.getString("interaction_desc"));
             interaction.setCommunicativeAct(
@@ -629,5 +630,13 @@ public class AgentTypeDAO {
         rs.close();
         stmt.close();
         return parameter;
+    }
+
+    public InteractionModel getInteractionModel(Event event) throws SQLException {
+        return getInteraction(event.getId());
+    }
+
+    public InteractionModel getInteractionModel(int interactionId) throws SQLException {
+        return getInteraction(interactionId);
     }
 }

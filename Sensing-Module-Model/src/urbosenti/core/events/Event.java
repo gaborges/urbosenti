@@ -31,6 +31,7 @@ public abstract class Event {
     public static final int APPLICATION_EVENT = 1;
 
     private int id;
+    private int databaseId;
     private String name;
     private boolean synchronous;
     private int eventType;
@@ -43,6 +44,7 @@ public abstract class Event {
     private Date time;
 
     public Event(ComponentManager component, int originType) {
+        this.id = 0;
         this.synchronous = false;
         this.eventType = Event.COMPONENT_EVENT;
         this.hasTimeout = false;
@@ -201,4 +203,12 @@ public abstract class Event {
         return false;
     }
 
+    public int getDatabaseId() {
+        return databaseId;
+    }
+
+    public void setDatabaseId(int databaseId) {
+        this.databaseId = databaseId;
+    }
+    
 }

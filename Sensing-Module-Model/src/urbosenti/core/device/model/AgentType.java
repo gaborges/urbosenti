@@ -9,7 +9,7 @@ public class AgentType {
     public static final int BACKEND_SYSTEM_SERVICE = 1;
     private int id;
     private String description;
-    private List<Interaction> interaction;
+    private List<InteractionModel> interaction;
     private List<State> states;
 
     public AgentType(int id, String description) {
@@ -38,11 +38,11 @@ public class AgentType {
         this.description = description;
     }
 
-    public List<Interaction> getInteraction() {
+    public List<InteractionModel> getInteraction() {
         return interaction;
     }
 
-    public void setInteraction(List<Interaction> interaction) {
+    public void setInteraction(List<InteractionModel> interaction) {
         this.interaction = interaction;
     }
 

@@ -17,6 +17,7 @@ import urbosenti.core.communication.Address;
 import urbosenti.core.communication.Message;
 import urbosenti.core.communication.MessageWrapper;
 import urbosenti.core.device.model.Service;
+import urbosenti.user.User;
 
 /**
  *
@@ -621,6 +622,14 @@ public class MessageReportDAO {
         this.stmt.setInt(18, report.getId());// service_id integer not null
         this.stmt.executeUpdate();
         stmt.close();
+    }
+
+    /**
+     * Suporte a separação por usuário não está pronta ainda.
+     * @param user 
+     */
+    void deleteAll(User user) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
 }

@@ -31,7 +31,7 @@ import urbosenti.core.device.model.Content;
 import urbosenti.core.device.model.Conversation;
 import urbosenti.core.device.model.Device;
 import urbosenti.core.device.model.Entity;
-import urbosenti.core.device.model.Interaction;
+import urbosenti.core.device.model.InteractionModel;
 import urbosenti.core.device.model.Service;
 import urbosenti.core.device.model.State;
 import urbosenti.core.events.Action;
@@ -154,7 +154,7 @@ public class TestDataBase {
                 for (State s : service.getAgent().getAgentType().getStates()) {
                     System.out.println("State: " + s.getId() + "," + s.getDescription() + ", content: " + s.getCurrentValue());
                 }
-                for (Interaction i : service.getAgent().getAgentType().getInteraction()) {
+                for (InteractionModel i : service.getAgent().getAgentType().getInteraction()) {
                     System.out.println("Interaction " + i.getId() + ", " + i.getDescription());
                 }
                 for (Conversation c : service.getAgent().getConversations()) {

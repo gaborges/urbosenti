@@ -14,6 +14,7 @@ public class Address {
     
     public static final int LAYER_SYSTEM = 2;
     public static final int LAYER_APPLICATION = 1;
+    public static final String DEFAULT_UID_VALUE = "unknown";
     
     private String uid;
     private Integer layer;
@@ -21,6 +22,7 @@ public class Address {
 
     public Address() {
         this.layer = Address.LAYER_APPLICATION;
+        this.uid = DEFAULT_UID_VALUE;
     }
 
     public Address(String address) {

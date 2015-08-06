@@ -5,43 +5,89 @@
 package urbosenti.core.communication;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import urbosenti.core.data.dao.CommunicationDAO;
+import urbosenti.core.device.UrboSentiService;
+import urbosenti.core.device.model.Content;
+import urbosenti.core.device.model.Instance;
+import urbosenti.core.device.model.InstanceRepresentative;
+import urbosenti.core.device.model.State;
 
 /**
  *
  * @author Guilherme
  */
-public class ReconnectionService implements Runnable {
+public class ReconnectionService extends UrboSentiService implements Runnable, InstanceRepresentative {
 
-    private CommunicationManager communicationManager;
-    private List<CommunicationInterface> communicationInterfaces;
+    private final CommunicationManager communicationManager;
+    private final List<CommunicationInterface> communicationInterfaces;
     private boolean reconnected;
+    public static int METHOD_ONE_BY_TIME = 1;
+    public static int METHOD_ALL_BY_ONCE = 2;
+    private final List<Thread> connectionTesters;
+    private final Object monitor;
+    private final Thread service;
+    private final Instance instance;
     /**
      * default 60 segundos Representado em milisegundos então (60 000)
      */
-    private int reconnectionTime;
+    private Long reconnectionTime;
     /**
      * Se 1 = Tenta somente em um método. Default. Se 2 = Tenta em todos os
      * métodos.
      */
     private int methodOfReconnection;
 
-    public ReconnectionService(CommunicationManager cm, List<CommunicationInterface> communicationInterfaces) {
+//    public ReconnectionService(CommunicationManager cm, List<CommunicationInterface> communicationInterfaces) {
+//        this.communicationManager = cm;
+//        this.communicationInterfaces = communicationInterfaces;
+//        this.reconnectionTime = 60000;
+//        this.methodOfReconnection = 1;
+//        this.reconnected = false;
+//        this.monitor = new Object();
+//        this.connectionTesters = new ArrayList(communicationInterfaces.size());
+//        for (CommunicationInterface ci : communicationInterfaces) {
+//            this.connectionTesters.add(new Thread(new ConnectionTester(ci)));
+//        }
+//        this.service = new Thread(this);
+//        this.instance = null;
+//    }
+    public ReconnectionService(CommunicationManager cm, List<CommunicationInterface> communicationInterfaces, Instance instance) {
         this.communicationManager = cm;
         this.communicationInterfaces = communicationInterfaces;
-        this.reconnectionTime = 60000;
+        this.reconnectionTime = new Long(60000);
         this.methodOfReconnection = 1;
         this.reconnected = false;
+        this.monitor = new Object();
+        this.connectionTesters = new ArrayList(communicationInterfaces.size());
+        for (CommunicationInterface ci : communicationInterfaces) {
+            this.connectionTesters.add(new Thread(new ConnectionTester(ci,this)));
+        }
+        this.service = new Thread(this);
+        this.instance = instance;
+        for (State s : instance.getStates()) {
+            if (s.getModelId() == CommunicationDAO.STATE_ID_OF_RECONNECTION_INTERVAL) {
+                this.reconnectionTime = (Long) Content.parseContent(s.getDataType(), s.getCurrentValue());
+            } else {
+                if (s.getModelId() == CommunicationDAO.STATE_ID_OF_RECONNECTION_METHOD) {
+                    this.methodOfReconnection = (Integer) Content.parseContent(s.getDataType(), s.getCurrentValue());
+                    if(this.methodOfReconnection != 1 && this.methodOfReconnection != 2){
+                        throw new Error("Reconnection Method value '"+this.methodOfReconnection+"' is invalid!");
+                    }
+                }
+            }
+        }
     }
 
-    public synchronized void setReconnectionTime(int reconnectionTime) {
+    public synchronized void setReconnectionTime(Long reconnectionTime) {
         this.reconnectionTime = reconnectionTime;
     }
 
-    public synchronized int getReconnectionTime() {
+    public synchronized Long getReconnectionTime() {
         return reconnectionTime;
     }
 
@@ -56,7 +102,15 @@ public class ReconnectionService implements Runnable {
     @Override
     public void run() {
         try {
-            reconectionProcess();
+            while (true) {
+                if (reconnected) {
+                    synchronized (this) {
+                        wait();
+                    }
+                } else {
+                    reconectionProcess();
+                }
+            }
         } catch (InterruptedException ex) {
             Logger.getLogger(ReconnectionService.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -64,20 +118,23 @@ public class ReconnectionService implements Runnable {
 
     public void reconectionProcess() throws InterruptedException {
         CommunicationInterface current;
-
-        if (this.methodOfReconnection == 1) {
-            while (!reconnected) {
+        while (!reconnected) {
+            communicationManager.notifyNewAttemptToReconnect(this);
+            synchronized (this) {
+                if (reconnectionTime > 0) {
+                    wait(reconnectionTime);
+                }
+            }
+            if (this.methodOfReconnection == METHOD_ONE_BY_TIME) {
                 Iterator<CommunicationInterface> iterator = communicationInterfaces.iterator();
                 while (iterator.hasNext()) {
-                    
-                        current = iterator.next();
+                    current = iterator.next();
                     try {
-                        synchronized (this) {
-                            wait(reconnectionTime);
-                        }
                         if (current.testConnection()) {
-                            communicationManager.notifyReconnection(current);
+                            communicationManager.notifyReconnection(current,this);
                             reconnected = true;
+                        } else {
+                            communicationManager.notifyReconnectionNotSucceed(current,this);
                         }
                     } catch (IOException ex) {
                         Logger.getLogger(ReconnectionService.class.getName()).log(Level.SEVERE, null, ex);
@@ -86,28 +143,77 @@ public class ReconnectionService implements Runnable {
                     }
                 }
             }
-        }
-        if (this.methodOfReconnection == 2) {
-            while (!reconnected) {
-                synchronized (this) {
-                        wait(reconnectionTime);
-                    }
-                Iterator<CommunicationInterface> iterator = communicationInterfaces.iterator();
-                while (iterator.hasNext()) {
-                    current = iterator.next();
-                    try {
-                        if (current.testConnection()) {
-                            communicationManager.notifyReconnection(current);
-                            reconnected = true;
-                        } else {
-                            communicationManager.notifyReconnectionNotSucceed(current);
-                        }
-                    } catch (IOException ex) {
-                        communicationManager.notifyReconnectionNotSucceed(current);
-                    } catch (UnsupportedOperationException ex) {
-                        communicationManager.notifyReconnectionNotSucceed(current);
-                    }
+            if (this.methodOfReconnection == METHOD_ALL_BY_ONCE) {
+                for (Thread tester : connectionTesters) {
+                    tester.start();
                 }
+                for (Thread tester : connectionTesters) {
+                    tester.join();
+                }
+            }
+        }
+    }
+
+    /**
+     *
+     * @return Retorna a instância se esta foi atribuída pelo construtor, senão
+     * retorna <b>null</b>;
+     */
+    @Override
+    public Instance getInstance() {
+        return instance;
+    }
+
+    @Override
+    public void start() {
+        if (!service.isAlive()) {
+            this.service.start();
+        }
+    }
+
+    @Override
+    public void stop() {
+        for (Thread tester : connectionTesters) {
+            tester.interrupt();
+        }
+        this.service.interrupt();
+    }
+
+    public synchronized void requireConnectionTest() {
+        this.reconnected = false;
+        this.wakeUp();
+    }
+
+    @Override
+    public synchronized void wakeUp() {
+        notifyAll();
+    }
+
+    class ConnectionTester implements Runnable {
+
+        private final CommunicationInterface communicationInterface;
+        private final ReconnectionService reconnectionService;
+
+        public ConnectionTester(CommunicationInterface communicationInterface, ReconnectionService reconnectionService) {
+            this.communicationInterface = communicationInterface;
+            this.reconnectionService = reconnectionService;
+        }
+
+        @Override
+        public void run() {
+            try {
+                if (communicationInterface.testConnection()) {
+                    communicationManager.notifyReconnection(communicationInterface,reconnectionService);
+                    synchronized (monitor) {
+                        reconnected = true;
+                    }
+                } else {
+                    communicationManager.notifyReconnectionNotSucceed(communicationInterface,reconnectionService);
+                }
+            } catch (IOException ex) {
+                communicationManager.notifyReconnectionNotSucceed(communicationInterface,reconnectionService);
+            } catch (UnsupportedOperationException ex) {
+                communicationManager.notifyReconnectionNotSucceed(communicationInterface,reconnectionService);
             }
         }
     }

@@ -13,6 +13,7 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import urbosenti.adaptation.ExecutionPlan;
 import urbosenti.core.device.model.ActionModel;
 import urbosenti.core.device.model.Content;
 import urbosenti.core.device.model.DataType;
@@ -21,6 +22,8 @@ import urbosenti.core.device.model.FeedbackAnswer;
 import urbosenti.core.device.model.Parameter;
 import urbosenti.core.device.model.PossibleContent;
 import urbosenti.core.device.model.State;
+import urbosenti.core.events.Action;
+import urbosenti.core.events.Event;
 import urbosenti.util.DeveloperSettings;
 
 /**
@@ -492,5 +495,33 @@ public class ActionModelDAO {
         rs.close();
         stmt.close();
         return possibleContents;
+    }
+
+    void insertAction(FeedbackAnswer response, Event event, Action actionToExecute, ExecutionPlan ep) throws SQLException {
+        String sql = "INSERT INTO generated_actions (action_model_id, entity_id, component_id, parameters, "
+                + " response_time, feedback_id, feedback_description, action_type, execution_plan_id, event_id, event_type) "
+                + " VALUES (?,?,?,?,?,?,?,?,?,?);";
+        PreparedStatement statement = this.connection.prepareStatement(sql,
+                Statement.RETURN_GENERATED_KEYS);
+        statement.setInt(1, actionToExecute.getId());
+        statement.setInt(2, actionToExecute.getTargetEntityId());
+        statement.setInt(3, actionToExecute.getTargetComponentId());
+        statement.setString(4, actionToExecute.getParameters().toString());
+        statement.setLong(5, response.getTime().getTime());
+        statement.setInt(6, response.getId());
+        statement.setString(7, response.getDescription());
+        statement.setInt(8, actionToExecute.getActionType());
+        statement.setInt(9, ep.getId());
+        statement.setInt(10, event.getDatabaseId());
+        statement.setInt(11, event.getEventType());
+        statement.execute();
+        ResultSet generatedKeys = statement.getGeneratedKeys();
+        if (generatedKeys.next()) {
+            actionToExecute.setDataBaseId(generatedKeys.getInt(1));
+        } else {
+            throw new SQLException(
+                    "Creating user failed, no ID obtained. ");
+        }
+        statement.close();
     }
 }

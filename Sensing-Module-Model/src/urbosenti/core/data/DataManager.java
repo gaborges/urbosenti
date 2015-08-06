@@ -93,30 +93,30 @@ public class DataManager extends ComponentManager {
     private ServiceTypeDAO serviceTypeDAO;
     private DataDAO dataDAO;
     private MessageReportDAO reportDAO;
-    
+
     public DataManager(DeviceManager deviceManager) {
-        super(deviceManager,DataDAO.COMPONENT_ID);
+        super(deviceManager, DataDAO.COMPONENT_ID);
         this.supportedCommunicationInterfaces = new ArrayList<CommunicationInterface>();
         this.knowledgeRepresentation = null;
         this.supportedInputCommunicationInterfaces = new ArrayList();
     }
-    
+
     @Override
     public void onCreate() {
-        if(DeveloperSettings.SHOW_FUNCTION_DEBUG_ACTIVITY){
+        if (DeveloperSettings.SHOW_FUNCTION_DEBUG_ACTIVITY) {
             System.out.println("Activating: " + getClass());
         }
         // Conecta ao banco
         Connection connection = null;
         try {
-          Class.forName("org.sqlite.JDBC");
-          connection = DriverManager.getConnection("jdbc:sqlite:urbosenti.db");
-        } catch ( Exception e ) {
-          System.err.println( e.getClass().getName() + ": " + e.getMessage() );
-          System.exit(0);
+            Class.forName("org.sqlite.JDBC");
+            connection = DriverManager.getConnection("jdbc:sqlite:urbosenti.db");
+        } catch (Exception e) {
+            System.err.println(e.getClass().getName() + ": " + e.getMessage());
+            System.exit(0);
         }
         System.out.println("Opened database successfully");
-        // conecta
+            // conecta
         // Gerente do conhecimento
         StoringGlobalKnowledgeModel kp = new StoringGlobalKnowledgeModel(this);
         try {
@@ -126,18 +126,18 @@ public class DataManager extends ComponentManager {
             Logger.getLogger(DataManager.class.getName()).log(Level.SEVERE, null, ex);
             throw new Error("Error during the database creation!");
         }
-        // Cria uma instância para cada DAO;
+            // Cria uma instância para cada DAO;
         // DAO dos componentes
-        deviceDAO = new DeviceDAO(connection,this);
-        communicationDAO = new CommunicationDAO(connection,this);
-        userDAO = new UserDAO(connection,this);
-        adaptationDAO = new AdaptationDAO(connection,this);
-        contextDAO = new ContextDAO(connection,this);
-        locationDAO = new LocationDAO(connection,this);
-        concernsDAO = new ConcernsDAO(connection,this);
-        dataDAO = new DataDAO(connection,this);
-        eventDAO = new EventDAO(connection,this);
-        resourcesDAO = new ResourcesDAO(connection,this);
+        deviceDAO = new DeviceDAO(connection, this);
+        communicationDAO = new CommunicationDAO(connection, this);
+        userDAO = new UserDAO(connection, this);
+        adaptationDAO = new AdaptationDAO(connection, this);
+        contextDAO = new ContextDAO(connection, this);
+        locationDAO = new LocationDAO(connection, this);
+        concernsDAO = new ConcernsDAO(connection, this);
+        dataDAO = new DataDAO(connection, this);
+        eventDAO = new EventDAO(connection, this);
+        resourcesDAO = new ResourcesDAO(connection, this);
         // General Definition DAOs
         this.agentTypeDAO = new AgentTypeDAO(connection);
         this.serviceTypeDAO = new ServiceTypeDAO(connection);
@@ -146,7 +146,7 @@ public class DataManager extends ComponentManager {
         this.implementationTypeDAO = new ImplementationTypeDAO(connection);
         this.agentCommunicationLanguageDAO = new AgentCommunicationLanguageDAO(connection);
         this.communicativeActDAO = new CommunicativeActDAO(connection);
-        this.interactionTypeDAO = new  InteractionTypeDAO(connection);
+        this.interactionTypeDAO = new InteractionTypeDAO(connection);
         this.interactionDirectionDAO = new InteractionDirectionDAO(connection);
         this.targetOriginDAO = new TargetOriginDAO(connection);
         this.agentAddressTypeDAO = new AgentAddressTypeDAO(connection);
@@ -162,33 +162,33 @@ public class DataManager extends ComponentManager {
         // Communication DAO
         this.reportDAO = new MessageReportDAO(connection);
         // Carrega interfaces de comunicação disponíveis (testa disponibilidade antes de executar - lookback)
-        for(CommunicationInterface ci : supportedCommunicationInterfaces){
+        for (CommunicationInterface ci : supportedCommunicationInterfaces) {
             try {
-                if(ci.isAvailable()){
+                if (ci.isAvailable()) {
                     this.communicationDAO.addAvailableCommunicationInterface(ci);
-                     System.out.println("Interface successfully added: "+ci.getName());
+                    System.out.println("Interface successfully added: " + ci.getName());
                 }
-            } catch (UnsupportedOperationException ex){
-                System.out.println("Not implemented yet: "+ci.getName());
+            } catch (UnsupportedOperationException ex) {
+                System.out.println("Not implemented yet: " + ci.getName());
                 //Logger.getLogger(DataManager.class.getName()).log(Level.SEVERE, "Not implemented yet.", ex);
             } catch (IOException ex) {
                 Logger.getLogger(DataManager.class.getName()).log(Level.SEVERE, null, ex);
-            } 
+            }
         }
         // Carrega interfaces de comunicação de entrada
         this.communicationDAO.addAvailableInputCommunicationInterfaces(supportedInputCommunicationInterfaces);
         // Verifica se o conhecimento foi adicionado, se não foi busca o padrão
-        if (this.knowledgeRepresentation == null){
+        if (this.knowledgeRepresentation == null) {
             this.knowledgeRepresentation = new File("deviceKnowledgeModel.xml");
             this.knowledgeDataType = "xmlFile";
-            // caso o arquivo são exista então 
-            if(!((File)this.knowledgeRepresentation).exists()){
+            // caso o arquivo são exista então
+            if (!((File) this.knowledgeRepresentation).exists()) {
                 throw new Error("Knowledge representation was not specified or not exists!");
             }
         }
         // Carregar dados e configurações que serão utilizados para execução em memória
         if (this.knowledgeDataType.equals("xmlFile")) {
-            File file = (File) this.knowledgeRepresentation ;
+            File file = (File) this.knowledgeRepresentation;
             try {
                 /*
                  Fazer metodos de validação depois. Eles devem testar se tem todos os atributos obrigatórios,
@@ -197,7 +197,7 @@ public class DataManager extends ComponentManager {
 //            if(kp.validateGeneralConfigurations(file)) throw new Error ("");
 //            if(kp.validateDeviceModel(file)) System.exit(-1);
 //            if(kp.validateAgentModel(file)) System.exit(-1);
-                /*
+                    /*
                  processa o arquivo de entrada com o modelo de conhecimento e coloca em memória. Atualmente pronto.
                  */
                 kp.loadingGeneralDefinitions(file);
@@ -205,7 +205,7 @@ public class DataManager extends ComponentManager {
                 kp.loadingAgentModels(file);
                 /*
                  grava no banco de dados os dados processados -- falta fazer. Primeiro fazer gerar os SQLs, depois fazer os DAO
-                 OBS.: Sempre que esses métodos são executados ele verifica a versão salva dos modeloas anteriores e substitui somente 
+                 OBS.: Sempre que esses métodos são executados ele verifica a versão salva dos modeloas anteriores e substitui somente
                  caso o conhecimento de entrada possuir uma versão mais recente, ou maior.
                  */
                 kp.saveGeneralDefinitions(connection);
@@ -221,13 +221,13 @@ public class DataManager extends ComponentManager {
         } else {
             throw new Error("Knowledge data type specified not supported!");
         }
-        // Preparar configurações inicias para execução
+            // Preparar configurações inicias para execução
         // Para tanto utilizar o DataManager para acesso aos dados.
         // Descobrir todo o conhecimento e criar o banco
     }
-    
-    public CommunicationDAO getCommunicationDAO(){
-        
+
+    public CommunicationDAO getCommunicationDAO() {
+
         return communicationDAO;
     }
 
@@ -239,8 +239,8 @@ public class DataManager extends ComponentManager {
     public FeedbackAnswer applyAction(Action action) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
-    
-    public void addSupportedCommunicationInterface(CommunicationInterface ci){
+
+    public void addSupportedCommunicationInterface(CommunicationInterface ci) {
         supportedCommunicationInterfaces.add(ci);
     }
 
@@ -356,7 +356,7 @@ public class DataManager extends ComponentManager {
     public EntityStateDAO getStateDAO() {
         return stateDAO;
     }
-    
+
     public MessageReportDAO getReportDAO() {
         return reportDAO;
     }

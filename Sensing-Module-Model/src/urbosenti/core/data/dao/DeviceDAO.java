@@ -22,7 +22,7 @@ import urbosenti.util.DeveloperSettings;
  *
  * @author Guilherme
  */
-public class DeviceDAO {
+public final class DeviceDAO {
 
     public static final int COMPONENT_ID = 1;
     public static final int ENTITY_ID_OF_SERVICE_REGISTRATION = 1;

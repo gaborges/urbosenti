@@ -8,12 +8,13 @@ package urbosenti.user;
 import java.util.List;
 import urbosenti.core.data.dao.UserDAO;
 import urbosenti.core.device.model.Instance;
+import urbosenti.core.device.model.InstanceRepresentative;
 
 /**
  *
  * @author Guilherme
  */
-public final class User {
+public final class User implements InstanceRepresentative{
 
     /**
      * Indica o estado termo de privacidade. Valor 4;
@@ -114,6 +115,7 @@ public final class User {
         this.isBeingMonitored = isBeingMonitored;
     }
 
+    @Override
     public Instance getInstance() {
         return instance;
     }

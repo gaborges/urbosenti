@@ -191,7 +191,7 @@ public class EventManager extends ComponentManager {
 //                else System.out.println("Não Achou :'(");
                 break;
         }
-        return null;
+        return new FeedbackAnswer(FeedbackAnswer.ACTION_RESULT_WAS_SUCCESSFUL);
     }
 
     /**

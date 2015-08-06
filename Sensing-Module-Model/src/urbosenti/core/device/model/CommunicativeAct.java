@@ -9,7 +9,7 @@ public class CommunicativeAct {
     public CommunicativeAct(int id, String description, AgentCommunicationLanguage agentCommunicationLanguage) {
         this.id = id;
         this.description = description;
-        this.agentCommunicationLanguage = agentCommunicationLanguage;
+        this.agentCommunicationLanguage = agentCommunicationLanguage;        
     }
 
     public CommunicativeAct() {

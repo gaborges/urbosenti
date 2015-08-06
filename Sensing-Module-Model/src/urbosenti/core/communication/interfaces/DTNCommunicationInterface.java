@@ -5,6 +5,7 @@
 package urbosenti.core.communication.interfaces;
 
 import java.io.IOException;
+import java.net.URL;
 import urbosenti.core.communication.CommunicationInterface;
 import urbosenti.core.communication.CommunicationManager;
 import urbosenti.core.communication.MessageWrapper;
@@ -61,6 +62,11 @@ public class DTNCommunicationInterface extends CommunicationInterface{
     
     @Override
     public Object receiveMessage(int timeout) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public boolean testConnection(URL url) throws IOException, UnsupportedOperationException {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 }

@@ -8,11 +8,11 @@ public class AgentMessage {
 
     private int id;
     private String description;
-    private Interaction previousInteraction;
+    private InteractionModel previousInteraction;
     private List<Content> contents;
     private Date time;
 
-    public AgentMessage(int id, String description, Interaction interaction) {
+    public AgentMessage(int id, String description, InteractionModel interaction) {
         this.id = id;
         this.description = description;
     }
@@ -56,11 +56,11 @@ public class AgentMessage {
      * Se for a primeira então retorna nulo.
      * @return 
      */
-    public Interaction getPreviousInteraction() {
+    public InteractionModel getPreviousInteraction() {
         return previousInteraction;
     }
 
-    public void setPreviousInteraction(Interaction previousInteraction) {
+    public void setPreviousInteraction(InteractionModel previousInteraction) {
         this.previousInteraction = previousInteraction;
     }
 

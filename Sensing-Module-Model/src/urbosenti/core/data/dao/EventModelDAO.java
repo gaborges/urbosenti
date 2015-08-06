@@ -22,6 +22,7 @@ import urbosenti.core.device.model.Implementation;
 import urbosenti.core.device.model.Parameter;
 import urbosenti.core.device.model.PossibleContent;
 import urbosenti.core.device.model.TargetOrigin;
+import urbosenti.core.events.Event;
 import urbosenti.util.DeveloperSettings;
 
 /**
@@ -29,7 +30,7 @@ import urbosenti.util.DeveloperSettings;
  * @author Guilherme
  */
 public class EventModelDAO {
-    
+
     private final Connection connection;
     private PreparedStatement stmt;
 
@@ -113,7 +114,7 @@ public class EventModelDAO {
         if (parameter.getPossibleContents() != null) {
             for (PossibleContent possibleContent : parameter.getPossibleContents()) {
                 statement = this.connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
-                statement.setObject(1, Content.parseContent(parameter.getDataType(),possibleContent.getValue()));
+                statement.setObject(1, Content.parseContent(parameter.getDataType(), possibleContent.getValue()));
                 statement.setBoolean(2, possibleContent.isIsDefault());
                 statement.setInt(3, parameter.getId());
                 statement.execute();
@@ -126,7 +127,7 @@ public class EventModelDAO {
                 statement.close();
                 if (DeveloperSettings.SHOW_DAO_SQL) {
                     System.out.println("INSERT INTO possible_event_contents (id,possible_value, default_value, event_parameter_id) "
-                            + " VALUES (" + possibleContent.getId() + "," + Content.parseContent(parameter.getDataType(),possibleContent.getValue()) + "," + possibleContent.isIsDefault() + "," + parameter.getId() + ");");
+                            + " VALUES (" + possibleContent.getId() + "," + Content.parseContent(parameter.getDataType(), possibleContent.getValue()) + "," + possibleContent.isIsDefault() + "," + parameter.getId() + ");");
                 }
             }
         }
@@ -163,7 +164,7 @@ public class EventModelDAO {
             // pegar o valor atual
             content.setId(rs.getInt("id"));
             content.setTime(new Date(Long.parseLong(rs.getString("reading_time"))));
-            content.setValue(Content.parseContent(parameter.getDataType(),rs.getObject("reading_value")));
+            content.setValue(Content.parseContent(parameter.getDataType(), rs.getObject("reading_value")));
         }
         rs.close();
         stmt.close();
@@ -174,7 +175,7 @@ public class EventModelDAO {
         String sql = "INSERT INTO event_contents (reading_value,reading_time,event_parameter_id) "
                 + " VALUES (?,?,?);";
         this.stmt = this.connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
-        this.stmt.setObject(1, Content.parseContent(parameter.getDataType(),parameter.getContent().getValue()));
+        this.stmt.setObject(1, Content.parseContent(parameter.getDataType(), parameter.getContent().getValue()));
         this.stmt.setObject(2, parameter.getContent().getTime().getTime());
         this.stmt.setInt(3, parameter.getId());
         this.stmt.execute();
@@ -187,11 +188,11 @@ public class EventModelDAO {
         stmt.close();
         if (DeveloperSettings.SHOW_DAO_SQL) {
             System.out.println("INSERT INTO event_contents (id,reading_value,reading_time,event_parameter_id) "
-                    + " VALUES (" + parameter.getContent().getId() + ",'" + Content.parseContent(parameter.getDataType(),parameter.getContent().getValue()) + "',"
+                    + " VALUES (" + parameter.getContent().getId() + ",'" + Content.parseContent(parameter.getDataType(), parameter.getContent().getValue()) + "',"
                     + ",'" + parameter.getContent().getTime().getTime() + "'," + "," + parameter.getId() + ");");
         }
     }
-    
+
     public List<EventModel> getEntityEvents(Entity entity) throws SQLException {
         List<EventModel> events = new ArrayList();
         EventModel event = null;
@@ -263,10 +264,10 @@ public class EventModelDAO {
             type.setInitialValue(rs.getObject("data_initial_value"));
             parameter.setDataType(type);
             parameter.setInferiorLimit(Content.parseContent(type, rs.getObject("inferior_limit")));
-            parameter.setSuperiorLimit(Content.parseContent(type,rs.getObject("superior_limit")));
-            parameter.setInitialValue(Content.parseContent(type,rs.getObject("initial_value")));
+            parameter.setSuperiorLimit(Content.parseContent(type, rs.getObject("superior_limit")));
+            parameter.setInitialValue(Content.parseContent(type, rs.getObject("initial_value")));
             parameter.setOptional(rs.getBoolean("optional"));
-            if(rs.getInt("entity_state_id") > 0){
+            if (rs.getInt("entity_state_id") > 0) {
                 EntityStateDAO dao = new EntityStateDAO(connection);
                 parameter.setRelatedState(dao.getState(rs.getInt("entity_state_id")));
             }
@@ -280,5 +281,97 @@ public class EventModelDAO {
         rs.close();
         stmt.close();
         return parameters;
+    }
+
+    public EventModel get(int modelId, int entityModelId, int componentId) throws SQLException {
+        EventModel event = null;
+        String sql = "SELECT events.id as event_id, events.model_id, events.description as event_description, synchronous, \n"
+                + "                implementation_type_id, implementation_types.description as implementation_description \n"
+                + "                FROM events, implementation_types, entities, components \n"
+                + "                WHERE events.model_id = ? AND entities.model_id = ? AND components.id = ? "
+                + "                AND implementation_type_id = implementation_types.id AND entity_id = entities.id\n"
+                + "                AND component_id = components.id;";
+        stmt = this.connection.prepareStatement(sql);
+        stmt.setInt(1, modelId);
+        stmt.setInt(2, entityModelId);
+        stmt.setInt(3, componentId);
+        ResultSet rs = stmt.executeQuery();
+        if(rs.next()) {
+            event = new EventModel();
+            event.setId(rs.getInt("event_id"));
+            event.setDescription(rs.getString("event_description"));
+            event.setSynchronous(rs.getBoolean("synchronous"));
+            event.setModelId(rs.getInt("model_id"));
+            event.setImplementation(new Implementation(rs.getInt("implementation_type_id"), rs.getString("implementation_description")));
+            event.setTargets(this.getEventTargets(event));
+            event.setParameters(this.getEventParameters(event));
+        }
+        rs.close();
+        stmt.close();
+        return event;
+    }
+
+    public EventModel get(int id) throws SQLException {
+        EventModel event = null;
+        String sql = "SELECT events.id as event_id, events.model_id, events.description as event_description, synchronous, \n"
+                + "                implementation_type_id, implementation_types.description as implementation_description \n"
+                + "                FROM events, implementation_types "
+                + "                WHERE id = ? AND implementation_type_id = implementation_types.id;";
+        stmt = this.connection.prepareStatement(sql);
+        stmt.setInt(1, id);
+        ResultSet rs = stmt.executeQuery();
+        if(rs.next()) {
+            event = new EventModel();
+            event.setId(rs.getInt("event_id"));
+            event.setDescription(rs.getString("event_description"));
+            event.setSynchronous(rs.getBoolean("synchronous"));
+            event.setModelId(rs.getInt("model_id"));
+            event.setImplementation(new Implementation(rs.getInt("implementation_type_id"), rs.getString("implementation_description")));
+            event.setTargets(this.getEventTargets(event));
+            event.setParameters(this.getEventParameters(event));
+        }
+        rs.close();
+        stmt.close();
+        return event;
+    }
+    /**
+     * Gera o evento e salva o valor do parâmetros. Se algum parâmetro obrigatório estiver com valor nulo é gerada uma exceção.
+     * @param event
+     * @param eventModel
+     * @throws SQLException
+     * @throws Exception 
+     */
+    public void insert(Event event, EventModel eventModel) throws SQLException, Exception {
+        // Criar evento
+        String sql = "INSERT INTO generated_events (event_id,entity_id,component_id,time,timeout) "
+                + " VALUES (?,?,?,?,?);";
+        this.stmt = this.connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+        this.stmt.setInt(1, eventModel.getId());
+        this.stmt.setInt(2, eventModel.getEntity().getId());
+        this.stmt.setInt(3, event.getComponentManager().getComponentId());
+        this.stmt.setObject(4, event.getTime());
+        this.stmt.setObject(5, event.getTimeout());
+        this.stmt.execute();
+        ResultSet generatedKeys = stmt.getGeneratedKeys();
+        if (generatedKeys.next()) {
+            event.setDatabaseId(generatedKeys.getInt(1));
+        } else {
+            throw new SQLException("Creating user failed, no ID obtained.");
+        }
+        stmt.close();
+        // adicionar conteúdos dos parâmetros
+        for(Parameter p : eventModel.getParameters()){
+            if(event.getParameters().get(p.getLabel())== null && !p.isOptional()){
+                throw new Exception("Parameter "+p.getLabel()+" from the event "+eventModel.getDescription()+" id "+eventModel.getId()
+                        +" was not found. Such parameter is not optional!");
+            } else{
+                if(event.getParameters().get(p.getLabel())!= null){
+                    p.setContent(new Content(
+                            Content.parseContent(p.getDataType(), event.getParameters().get(p.getLabel())),
+                            event.getTime()));
+                    this.insertContent(p);
+                }
+            }
+        }
     }
 }

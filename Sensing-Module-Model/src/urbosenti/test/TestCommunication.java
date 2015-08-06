@@ -6,6 +6,7 @@ package urbosenti.test;
 
 import java.io.IOException;
 import java.net.SocketTimeoutException;
+import java.sql.SQLException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import urbosenti.core.communication.Address;
@@ -114,8 +115,14 @@ public class TestCommunication {
         //m.setContentType("application/xml");
         m.setContent("oiiiiii");
         
-        // Envia o relato
-        deviceManager.getCommunicationManager().sendReport(m);
+        try {
+            // Envia o relato
+            deviceManager.getCommunicationManager().addReportToSend(m);
+        } catch (SQLException ex) {
+            Logger.getLogger(TestCommunication.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (Exception ex) {
+            Logger.getLogger(TestCommunication.class.getName()).log(Level.SEVERE, null, ex);
+        }
       
     }
 

@@ -7,6 +7,7 @@ package urbosenti.core.communication;
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.net.ConnectException;
 import java.net.SocketTimeoutException;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -40,21 +41,21 @@ import urbosenti.core.events.Action;
 import urbosenti.core.events.ApplicationEvent;
 import urbosenti.core.events.Event;
 import urbosenti.core.events.SystemEvent;
-import urbosenti.user.User;
 import urbosenti.util.DeveloperSettings;
 
 /**
  *
  * @author Guilherme
  */
-public class CommunicationManager extends ComponentManager implements Runnable {
+public class CommunicationManager extends ComponentManager {
 
     /**
      * int EVENT_INTERFACE_DISCONNECTION = 1; </ br>
      *
      * <ul><li>id: 1</li>
      * <li>evento: Interface Desconectada</li>
-     * <li>parâmetros: Interface desconectada</li></ul>
+     * <li>parâmetros: Interface desconectada; (opcional) Serviço de
+     * reconexão</li></ul>
      *
      */
     private static final int EVENT_INTERFACE_DISCONNECTION = 1;
@@ -104,10 +105,10 @@ public class CommunicationManager extends ComponentManager implements Runnable {
      */
     private static final int EVENT_ADDRESS_NOT_REACHABLE = 6;
     /**
-     * int EVENT_INTERFACE_DISCONNECTION = 7; </ br>
+     * int EVENT_INTERFACE_DISCONNECTION = 7;
      *
-     * <ul><li>id: 9</li>
-     * <li>evento: desconexão geral do dispositivo </li>
+     * <ul><li>id: 7</li>
+     * <li>evento: desconexão geral do dispositivo</li>
      * <li>parâmetros: nenhum.</li></ul>
      *
      */
@@ -117,10 +118,10 @@ public class CommunicationManager extends ComponentManager implements Runnable {
      *
      * <ul><li>id: 8</li>
      * <li>evento: Conexão Reestabelecida</li>
-     * <li>parâmetros: Interface</li></ul>
+     * <li>parâmetros: Interface ; (opcional) Serviço de reconexão</li></ul>
      *
      */
-    private static final int EVENT_RESTORED_CONNECTION = 8;
+    private static final int EVENT_CONNECTION_RESTORED = 8;
     /**
      * int EVENT_REPORT_AWAITING_APPROVAL = 9;
      *
@@ -129,7 +130,7 @@ public class CommunicationManager extends ComponentManager implements Runnable {
      * <li>parâmetros: Mensagem</li></ul>
      *
      */
-    private static final int EVENT_REPORT_AWAITING_APPROVAL = 9;
+    static final int EVENT_REPORT_AWAITING_APPROVAL = 9;
     /**
      * int EVENT_MESSAGE_STORED = 10;
      *
@@ -157,8 +158,15 @@ public class CommunicationManager extends ComponentManager implements Runnable {
      *
      */
     private static final int EVENT_NEW_INPUT_COMMUNICATION_INTERFACE_ADDRESS = 15;
-    private int countPriorityMessage;
-    private int countNormalMessage;
+    /**
+     * int EVENT_NEW_RECONNECTION_ATTEMPT = 16;
+     *
+     * <ul><li>id: 16</li>
+     * <li>evento: Nova tentativa de reconexão</li>
+     * <li>parâmetros: Serviço de reconexão</li></ul>
+     *
+     */
+    private static final int EVENT_NEW_RECONNECTION_ATTEMPT = 16;
     private int limitPriorityMessage;
     private int limitNormalMessage;
 //    private List<MessageWrapper> messagesNotChecked;
@@ -215,31 +223,39 @@ public class CommunicationManager extends ComponentManager implements Runnable {
      * dinamicamente o tempo de reconexão.</li></ul>
      */
     private int reconnectionPolicy; // Política de reconexão
-    private Integer uploadInterval; // Intervalo de upload
-    private Double uploadRate; // Taxa de upload atribuída dinâmicamente. Inicialmente 1;
-    private int reportsCountSentByUploadInterval; // Contagem de relatos enviados por intervalo, inicial 0
-    private int limitOfReportsSentByUploadInterval; // Limite do envio de relatos por intervalo, padrão 20 (Posso fazer experimentos)
-    private Integer reconnectionAttemptInterval;
     private CommunicationInterface currentCommunicationInterface;
     private List<CommunicationInterface> communicationInterfaces;
-    private ReconnectionService reconnectionService;
-    private Service uploadServer;
-    private boolean running; // indica se o servidor está rodando ou não
+    private ReconnectionService gerenalReconnectionService;
     private final List<PushServiceReceiver> pushServiceReveivers;
-    private final Thread uploadServiceThread;
+    private final List<UploadService> uploadServices;
+    private final List<ReconnectionService> reconnectionServices;
+    private UploadService backendUploadService;
+    private boolean completelyDisconnected;
 
     public CommunicationManager(DeviceManager deviceManager) {
         super(deviceManager, CommunicationDAO.COMPONENT_ID);
 //        this.normalMessageQueue = new LinkedList();
 //        this.priorityMessageQueue = new LinkedList();
         this.pushServiceReveivers = new ArrayList();
-        this.uploadServiceThread = new Thread(this);
-        this.uploadServer = null;
+        this.uploadServices = new ArrayList();
+        this.reconnectionServices = new ArrayList();
+        this.completelyDisconnected = false;
+        this.backendUploadService = null;
     }
 
     // if do not setted then when the method onCreate was activated it creates automatically
-    public void setReconectionService(ReconnectionService reconnectionService) {
-        this.reconnectionService = reconnectionService;
+    public void setGeneralReconectionService(ReconnectionService reconnectionService) {
+        this.gerenalReconnectionService = reconnectionService;
+        boolean isThere = false;
+        for (ReconnectionService rs : reconnectionServices) {
+            if (rs.getInstance().getId() == reconnectionService.getInstance().getId()) {
+                isThere = true;
+                break;
+            }
+        }
+        if (!isThere) {
+            reconnectionServices.add(reconnectionService);
+        }
     }
 
     @Override
@@ -253,6 +269,14 @@ public class CommunicationManager extends ComponentManager implements Runnable {
             // Para tanto utilizar o DataManager para acesso aos dados.
             this.communicationInterfaces = super.getDeviceManager().getDataManager().getCommunicationDAO().getAvailableInterfaces();
             this.currentCommunicationInterface = this.communicationInterfaces.get(0);
+            // verifica que o servidor de upload foi atribuído
+            if (backendUploadService == null) {
+                throw new Error("Backend upload service do was not assigned!");
+            }
+            // verifica se o serviço geral de reconexão foi atribuído
+            if (gerenalReconnectionService == null) {
+                throw new Error("Main reconnection service was not assigned!");
+            }
 //
 //        this.mobileDataPolicy = 1; // sem mobilidade - Default
 //        this.messagingPolicy = 1;  // Se não der certo avisa a origem da mensagem
@@ -280,37 +304,6 @@ public class CommunicationManager extends ComponentManager implements Runnable {
             //Contadores do escalonador da fila de reports
             limitNormalMessage = 1;
             limitPriorityMessage = 4;
-
-            // Intervalo para upload do serviço de upload em 15 segundos (ou 100ms)
-            this.uploadInterval = 15000;
-            this.uploadInterval = Integer.parseInt(super.getDeviceManager().getDataManager().getStateDAO().getEntityState(
-                    CommunicationDAO.COMPONENT_ID, CommunicationDAO.ENTITY_ID_OF_UPLOAD_PERIODIC_REPORTS,
-                    CommunicationDAO.STATE_ID_OF_UPLOAD_PERIODIC_REPORTS_UPLOAD_INTERVAL).getCurrentValue().toString());
-            this.uploadRate = 1.0;
-            this.uploadRate = Double.parseDouble(super.getDeviceManager().getDataManager().getStateDAO().getEntityState(
-                    CommunicationDAO.COMPONENT_ID, CommunicationDAO.ENTITY_ID_OF_UPLOAD_PERIODIC_REPORTS,
-                    CommunicationDAO.STATE_ID_OF_UPLOAD_PERIODIC_REPORTS_FOR_UPLOAD_RATE).getCurrentValue().toString());
-            this.reportsCountSentByUploadInterval = 0;
-            this.limitOfReportsSentByUploadInterval = 20;
-            this.limitOfReportsSentByUploadInterval = Integer.parseInt(super.getDeviceManager().getDataManager().getStateDAO().getEntityState(
-                    CommunicationDAO.COMPONENT_ID, CommunicationDAO.ENTITY_ID_OF_UPLOAD_PERIODIC_REPORTS,
-                    CommunicationDAO.STATE_ID_OF_UPLOAD_PERIODIC_REPORTS_ABOUT_AMOUNT_OF_MESSAGES_UPLOADED_BY_INTERVAL).getCurrentValue().toString());
-            // Intervalo para reconexão em 60 segundos
-            this.reconnectionAttemptInterval = 60000;
-            this.reconnectionAttemptInterval = Integer.parseInt(super.getDeviceManager().getDataManager().getStateDAO().getEntityState(
-                    CommunicationDAO.COMPONENT_ID, CommunicationDAO.ENTITY_ID_OF_RECONNECTION,
-                    CommunicationDAO.STATE_ID_OF_RECONNECTION_INTERVAL).getCurrentValue().toString());
-            if (reconnectionService == null) {
-                this.reconnectionService = new ReconnectionService(this, communicationInterfaces);
-                this.reconnectionService.setReconnectionTime(reconnectionAttemptInterval);
-                if (Integer.parseInt(super.getDeviceManager().getDataManager().getStateDAO().getEntityState(
-                        CommunicationDAO.COMPONENT_ID, CommunicationDAO.ENTITY_ID_OF_RECONNECTION,
-                        CommunicationDAO.STATE_ID_OF_RECONNECTION_METHOD).getCurrentValue().toString()) == 1) {
-                    this.reconnectionService.setReconnectionMethodOneByTime();
-                } else {
-                    this.reconnectionService.setReconnectionMethodAllByOnce();
-                }
-            }
         } catch (SQLException ex) {
             Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
             throw new Error(ex);
@@ -320,7 +313,7 @@ public class CommunicationManager extends ComponentManager implements Runnable {
     /**
      * Ações disponibilizadas por esse componente por função:
      * <p>
-     * <b>Objeto Alvo</b>: Função de Armazenamento de relatos</p>
+     * <b>Entidade Alvo</b>: Função de Armazenamento de relatos</p>
      * <ul>
      * <li>01 - Remover relato da fila de upload e do banco de dados -
      * reportId</li>
@@ -329,14 +322,14 @@ public class CommunicationManager extends ComponentManager implements Runnable {
      * <li>04 - Alterar política - policy - de 1 a 4</li>
      * </ul>
      * <p>
-     * <b>Objeto Alvo</b>: Função de Reconexão</p>
+     * <b>Entidade Alvo</b>: Função de Reconexão</p>
      * <ul>
-     * <li>05 - Alterar intervalo de reconexão - interval</li>
-     * <li>06 - Alterar método - method - 1 ou 2</li>
+     * <li>05 - Alterar intervalo de reconexão - interval ; instaceId</li>
+     * <li>06 - Alterar método - method - 1 ou 2 ; instaceId</li>
      * <li>07 - Alterar política - policy - 1 ou 2</li>
      * </ul>
      * <p>
-     * <b>Objeto Alvo</b>: Função de Otimização de Upload de Relatos</p>
+     * <b>Entidade Alvo</b>: Função de Otimização de Upload de Relatos</p>
      * <ul>
      * <li>08 - Alterar política - policy - de 1 a 4</li>
      * <li>09 - Alterar taxa de upload - uploadRate - entre 1.0 e 0.0</li>
@@ -346,7 +339,7 @@ public class CommunicationManager extends ComponentManager implements Runnable {
      * - quantity</li>
      * </ul>
      * <p>
-     * <b>Objeto Alvo</b>: Função de Uso de Dados Móveis. OBS.:Não operacional
+     * <b>Entidade Alvo</b>: Função de Uso de Dados Móveis. OBS.:Não operacional
      * ainda</p>
      * <ul>
      * <li>12 - Alterar política - policy - de 1 a 6</li>
@@ -355,7 +348,7 @@ public class CommunicationManager extends ComponentManager implements Runnable {
      * <li>14 - Alterar Limite de Dados Móveis com prioridade - newLimit</li>
      * </ul>
      * <p>
-     * <b>Objeto Alvo</b>: Interface de Comunicação de Saída</p>
+     * <b>Entidade Alvo</b>: Interface de Comunicação de Saída</p>
      * <ul>
      * <li>15 - Desabilitar interface - interface</li>
      * <li>16 - Habilitar interface - interface</li>
@@ -364,10 +357,16 @@ public class CommunicationManager extends ComponentManager implements Runnable {
      * <li>19 - Alterar timeout - interface - timeout</li>
      * </ul>
      * <p>
-     * <b>Objeto Alvo</b>: Interface de Comunicação de Entrada</p>
+     * <b>Entidade Alvo</b>: Interface de Comunicação de Entrada</p>
      * <ul>
      * <li>20 - Habilitar Interface - interface</li>
      * <li>21 - Desabilitar Interface - interface</li>
+     * </ul>
+     * <p>
+     * <b>Entidade Alvo</b>: Função de envio de mensagens</p>
+     * <ul>
+     * <li>22 - Enviar mensagem síncrona - target,message</li>
+     * <li>23 - Enviar mensagem assíncrona - target,message</li>
      * </ul>
      *
      * @param action contém objeto ação.
@@ -376,9 +375,11 @@ public class CommunicationManager extends ComponentManager implements Runnable {
      */
     @Override
     public synchronized FeedbackAnswer applyAction(Action action) {
-        Integer policy, genericInteger;
+        Integer policy, genericInteger, instanceId;
         Double genericDouble;
         Agent agent;
+        FeedbackAnswer answer = null;
+        Message message;
         switch (action.getId()) {
             /**
              * *********** Função de Armazenamento de relatos *****************
@@ -402,6 +403,7 @@ public class CommunicationManager extends ComponentManager implements Runnable {
                 } catch (SQLException ex) {
                     Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
                     // retorno erro
+                    answer = new FeedbackAnswer(FeedbackAnswer.ACTION_RESULT_FAILED, ex.toString());
                 }
                 break;
             case 2: // Alterar limite de relatos armazenados *** tais estados são mantidos no módulo de adaptação, depois implementar
@@ -423,24 +425,35 @@ public class CommunicationManager extends ComponentManager implements Runnable {
             case 5: // Alterar intervalo de reconexão
                 // Parâmetro
                 genericInteger = (Integer) action.getParameters().get("interval");
+                instanceId = (Integer) action.getParameters().get("instaceId");
                 // verifica se a política é a estática e se a origem não é o sistema, pois nesse caso somente a aplicação e usuários podem alterar.
                 if (reconnectionPolicy == 1 && action.getOrigin() != Address.LAYER_SYSTEM) {
-                    // Atribuir o valor
-                    this.reconnectionService.setReconnectionTime(genericInteger);
-                    this.reconnectionAttemptInterval = genericInteger;
+                    // Atribuir o valor na interface encontrada
+                    for (ReconnectionService rs : reconnectionServices) {
+                        if (instanceId == rs.getInstance().getModelId()) {
+                            rs.setReconnectionTime(genericInteger.longValue());
+                            break;
+                        }
+                    }
                 }
                 break;
             case 6: // Alterar método
                 // Parâmetro
                 genericInteger = (Integer) action.getParameters().get("method");
+                instanceId = (Integer) action.getParameters().get("instaceId");
                 agent = (Agent) action.getParameters().get("origin");
                 // verifica se a política é a estática e se a origem não é o sistema, pois nesse caso somente a aplicação e usuários podem alterar.
                 if (reconnectionPolicy == 1 && action.getOrigin() != Address.LAYER_SYSTEM) {
                     // Verificar o valor
-                    if (genericInteger == 1) {
-                        reconnectionService.setReconnectionMethodOneByTime();
-                    } else if (genericInteger == 2) {
-                        reconnectionService.setReconnectionMethodAllByOnce();
+                    for (ReconnectionService rs : reconnectionServices) {
+                        if (instanceId == rs.getInstance().getModelId()) {
+                            if (genericInteger == 1) {
+                                rs.setReconnectionMethodOneByTime();
+                            } else if (genericInteger == 2) {
+                                rs.setReconnectionMethodAllByOnce();
+                            }
+                            break;
+                        }
                     }
                 }
                 break;
@@ -466,21 +479,41 @@ public class CommunicationManager extends ComponentManager implements Runnable {
                 }
                 break;
             case 9: // Alterar taxa de upload
+                instanceId = (Integer) action.getParameters().get("instaceId");
                 genericDouble = (Double) action.getParameters().get("uploadRate");
                 if (genericDouble <= 1.0 && genericDouble >= 0.0) {
-                    this.uploadRate = genericDouble;
+                    for (UploadService us : uploadServices) {
+                        if (instanceId == us.getInstance().getModelId()) {
+                            us.setUploadRate(genericDouble);
+                            break;
+                        }
+                    }
                 }
+                // Verificar o valor
+
                 break;
             case 10: // Alterar tempo do intervalo entre ciclos de upload
+                instanceId = (Integer) action.getParameters().get("instaceId");
                 genericInteger = (Integer) action.getParameters().get("interval");
                 if (genericInteger > 0) {
-                    this.reconnectionPolicy = genericInteger;
+                    for (UploadService us : uploadServices) {
+                        if (instanceId == us.getInstance().getModelId()) {
+                            us.setUploadInterval(genericInteger.longValue());
+                            break;
+                        }
+                    }
                 }
                 break;
             case 11: // Alterar quantidade de relatos enviados simultaneamente por ciclo
+                instanceId = (Integer) action.getParameters().get("instaceId");
                 genericInteger = (Integer) action.getParameters().get("quantity");
                 if (genericInteger > 0) {
-                    this.limitOfReportsSentByUploadInterval = genericInteger;
+                    for (UploadService us : uploadServices) {
+                        if (instanceId == us.getInstance().getModelId()) {
+                            us.setLimitOfReportsSentByUploadInterval(genericInteger);
+                            break;
+                        }
+                    }
                 }
                 break;
             /**
@@ -570,8 +603,51 @@ public class CommunicationManager extends ComponentManager implements Runnable {
                     }
                 }
                 break;
+            case 22: // 22 - Enviar mensagem síncrona - com comfirmação de chegada - target,message
+                message = (Message) action.getParameters().get("message");
+                message.setTarget((Address) action.getParameters().get("target"));
+                try {
+                    this.sendMessage(message);
+                } catch (SocketTimeoutException ex) {
+                    Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+                    answer = new FeedbackAnswer(FeedbackAnswer.ACTION_RESULT_FAILED_TIMEOUT, ex.toString());
+                } catch (ConnectException ex) {
+                    Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+                    answer = new FeedbackAnswer(FeedbackAnswer.ACTION_RESULT_FAILED, ex.toString());
+                } catch (IOException ex) {
+                    Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+                    answer = new FeedbackAnswer(FeedbackAnswer.ACTION_RESULT_FAILED, ex.toString());
+                }
+                break;
+            case 23: // 23 - Enviar mensagem assíncrona - target,message
+                message = (Message) action.getParameters().get("message");
+                message.setTarget((Address) action.getParameters().get("target"));
+                try {
+                    boolean found = false;
+                    // procura o upload service para enviar
+                    for (UploadService us : uploadServices) {
+                        if (us.getService().getServiceUID().equals(message.getTarget().getUid())) {
+                            us.sendAssynchronousMessage(message);
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found) {
+                        answer = new FeedbackAnswer(FeedbackAnswer.ACTION_RESULT_FAILED, "Upload Service UID:" + message.getTarget().getUid() + " was not found!");
+                    }
+                } catch (SQLException ex) {
+                    Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+                    answer = new FeedbackAnswer(FeedbackAnswer.ACTION_RESULT_FAILED, ex.toString());
+                }
+                break;
         }
-        return null;
+        // verifica se a ação existe ou se houve algum resultado durante a execução
+        if (answer == null && action.getId() >= 1 && action.getId() <= 23) {
+            answer = new FeedbackAnswer(FeedbackAnswer.ACTION_RESULT_WAS_SUCCESSFUL);
+        } else if (answer == null) {
+            answer = new FeedbackAnswer(FeedbackAnswer.ACTION_DOES_NOT_EXIST);
+        }
+        return answer;
     }
 
     /**
@@ -790,53 +866,24 @@ public class CommunicationManager extends ComponentManager implements Runnable {
      *
      * @param message Adiciona um report para envio ao servidor.
      */
-    public void sendReport(Message message) throws SQLException {
-        // recebe o report para envio
-        // cria envelope
-        if (message.getOrigin() == null) {
-            message.setOrigin(new Address());
-            message.getOrigin().setLayer(Address.LAYER_APPLICATION);
-        }
-        // adiciona o application UID para o serviço
-        message.getOrigin().setUid(uploadServer.getApplicationUID());
-        // cria o MessageWrapper que será utilizado para criar o envelope
-        MessageWrapper messageWrapper = new MessageWrapper(message);
-        // Adiciona o servidor visado
-        messageWrapper.getMessage().setTarget(new Address());
-        messageWrapper.getMessage().getTarget().setAddress(uploadServer.getAddress());
-        messageWrapper.getMessage().getTarget().setLayer(Address.LAYER_APPLICATION);
-        messageWrapper.getMessage().getTarget().setUid(uploadServer.getServiceUID());
-        // adiciona o assunto da mensagem
-        messageWrapper.getMessage().setSubject(Message.SUBJECT_UPLOAD_REPORT);
-        // adiciona o encapsulamente específico para relatos
-        // verifica se o módulo de usuário está habilitado, se tiver ID do usuário monitorado é enviado
-        if (getDeviceManager().getUserManager() != null) {
-            User user;
-            String contentReport = "<report>";
-            try {
-                user = getDeviceManager().getUserManager().getMonitoredUser();
-                if (user != null) {
-                    contentReport = "<report userId=\"" + user.getId() + "\">";
-                }
-            } catch (SQLException ex) {
-                Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
-            }
-            messageWrapper.getMessage().setContent(contentReport + messageWrapper.getMessage().getContent() + "</report>");
+    public void addReportToSend(Message message) throws SQLException, Exception {
+        // se não possui algo então o alvo é o servidor base
+        if (message.getTarget() == null) {
+            backendUploadService.sendAssynchronousReport(message);
         } else {
-            messageWrapper.getMessage().setContent("<report>" + messageWrapper.getMessage().getContent() + "</report>");
+            boolean found = false;
+            // procura o upload service para enviar
+            for (UploadService us : uploadServices) {
+                if (us.getService().getServiceUID().equals(message.getTarget().getUid())) {
+                    us.sendAssynchronousReport(message);
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                throw new Exception("Upload service not found.");
+            }
         }
-        try {
-            // Cria o envelope XML da UrboSenti correspondente da mensagem
-            messageWrapper.build();
-        } catch (ParserConfigurationException ex) {
-            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (TransformerConfigurationException ex) {
-            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (TransformerException ex) {
-            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        // adiciona na fila de upload
-        this.addReport(messageWrapper);
     }
 
     /**
@@ -942,7 +989,7 @@ public class CommunicationManager extends ComponentManager implements Runnable {
      * uma quantidade ou um tempo.
      * @throws java.sql.SQLException
      */
-    protected void storagePolice(MessageWrapper messageWrapper) throws SQLException {
+    protected synchronized void storagePolice(MessageWrapper messageWrapper, Service service) throws SQLException {
         switch (messageStoragePolicy) {
             case 1: // Não armazenar nenhuma
                 break;
@@ -953,7 +1000,7 @@ public class CommunicationManager extends ComponentManager implements Runnable {
                     if (messageWrapper.getId() > 0) {
                         getDeviceManager().getDataManager().getReportDAO().update(messageWrapper);
                     } else {
-                        getDeviceManager().getDataManager().getReportDAO().insert(messageWrapper, this.uploadServer);
+                        getDeviceManager().getDataManager().getReportDAO().insert(messageWrapper, service);
                     }
                 }
                 break;
@@ -961,135 +1008,18 @@ public class CommunicationManager extends ComponentManager implements Runnable {
                 if (messageWrapper.getId() > 0) {
                     getDeviceManager().getDataManager().getReportDAO().update(messageWrapper);
                 } else {
-                    getDeviceManager().getDataManager().getReportDAO().insert(messageWrapper, this.uploadServer);
+                    getDeviceManager().getDataManager().getReportDAO().insert(messageWrapper, service);
                 }
                 break;
             case 4: // Dinâmico (Exige componente de adaptação). Dá poder ao mecanismo decidir quando apagar uma mensagem armazenada. O usuário pode especificar uma quantidade ou um tempo.
                 if (messageWrapper.getId() > 0) {
                     getDeviceManager().getDataManager().getReportDAO().update(messageWrapper);
                 } else {
-                    getDeviceManager().getDataManager().getReportDAO().insert(messageWrapper, this.uploadServer);
+                    getDeviceManager().getDataManager().getReportDAO().insert(messageWrapper, service);
                     // Gerar evento -- Mensagem armazenada.
                     this.newInternalEvent(EVENT_MESSAGE_STORED, messageWrapper);
                 }
                 break;
-        }
-    }
-
-    /**
-     * @param messageWrapper Adiciona um novo relato para ser feito o upload. Se
-     * política 3 e o relato não foi aprovado ainda ele é adicionado na fila de
-     * espera e um evento avisando a aplicação que o relato está esperando sua
-     * aprovação.
-     */
-    private synchronized void addReport(MessageWrapper messageWrapper) throws SQLException {
-        // Verifica política de upload de relatos
-        // se 3 gera adiciona na fila para aprovação da aplicação e utiliza política de armazenamento
-        if (this.uploadMessagingPolicy == 3 && !messageWrapper.isChecked()) {
-            //this.messagesNotChecked.add(messageWrapper);
-            messageWrapper.setUnChecked();
-            this.storagePolice(messageWrapper); // depois vejo se uso ou não
-            this.newInternalEvent(EVENT_REPORT_AWAITING_APPROVAL, messageWrapper.getMessage());
-        } else {
-            // mensagem pode ser enviada
-            messageWrapper.setChecked();
-            this.storagePolice(messageWrapper);
-            notifyAll();
-        }
-    }
-
-    /**
-     * @return retorna a primeira MessageWrapper da fila <b>normal</b> contendo
-     * um relato com prioridade <b>normal</b>. Esse relato continua da fila.
-     * OBS.: SOmente utilizado pelo método de upload dinâmico, pois tem um loop
-     * infinito dentro.
-     * @throws InterruptedException
-     * @throws java.sql.SQLException
-     */
-    protected synchronized MessageWrapper getNormalReport() throws InterruptedException, SQLException {
-        MessageWrapper mw;
-        while (true) {
-            mw = super.getDeviceManager().getDataManager().getReportDAO()
-                    .getOldestCheckedNotSent(Message.NORMAL_PRIORITY, this.uploadServer);
-            if (mw == null) {
-                wait();
-            } else {
-                break;
-            }
-        }
-        return mw;
-    }
-
-    /**
-     * @return retorna a primeira MessageWrapper da fila <b>prioritária</b>
-     * contendo um relato com prioridade <b>prioritária</b>. Esse relato
-     * continua da fila. OBS.: SOmente utilizado pelo método de upload dinâmico,
-     * pois tem um loop infinito dentro.
-     * @throws InterruptedException
-     * @throws java.sql.SQLException
-     */
-    protected synchronized MessageWrapper getPriorityReport() throws InterruptedException, SQLException {
-        MessageWrapper mw;
-        while (true) {
-            mw = super.getDeviceManager().getDataManager().getReportDAO()
-                    .getOldest(false, true, Message.PREFERENTIAL_PRIORITY, this.uploadServer);
-            if (mw == null) {
-                wait();
-            } else {
-                break;
-            }
-        }
-        return mw;
-    }
-
-    /**
-     * @return retorna a primeira MessageWrapper de uma das duas filas
-     * <b>prioritária</b> ou <b>normal</b> conforme o escalonamento dinâmico
-     * pré-configurado no método OnCreate. Esse relato escolhido não é remvido
-     * da fila. OBS.: SOmente utilizado pelo método de upload dinâmico, pois tem
-     * um loop infinito dentro.
-     * @throws InterruptedException
-     * @throws java.sql.SQLException
-     */
-    protected synchronized MessageWrapper getReport() throws InterruptedException, SQLException {
-        MessageWrapper mwp, mwn;
-        while (true) {
-            /*
-             * Fazer um escalonamento dinâmico entre prioridades;
-             * // Se a outra fila está vazia faz a atual e zera os contadores
-             // obedece os dois limites priorizando os prioritários
-             */
-
-            // Pega primeiras mensagens
-            mwp = super.getDeviceManager().getDataManager().getReportDAO()
-                    .getOldestCheckedNotSent(Message.PREFERENTIAL_PRIORITY, this.uploadServer);
-            mwn = super.getDeviceManager().getDataManager().getReportDAO()
-                    .getOldestCheckedNotSent(Message.NORMAL_PRIORITY, this.uploadServer);
-            // Se ambas estão vazias, zera as contagens e espera
-            if (mwn == null && mwp == null) {
-                countNormalMessage = 0;
-                countPriorityMessage = 0;
-                wait();
-            }
-            // Se houver mensagens prioritárias pega elas até o limite
-            if (mwp != null && countPriorityMessage < limitPriorityMessage) {
-                if (countNormalMessage == 0) {
-                    countPriorityMessage = 0;
-                } else {
-                    countPriorityMessage++;
-                }
-                return mwp;
-            }
-            // se houver mensagens normais depois de atingido o limite das prioritárias então pega as mensagens normais até atingir seu limite.
-            // Atingido o limite normal a contagem é zerada de ambas as filas é zerada
-            if (mwn != null && countNormalMessage < limitNormalMessage) {
-                if (countPriorityMessage == 0) {
-                    countNormalMessage = 0;
-                } else {
-                    countNormalMessage++;
-                }
-                return mwn;
-            }
         }
     }
 
@@ -1134,7 +1064,10 @@ public class CommunicationManager extends ComponentManager implements Runnable {
      * Removida</li>
      * <li>CommunicationManager.EVENT_NEW_INPUT_COMMUNICATION_INTERFACE_ADDRESS
      * - novo endereço da interface de comunicação de entrada</li>
+     * <li>CommunicationManager.EVENT_NEW_RECONNECTION_ATTEMPT
+     * - Serviço de reconexão</li>
      * </ul>
+     * 
      *
      * @param eventId
      * @param parameters
@@ -1145,13 +1078,14 @@ public class CommunicationManager extends ComponentManager implements Runnable {
      * @see #EVENT_MESSAGE_RECEIVED_INVALID_FORMAT
      * @see #EVENT_ADDRESS_NOT_REACHABLE
      * @see #EVENT_DISCONNECTION
-     * @see #EVENT_RESTORED_CONNECTION
+     * @see #EVENT_CONNECTION_RESTORED
      * @see #EVENT_REPORT_AWAITING_APPROVAL
      * @see #EVENT_MESSAGE_STORED
      * @see #EVENT_MESSAGE_STORED_REMOVED
      * @see #EVENT_NEW_INPUT_COMMUNICATION_INTERFACE_ADDRESS
+     * @see #EVENT_NEW_RECONNECTION_ATTEMPT
      */
-    private synchronized void newInternalEvent(int eventId, Object... parameters) {
+    protected synchronized void newInternalEvent(int eventId, Object... parameters) {
         Address address;
         CommunicationInterface ci;
         MessageWrapper mw;
@@ -1160,13 +1094,15 @@ public class CommunicationManager extends ComponentManager implements Runnable {
         HashMap<String, Object> values;
         String bruteMessage;
         switch (eventId) {
-            case EVENT_INTERFACE_DISCONNECTION: // 1 - Desconexão - parâmetros: Interface desconectada
+            case EVENT_INTERFACE_DISCONNECTION: // 1 - Desconexão - parâmetros: Interface desconectada + (optional) instanceId(reconectionService)
                 ci = (CommunicationInterface) parameters[0];
 
                 // Adiciona os valores que serão passados para serem tratados
                 values = new HashMap<String, Object>();
                 values.put("interface", ci);
-
+                if (parameters.length > 1) {
+                    values.put("reconnectionService", parameters[1]);
+                }
                 // cria o evento
                 event = new SystemEvent(this);// Event: new Message
                 event.setId(1);
@@ -1319,12 +1255,15 @@ public class CommunicationManager extends ComponentManager implements Runnable {
                 // envia o evento
                 getEventManager().newEvent(event);
                 break;
-            case EVENT_RESTORED_CONNECTION: // 8 - Conexão Reestabelecida - parâmetros: interface
+            case EVENT_CONNECTION_RESTORED: // 8 - Conexão Reestabelecida - parâmetros: interface + (optional) instanceId(reconectionService)
                 ci = (CommunicationInterface) parameters[0];
 
                 // Adiciona os valores que serão passados para serem tratados
                 values = new HashMap<String, Object>();
                 values.put("interface", ci);
+                if (parameters.length > 1) {
+                    values.put("reconnectionService", parameters[1]);
+                }
 
                 // Event: new Message
                 event = new SystemEvent(this);
@@ -1407,6 +1346,21 @@ public class CommunicationManager extends ComponentManager implements Runnable {
                 // envia o evento
                 getEventManager().newEvent(event);
                 break;
+            case EVENT_NEW_RECONNECTION_ATTEMPT:
+                event = new SystemEvent(this);
+
+                // Adiciona os valores que serão passados para serem tratados
+                values = new HashMap<String, Object>();
+                values.put("reconnectionService", parameters[0]);
+
+                event.setId(16);
+                event.setName("New attempt to reconnect on communicationinterface by reconnection service");
+                event.setTime(new Date());
+                event.setParameters(values);
+
+                // envia o evento
+                getEventManager().newEvent(event);
+                break;
         }
         // inserir métricas e medidas no evento
     }
@@ -1421,9 +1375,17 @@ public class CommunicationManager extends ComponentManager implements Runnable {
      *
      * @param current
      */
-    void notifyReconnection(CommunicationInterface current) {
-        this.newInternalEvent(EVENT_RESTORED_CONNECTION, current);
-        this.currentCommunicationInterface = current;
+    void notifyReconnection(CommunicationInterface current, ReconnectionService reconnectionService) {
+        this.newInternalEvent(EVENT_CONNECTION_RESTORED, current, reconnectionService);
+        current.setStatus(CommunicationInterface.STATUS_CONNECTED);
+        // se continua desconectado coloca a interface como primeira.
+        synchronized (this) {
+            if (completelyDisconnected) {
+                this.completelyDisconnected = false;
+                this.currentCommunicationInterface = current;
+                this.notifyAllUploadServices();
+            }
+        }
     }
 
     /**
@@ -1432,24 +1394,30 @@ public class CommunicationManager extends ComponentManager implements Runnable {
      *
      * @param current
      */
-    void notifyReconnectionNotSucceed(CommunicationInterface current) {
-        this.newInternalEvent(EVENT_INTERFACE_DISCONNECTION, current);
+    void notifyReconnectionNotSucceed(CommunicationInterface current, ReconnectionService reconnectionService) {
+        this.newInternalEvent(EVENT_INTERFACE_DISCONNECTION, current, reconnectionService);
+    }
+
+    void notifyNewAttemptToReconnect(ReconnectionService reconnectionService) {
+        this.newInternalEvent(EVENT_NEW_RECONNECTION_ATTEMPT, reconnectionService);
+    }
+
+    /**
+     * NOtifica todos os serviços de upload
+     */
+    public synchronized void notifyAllUploadServices() {
+        for (UploadService up : uploadServices) {
+            up.wakeUp();
+        }
+        notifyAll();
     }
 
     /**
      *
      * @return retorna se o serviço de upload automático está em funcionamento
      */
-    public synchronized boolean isUploadServerRunning() {
-        return running;
-    }
-
-    /**
-     * @param status , seta o status que o serviço de upload de arquivos deve
-     * estar.
-     */
-    public synchronized void setUploadServerRunningStatus(boolean status) {
-        this.running = status;
+    public synchronized boolean isBackendUploadServerRunning() {
+        return backendUploadService.isRunning();
     }
 
     /**
@@ -1462,7 +1430,8 @@ public class CommunicationManager extends ComponentManager implements Runnable {
     private synchronized CommunicationInterface getCommunicationInterfaceWithConnection() {
         // Se há uma interface atual testa se ela possuí conexão
         if (currentCommunicationInterface != null) {
-            if (currentCommunicationInterface.getStatus() != CommunicationInterface.STATUS_UNAVAILABLE) {
+            if (currentCommunicationInterface.getStatus() != CommunicationInterface.STATUS_UNAVAILABLE 
+                    && currentCommunicationInterface.getStatus() != CommunicationInterface.STATUS_DISCONNECTED) {
                 try {
                     if (currentCommunicationInterface.testConnection()) {
                         return currentCommunicationInterface;
@@ -1477,7 +1446,8 @@ public class CommunicationManager extends ComponentManager implements Runnable {
 
         // Testa se outra interface possuí conexão, se sim ela passa a ser a atual e é retornada
         for (CommunicationInterface ci : communicationInterfaces) {
-            if (currentCommunicationInterface.getStatus() != CommunicationInterface.STATUS_UNAVAILABLE) {
+            if (currentCommunicationInterface.getStatus() != CommunicationInterface.STATUS_UNAVAILABLE
+                    && currentCommunicationInterface.getStatus() != CommunicationInterface.STATUS_DISCONNECTED) {
                 try {
                     if (ci.testConnection()) {
                         currentCommunicationInterface = ci;
@@ -1495,32 +1465,21 @@ public class CommunicationManager extends ComponentManager implements Runnable {
     }
 
     /**
-     * Método utilizado para upload de relatos para um único servidor. Depois
-     * fazer um para uploads múltiplos adicionando 2 métodos.
-     * <ul><li>public static UploadService createUploadService(Agent Server)
-     * throws InterruptException; </li>
-     * <li>public synchronized addUploadService(UploadService up);</li>
-     * <li> public boolean startUploadService(UploadService up);</li>
-     * <li> UploadService up = createUploadService(Agent Server);</li>
-     * <li> up.addReport();</li></ul>
      *
-     */
-    @Override
-    public void run() {
-        try {
-            uploadService(uploadServer);
-        } catch (InterruptedException ex) {
-            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
-        }
-    }
-
-    /**
-     *
-     * @param server Adiciona o servidor que a função de upload dinâmico vai
+     * @param service Adiciona o servidor que a função de upload dinâmico vai
      * reportar.
      */
-    public void addUploadServer(Service server) {
-        this.uploadServer = server;
+    public void addUploadServer(UploadService service) {
+        // se já está na lista não adiciona
+        for (UploadService us : this.uploadServices) {
+            if (service.getService().getId() == us.getService().getId()) {
+                return;
+            }
+        }
+        this.uploadServices.add(service);
+        if (service.getService().getId() == getDeviceManager().getBackendService().getId()) {
+            this.backendUploadService = service;
+        }
     }
 
     /**
@@ -1532,150 +1491,133 @@ public class CommunicationManager extends ComponentManager implements Runnable {
      * @param server contém o agente que será usado de servidor.
      *
      */
-    private void uploadService(Service server) throws InterruptedException {
-        this.running = true;
+    protected void uploadServiceFunction(Service server, UploadService uploadService, Long uploadInterval, Double uploadRate, int limitOfReportsSentByUploadInterval) throws InterruptedException {
         final Integer waitUpload = 0;
-        while (isUploadServerRunning()) {
-            // [Início Loop]
-            // Aguarda condição da política de upload ser atendida
-            switch (this.uploadMessagingPolicy) {
-                case 1: // Sempre que há um relato novo tenta fazer o upload, caso exista conexão, senão espera reconexão. Padrão.
-                    break;
-                case 2: // Em intervalos fixos. Pode ser definido pela aplicação. Intervalo inicial padrão a cada 15 segundos. Se não há conexão as mensagens são armazenadas.
-                    // enquanto a quantidade de relatos por intervalo não for atendida, somente soma, senão zera a contagem e espera o tempo do intervalo
-                    if (this.reportsCountSentByUploadInterval == 0 && reportsCountSentByUploadInterval < this.limitOfReportsSentByUploadInterval) {
-                        this.reportsCountSentByUploadInterval = 0;
-                        synchronized (waitUpload) {
-                            waitUpload.wait(uploadInterval);
-                        }
-                    } else {
-                        this.reportsCountSentByUploadInterval++;
+        int reportsCountSentByUploadInterval = 0; // Contagem de relatos enviados por intervalo, inicial 0
+        // [Início Loop]
+        // Aguarda condição da política de upload ser atendida
+        switch (this.uploadMessagingPolicy) {
+            case 1: // Sempre que há um relato novo tenta fazer o upload, caso exista conexão, senão espera reconexão. Padrão.
+                break;
+            case 2: // Em intervalos fixos. Pode ser definido pela aplicação. Intervalo inicial padrão a cada 15 segundos. Se não há conexão as mensagens são armazenadas.
+                // enquanto a quantidade de relatos por intervalo não for atendida, somente soma, senão zera a contagem e espera o tempo do intervalo
+                if (reportsCountSentByUploadInterval == 0 && reportsCountSentByUploadInterval < limitOfReportsSentByUploadInterval) {
+                    reportsCountSentByUploadInterval = 0;
+                    synchronized (waitUpload) {
+                        waitUpload.wait(uploadInterval);
                     }
-                    break;
-                case 3: // Está implementada no método ADDMessage. Exige confirmação da aplicação para upload dos relatos. Enquanto não confirmada comportamento na política 1.  
-                    break;
-                case 4: // Adaptativo. O componente de adaptação irá atribuir dinamicamente novos intervalos.
-                    // Se a taxa de upload for menor que 1 então verificar se nessse intervalo será necessário fazer o upload
-                    if (this.uploadRate < 1.0 && this.reportsCountSentByUploadInterval == 0) {
-                        while (true) {
-                            if (this.uploadRate <= Math.random()) { // Testa se é necessário fazer o upload, caso não, espera mais um intervalo
-                                synchronized (waitUpload) {
-                                    waitUpload.wait(uploadInterval);
-                                }
-                            } else {
-                                synchronized (waitUpload) {
-                                    waitUpload.wait(uploadInterval);
-                                }
-                                this.reportsCountSentByUploadInterval++;
-                                break;
-                            }
-                        }
-                    } else {
-                        // enquanto a quantidade de relatos por intervalo não for atendida, somente soma, senão zera a contagem e espera o tempo do intervalo
-                        if (this.reportsCountSentByUploadInterval == 0 && reportsCountSentByUploadInterval < this.limitOfReportsSentByUploadInterval) {
-                            this.reportsCountSentByUploadInterval = 0;
+                } else {
+                    reportsCountSentByUploadInterval++;
+                }
+                break;
+            case 3: // Está implementada no método ADDMessage. Exige confirmação da aplicação para upload dos relatos. Enquanto não confirmada comportamento na política 1.  
+                break;
+            case 4: // Adaptativo. O componente de adaptação irá atribuir dinamicamente novos intervalos.
+                // Se a taxa de upload for menor que 1 então verificar se nessse intervalo será necessário fazer o upload
+                if (uploadRate < 1.0 && reportsCountSentByUploadInterval == 0) {
+                    while (true) {
+                        if (uploadRate <= Math.random()) { // Testa se é necessário fazer o upload, caso não, espera mais um intervalo
                             synchronized (waitUpload) {
                                 waitUpload.wait(uploadInterval);
                             }
                         } else {
-                            // Soma até atingir limite de relatos
-                            this.reportsCountSentByUploadInterval++;
+                            synchronized (waitUpload) {
+                                waitUpload.wait(uploadInterval);
+                            }
+                            reportsCountSentByUploadInterval++;
+                            break;
                         }
                     }
-                    break;
-            }
-            // Busca uma mensagem da fila para a upload
-            // Aguarda condições de dados móveis [To do - implement the mobile data policy] - Serviço compartilhado entre os servers
-            MessageWrapper mw;
-            try {
-                mw = this.getReportByMobileDataPolicyCriteria();
-                // construir a mensagem
-                mw.build();
-                // 3 - Verifica se alguma interface de comunicação está disponível
-                CommunicationInterface ci = this.getCommunicationInterfaceWithConnection(); // Método traz a interface de comunicação atual
-                // 4 - [disponível]
-                if (ci != null) {
-                    try {
-                        // Tempo inicial de envio
-                        Date initialTime = new Date();
-                        // Executa função SendMessage
-                        ci.sendMessage(this, mw);
-                        // Marca como mensagem enviada e algumas métricas
-                        ci.updateEvaluationMetrics(mw, initialTime);
-                        // Evento: Mensagem Entregue
-                        this.newInternalEvent(EVENT_MESSAGE_DELIVERED, mw, mw.getMessage().getTarget(), currentCommunicationInterface);
-                        // Política de Armazenamento
-                        this.storagePolice(mw);
-                        // confirmação do funcionamento sem erros
-                        // this.newInternalEvent(EVENT_SERVICE_FUNCTIONS_END, CommunicationDAO.UPLOAD_MESSAGING_POLICY, uploadServer);
-                    } catch (java.net.ConnectException ex) {
-                        // Evento: Timeout
-                        // thows Timeout exception   
-                        this.newInternalEvent(EVENT_ADDRESS_NOT_REACHABLE, mw, mw.getMessage().getTarget(), currentCommunicationInterface);
-                        Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
-                    } catch (SocketTimeoutException ex) {
-                        //[Timeout]
-                        // Evento: Timeout
-                        this.newInternalEvent(EVENT_ADDRESS_NOT_REACHABLE, mw, mw.getMessage().getTarget(), currentCommunicationInterface);
-                        Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
-                    } catch (IOException ex) {
-                        //[Erro de IO]
-                        // Evento: Mensagem não entregue
-                        this.newInternalEvent(EVENT_MESSAGE_NOT_DELIVERED, mw, mw.getMessage().getTarget());
-                        Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+                } else {
+                    // enquanto a quantidade de relatos por intervalo não for atendida, somente soma, senão zera a contagem e espera o tempo do intervalo
+                    if (reportsCountSentByUploadInterval == 0 && reportsCountSentByUploadInterval < limitOfReportsSentByUploadInterval) {
+                        reportsCountSentByUploadInterval = 0;
+                        synchronized (waitUpload) {
+                            waitUpload.wait(uploadInterval);
+                        }
+                    } else {
+                        // Soma até atingir limite de relatos
+                        reportsCountSentByUploadInterval++;
                     }
-                } else {
-                    // Evento desconexão
-                    this.newInternalEvent(EVENT_DISCONNECTION);
-                    // [Sem sucesso] [IO Exception] [Timeout]
-                    // [Aguarda Política de Reconexão]        
-                    System.out.println("All functions communication interfaces are disconnected. Starting Reconection Service");
-                    //this.reconnectionService.setReconnectionMethodAllByOnce();
-                    this.reconnectionService.reconectionProcess();
                 }
-            } catch (SQLException ex) {
-                Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
-                // criar
-                // this.newInternalEvent(EVENT_SERVICE_FUNCTION_ERROR, CommunicationDAO.UPLOAD_MESSAGING_POLICY, ex ,uploadServer);// fazer depois
-            } catch (ParserConfigurationException ex) {
-                Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
-                // criar
-                // this.newInternalEvent(EVENT_SERVICE_FUNCTION_ERROR, CommunicationDAO.UPLOAD_MESSAGING_POLICY, ex ,uploadServer);// fazer depois
-            } catch (TransformerException ex) {
-                Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
-                // criar
-                // this.newInternalEvent(EVENT_SERVICE_FUNCTION_ERROR, CommunicationDAO.UPLOAD_MESSAGING_POLICY, ex ,uploadServer);// fazer depois
+                break;
+        }
+        // Busca uma mensagem da fila para a upload
+        // Aguarda condições de dados móveis [To do - implement the mobile data policy] - Serviço compartilhado entre os servers
+        MessageWrapper mw;
+        try {
+            mw = uploadService.getReportByMobileDataPolicyCriteria();
+            // construir a mensagem
+            mw.build();
+            // 3 - Verifica se alguma interface de comunicação está disponível
+            CommunicationInterface ci = this.getCommunicationInterfaceWithConnection(); // Método traz a interface de comunicação atual
+            // 4 - [disponível]
+            if (ci != null) {
+                try {
+                    // Tempo inicial de envio
+                    Date initialTime = new Date();
+                    // Executa função SendMessage
+                    ci.sendMessage(this, mw);
+                    // Marca como mensagem enviada e algumas métricas
+                    ci.updateEvaluationMetrics(mw, initialTime);
+                    // Evento: Mensagem Entregue
+                    this.newInternalEvent(EVENT_MESSAGE_DELIVERED, mw, mw.getMessage().getTarget(), currentCommunicationInterface);
+                    // Política de Armazenamento
+                    this.storagePolice(mw, server);
+                    // confirmação do funcionamento sem erros
+                    ci.setStatus(CommunicationInterface.STATUS_CONNECTED);
+                    // this.newInternalEvent(EVENT_SERVICE_FUNCTIONS_END, CommunicationDAO.UPLOAD_MESSAGING_POLICY, uploadServer);
+                } catch (java.net.ConnectException ex) {
+                    // Evento: Timeout
+                    // thows Timeout exception   
+                    this.newInternalEvent(EVENT_ADDRESS_NOT_REACHABLE, mw, mw.getMessage().getTarget(), currentCommunicationInterface);
+                    Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+                    ci.setStatus(CommunicationInterface.STATUS_DISCONNECTED);
+                } catch (SocketTimeoutException ex) {
+                    //[Timeout]
+                    // Evento: Timeout
+                    this.newInternalEvent(EVENT_ADDRESS_NOT_REACHABLE, mw, mw.getMessage().getTarget(), currentCommunicationInterface);
+                    Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+                    ci.setStatus(CommunicationInterface.STATUS_DISCONNECTED);
+                } catch (IOException ex) {
+                    //[Erro de IO]
+                    // Evento: Mensagem não entregue
+                    this.newInternalEvent(EVENT_MESSAGE_NOT_DELIVERED, mw, mw.getMessage().getTarget());
+                    Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+                    ci.setStatus(CommunicationInterface.STATUS_DISCONNECTED);
+                }
+            } else {
+                // Evento desconexão
+                this.newInternalEvent(EVENT_DISCONNECTION);
+                this.completelyDisconnected = true;
+                // [Sem sucesso] [IO Exception] [Timeout]
+                // [Aguarda Política de Reconexão]        
+                System.out.println("All functions communication interfaces are disconnected. Starting Reconection Service");
+                //this.gerenalReconnectionService.setReconnectionMethodAllByOnce();
+                this.gerenalReconnectionService.requireConnectionTest();
+                //this.gerenalReconnectionService.reconectionProcess();
+                // espera conectar
+                synchronized (this) {
+                    while (isCompletelyDisconnected()) {
+                        wait();
+                    }
+                }
             }
+        } catch (SQLException ex) {
+            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            // criar
+            // this.newInternalEvent(EVENT_SERVICE_FUNCTION_ERROR, CommunicationDAO.UPLOAD_MESSAGING_POLICY, ex ,uploadServer);// fazer depois
+        } catch (ParserConfigurationException ex) {
+            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            // criar
+            // this.newInternalEvent(EVENT_SERVICE_FUNCTION_ERROR, CommunicationDAO.UPLOAD_MESSAGING_POLICY, ex ,uploadServer);// fazer depois
+        } catch (TransformerException ex) {
+            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            // criar
+            // this.newInternalEvent(EVENT_SERVICE_FUNCTION_ERROR, CommunicationDAO.UPLOAD_MESSAGING_POLICY, ex ,uploadServer);// fazer depois
         }
-        // [Fim Loop]
-    }
 
-    /**
-     * Função referente a política de dados móveis. Somente estratégias 1 e 2
-     * funcionam, as demais necessitam de implementação
-     *
-     * @return
-     * @throws InterruptedException
-     */
-    private MessageWrapper getReportByMobileDataPolicyCriteria() throws InterruptedException, SQLException {
-        // Política de dados móveis, se a interface usa dados móveis
-        MessageWrapper mw = null;
-        switch (mobileDataPolicy) {
-            case 1: // Sem mobilidade. Configuração default. Nenhuma ação.
-                mw = this.getReport();
-                break;
-            case 2: // Fazer o uso sempre que possível. Nenhuma ação adicional.
-                mw = this.getReport();
-                break;
-            case 3: // Somente fazer uso com mensagens de alta prioridade.
-                if (currentCommunicationInterface.isUsesMobileData()) {
-                    mw = this.getPriorityReport();
-                } else {
-                    mw = this.getReport();
-                }
-                break;
-        }
-        return mw;
+        // [Fim Loop]
     }
 
     public void addPushServiceReceiver(PushServiceReceiver receiver) {
@@ -1729,20 +1671,68 @@ public class CommunicationManager extends ComponentManager implements Runnable {
     }
 
     /**
-     * Inicia o serviço de upload
+     * Inicia todos os serviços de upload
      */
-    public void startUploadService() {
-        if (uploadServer == null) {
-            throw new Error("Upload server not specified! - Remember to use: deviceManager.getCommunicationManager().addUploadServer(uploadServer)");
+    public void startAllCommunicationServices() {
+        for (UploadService us : uploadServices) {
+            us.start();
         }
-        this.running = true;
-        uploadServiceThread.start();
+        for(ReconnectionService rs : this.reconnectionServices){
+            rs.start();
+        }
     }
 
     /**
-     * Para o serviço de upload
+     * Para todos o serviços de upload
      */
-    public void stopUploadService() {
-        this.running = false;
+    public void stopAllCommunicationServices() {
+        for (UploadService us : uploadServices) {
+            us.stop();
+        }
+        for(ReconnectionService rs : this.reconnectionServices){
+            rs.stop();
+        }
     }
+
+    public List<PushServiceReceiver> getPushServiceReveivers() {
+        return pushServiceReveivers;
+    }
+
+    public PushServiceReceiver getMainPushServiceReceiver() {
+        for (PushServiceReceiver receiver : pushServiceReveivers) {
+            if (receiver.getStatus() == PushServiceReceiver.STATUS_LISTENING) {
+                return receiver;
+            }
+        }
+        return null;
+    }
+
+    protected int getUploadMessagingPolicy() {
+        return uploadMessagingPolicy;
+    }
+
+    protected int getLimitNormalMessage() {
+        return limitNormalMessage;
+    }
+
+    protected int getLimitPriorityMessage() {
+        return limitPriorityMessage;
+    }
+
+    public int getMobileDataPolicy() {
+        return mobileDataPolicy;
+    }
+
+    public synchronized boolean isCompletelyDisconnected() {
+        return completelyDisconnected;
+    }
+
+    public List<UploadService> getUploadServices() {
+        return uploadServices;
+    }
+
+    public List<ReconnectionService> getReconnectionServices() {
+        return reconnectionServices;
+    }
+
 }

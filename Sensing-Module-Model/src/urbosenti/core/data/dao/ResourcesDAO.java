@@ -18,7 +18,7 @@ import urbosenti.core.device.model.EntityType;
  *
  * @author Guilherme
  */
-public class ResourcesDAO {
+public final class ResourcesDAO {
     public final static int  COMPONENT_ID = 8;
     private final Connection connection;
     private PreparedStatement stmt;

@@ -35,6 +35,8 @@ import urbosenti.core.communication.CommunicationInterface;
 import urbosenti.core.communication.CommunicationManager;
 import urbosenti.core.communication.Message;
 import urbosenti.core.communication.PushServiceReceiver;
+import urbosenti.core.communication.ReconnectionService;
+import urbosenti.core.communication.UploadService;
 import urbosenti.core.data.DataManager;
 import urbosenti.core.data.dao.CommunicationDAO;
 import urbosenti.core.data.dao.DeviceDAO;
@@ -137,6 +139,7 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
     private OperatingSystemDiscovery OSDiscovery = null;
     private List<ComponentManager> enabledComponentManagers;
     private Boolean isRunning;
+
     /**
      *
      * @return
@@ -242,7 +245,7 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
 
     @Override
     public void onCreate() { // Before the execution
-        if(DeveloperSettings.SHOW_FUNCTION_DEBUG_ACTIVITY){
+        if (DeveloperSettings.SHOW_FUNCTION_DEBUG_ACTIVITY) {
             System.out.println("Activating: " + getClass());
         }
         // instancia um estado para ser usado na ativaçaõ dos módulos sobdemanda
@@ -264,6 +267,8 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
             this.outputCommunicationInterfacesDiscovery();
             this.inputCommunicationInterfacesDiscovery();
             this.deviceDiscovery(); // descobre as informações do dispositivo
+            // inicia conficurações dos serviços
+            this.setUpCommunicationUrboSentiServices();
             this.communicationManager.onCreate(); // Instancia os monitores gerais de funcionalidade e os atuadores gerais
             this.enabledComponentManagers.add(this.communicationManager);
             // ativação dos Módulos sobdemanda
@@ -385,25 +390,91 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
             throw new Error(ex);
         }
         this.enabledComponentManagers.add(this);
-        if(DeveloperSettings.SHOW_FUNCTION_DEBUG_ACTIVITY){
+        if (DeveloperSettings.SHOW_FUNCTION_DEBUG_ACTIVITY) {
             System.out.println("onCreate Process Finished");
         }
     }
 
     /**
-     * Ações disponibilizadas por esse componente:
+     * Ações disponibilizadas por esse componente por função:
+     * <p><b>Entidade Alvo</b>: Função dos Serviços UrboSenti</p>
      * <ul>
-     * <li>Nenhuma ação ainda é suportada</li>
+     * <li>01 - Acordar um serviço - componentId, entityId, instanceId</li>
+     * <li>02 - Reiniciar um serviço - componentId, entityId, instanceId</li>
+     * <li>03 - Parar serviço - componentId, entityId, instanceId</li>
      * </ul>
-     *
      * @param action contém objeto ação.
      * @return
      *
      */
     @Override
     public FeedbackAnswer applyAction(Action action) {
-        // não necessita de ações ainda.
-        return null;
+        FeedbackAnswer answer = null;
+        Integer componentId = Integer.parseInt((action.getParameters().get("componentId").toString())), 
+                entityId = Integer.parseInt((action.getParameters().get("entityId").toString())), 
+                instanceId = Integer.parseInt((action.getParameters().get("instanceId").toString()));
+        switch(action.getId()){
+            case 1: // Acordar um serviço
+                if(componentId == CommunicationDAO.COMPONENT_ID){
+                    if(entityId == CommunicationDAO.ENTITY_ID_OF_RECONNECTION){
+                        for(ReconnectionService rs : communicationManager.getReconnectionServices()){
+                            if(instanceId == rs.getInstance().getModelId()){
+                                rs.wakeUp();
+                            }
+                        }                            
+                    } else if(entityId == CommunicationDAO.ENTITY_ID_OF_SERVICE_OF_UPLOAD_REPORTS){
+                        for(UploadService up : communicationManager.getUploadServices()){
+                            if(instanceId == up.getInstance().getModelId()){
+                                up.wakeUp();
+                            }
+                        }   
+                    }             
+                }
+                break;
+            case 2: // Reiniciar um serviço
+                if(componentId == CommunicationDAO.COMPONENT_ID){
+                    if(entityId == CommunicationDAO.ENTITY_ID_OF_RECONNECTION){
+                        for(ReconnectionService rs : communicationManager.getReconnectionServices()){
+                            if(instanceId == rs.getInstance().getModelId()){
+                                rs.stop();
+                                rs.start();
+                            }
+                        }                            
+                    } else if(entityId == CommunicationDAO.ENTITY_ID_OF_SERVICE_OF_UPLOAD_REPORTS){
+                        for(UploadService up : communicationManager.getUploadServices()){
+                            if(instanceId == up.getInstance().getModelId()){
+                                up.stop();
+                                up.start();
+                            }
+                        }   
+                    }             
+                }
+                break;
+            case 4: // Parar serviço
+                if(componentId == CommunicationDAO.COMPONENT_ID){
+                    if(entityId == CommunicationDAO.ENTITY_ID_OF_RECONNECTION){
+                        for(ReconnectionService rs : communicationManager.getReconnectionServices()){
+                            if(instanceId == rs.getInstance().getModelId()){
+                                rs.start();
+                            }
+                        }                            
+                    } else if(entityId == CommunicationDAO.ENTITY_ID_OF_SERVICE_OF_UPLOAD_REPORTS){
+                        for(UploadService up : communicationManager.getUploadServices()){
+                            if(instanceId == up.getInstance().getModelId()){
+                                up.start();
+                            }
+                        }   
+                    }             
+                }
+                break;
+        }
+         // verifica se a ação existe ou se houve algum resultado durante a execução
+        if (answer == null && action.getId() >= 1 && action.getId() <= 3) {
+            answer = new FeedbackAnswer(FeedbackAnswer.ACTION_RESULT_WAS_SUCCESSFUL);
+        } else if (answer == null) {
+            answer = new FeedbackAnswer(FeedbackAnswer.ACTION_DOES_NOT_EXIST);
+        }
+        return answer;
     }
 
     /**
@@ -1094,52 +1165,60 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
     public void addComponentManager(ComponentManager componentManager) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
+
     /**
-     * Inicia todos os serviços da UrboSenti. Se estes já estiverem inicializados não faz nada.
-     * @throws IOException 
+     * Inicia todos os serviços da UrboSenti. Se estes já estiverem
+     * inicializados não faz nada.
+     *
+     * @throws IOException
      */
-    public void startUrboSentiServices() throws IOException {
+    public void startUrboSentiServices() throws IOException, SQLException {
         // if is not running execute all threads
-        if(!isRunning){
+        if (!isRunning) {
             // Cria as threads
             Thread systemHandler = new Thread(adaptationManager);
 
-            /***** Configurações necessárias para os componentes *****/
+            /**
+             * *** Configurações necessárias para os componentes ****
+             */
             // tratador de eventos do sistema
-            this.getAdaptationManager().start(); 
+            this.getAdaptationManager().start();
             // Registrar do nó de sensoriamento movel no backend server :
             // 1 - busca o servidor backend cadastrado no conhecimento inicial
             Service backendServer = this.getBackendService();
             // 2 - Registrar no Servidor Backend
             this.registerSensingModule(backendServer);
-            // 3 - Adicionar o servidor da aplicação como servidor para upload
-            communicationManager.addUploadServer(backendServer);
+            // 3 - Adicionar o servidor da aplicação como servidor para upload na função de serviços
+            // busca o servidor de upload respectivo, se não possui, cria um e adiciona
 
-            /**************** Iniciar os serviços **************/
+            /**
+             * ************** Iniciar os serviços *************
+             */
             // interfaces de comunicação de entrada
-            for(PushServiceReceiver receivers : dataManager.getCommunicationDAO().getInputCommunicationInterfaces()){
+            for (PushServiceReceiver receivers : dataManager.getCommunicationDAO().getInputCommunicationInterfaces()) {
                 receivers.start();
             }
             // tratador de eventos do sistema
             systemHandler.start();
             // serviço de upload de relatos
-            this.communicationManager.startUploadService();
+            this.communicationManager.startAllCommunicationServices();
             // Evento que os serviços estão em funcionamento
             this.newInternalEvent(EVENT_DEVICE_SERVICES_INITIATED);
             // Service now is running
             this.isRunning = true;
         }
     }
+
     /**
      * Para todos os serviços da UrboSenti
      */
-    public void stopUrboSentiServices(){
+    public void stopUrboSentiServices() {
         // Para o adaptation Manager
         this.adaptationManager.stop();
         // Para  serviço de Upload
-        this.communicationManager.stopUploadService();
+        this.communicationManager.stopAllCommunicationServices();
         // Para os listeners
-        for(PushServiceReceiver receivers : dataManager.getCommunicationDAO().getInputCommunicationInterfaces()){
+        for (PushServiceReceiver receivers : dataManager.getCommunicationDAO().getInputCommunicationInterfaces()) {
             receivers.stop();
         }
         this.isRunning = false;
@@ -1149,6 +1228,29 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
 
     public Boolean isRunning() {
         return isRunning;
+    }
+
+    public void setUpCommunicationUrboSentiServices() throws SQLException {
+        Entity entity;
+        // pega a instância de serviço de upload para o backend, se não existir cria
+        Instance instance = dataManager.getInstanceDAO().getInstance(1, CommunicationDAO.ENTITY_ID_OF_SERVICE_OF_UPLOAD_REPORTS, COMMUNICATION_COMPONENT_ID);
+        if (instance == null) {
+            instance = new Instance(1, "Backend upload service", "urbosenti.core.communication.UploadService");
+            entity = this.dataManager.getEntityDAO().getEntity(CommunicationDAO.ENTITY_ID_OF_SERVICE_OF_UPLOAD_REPORTS, COMMUNICATION_COMPONENT_ID);
+            instance.setStates(this.dataManager.getEntityStateDAO().getInitialModelInstanceStates(entity));
+            for (State s : instance.getStates()) {
+                if (s.getId() == CommunicationDAO.STATE_ID_OF_UPLOAD_PERIODIC_REPORTS_SERVICE_ID) {
+                    s.setContent(new Content(this.getBackendService().getId()));
+                }
+            }
+            this.dataManager.getInstanceDAO().insert(instance);
+        }
+        // atribui a instância de serviço de upload
+        this.communicationManager.addUploadServer(new UploadService(this.getBackendService(), communicationManager, instance));
+            // cria a instância dos demais serviços de upload --- Trabalho futuro
+        // cria as instâncias de serviços de reconexão
+        instance = dataManager.getInstanceDAO().getInstance(1,CommunicationDAO.ENTITY_ID_OF_RECONNECTION, COMMUNICATION_COMPONENT_ID);
+        this.communicationManager.setGeneralReconectionService(new ReconnectionService(communicationManager, dataManager.getCommunicationDAO().getAvailableInterfaces(),instance));
     }
     
 }

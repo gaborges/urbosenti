@@ -18,7 +18,7 @@ import urbosenti.core.device.model.EntityType;
  *
  * @author Guilherme
  */
-public class EventDAO {
+public final class EventDAO {
     public final static int  COMPONENT_ID = 2;
     public static final int ENTITY_ID_OF_TEMPORAL_TRIGGER_OF_DYNAMIC_EVENTS = 1;
     

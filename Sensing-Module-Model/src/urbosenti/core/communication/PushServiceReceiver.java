@@ -7,12 +7,13 @@ package urbosenti.core.communication;
 import java.io.IOException;
 import java.util.HashMap;
 import urbosenti.core.device.model.Instance;
+import urbosenti.core.device.model.InstanceRepresentative;
 
 /**
  *
  * @author Guilherme
  */
-public abstract class PushServiceReceiver implements Runnable {
+public abstract class PushServiceReceiver implements Runnable, InstanceRepresentative {
 
     public static final boolean STATUS_LISTENING = true;
     public static final boolean STATUS_STOPPED = false;
@@ -91,6 +92,7 @@ public abstract class PushServiceReceiver implements Runnable {
         this.description = description;
     }
 
+    @Override
     public Instance getInstance() {
         return instance;
     }
