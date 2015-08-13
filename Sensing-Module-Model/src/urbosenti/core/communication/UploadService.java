@@ -37,6 +37,7 @@ public class UploadService extends UrboSentiService implements Runnable, Instanc
     private Double uploadRate; // Taxa de upload atribuída dinâmicamente. Inicialmente 1;
     private int limitOfReportsSentByUploadInterval; // Limite do envio de relatos por intervalo, padrão 20 (Posso fazer experimentos)
     private boolean allowedToPerformUpload;
+    private boolean subscribedMaximumUploadRate;
 
     public UploadService(Service service, CommunicationManager communicationManager, Instance instance) {
         this.service = service;
@@ -54,7 +55,9 @@ public class UploadService extends UrboSentiService implements Runnable, Instanc
                 allowedToPerformUpload = (Boolean) Content.parseContent(s.getDataType(), s.getCurrentValue());
             } else if (s.getModelId() == CommunicationDAO.STATE_ID_OF_UPLOAD_PERIODIC_REPORTS_ABOUT_AMOUNT_OF_MESSAGES_UPLOADED_BY_INTERVAL) {
                 limitOfReportsSentByUploadInterval = (Integer) Content.parseContent(s.getDataType(), s.getCurrentValue());
-            }
+            } else if (s.getModelId() == CommunicationDAO.STATE_ID_OF_UPLOAD_PERIODIC_REPORTS_SUBSCRIBED_MAXIMUM_UPLOAD_RATE) {
+                this.subscribedMaximumUploadRate = (Boolean) Content.parseContent(s.getDataType(), s.getCurrentValue());
+            } 
         }
     }
 
@@ -396,5 +399,18 @@ public class UploadService extends UrboSentiService implements Runnable, Instanc
         this.limitOfReportsSentByUploadInterval = limitOfReportsSentByUploadInterval;
     }
 
+    public synchronized boolean isSubscribedMaximumUploadRate() {
+        return subscribedMaximumUploadRate;
+    }
+
+    public synchronized void setSubscribedMaximumUploadRate(boolean subscribedMaximumUploadRate) {
+        this.subscribedMaximumUploadRate = subscribedMaximumUploadRate;
+        notifyAll();
+    }
     
+    @Override
+    public String toString() {
+        return "UploadService{" + "service=" + service + ", instance=" + instance.getId() + '}';
+    }
+
 }

@@ -74,6 +74,8 @@ public class SocketPushServiceReceiver extends PushServiceReceiver {
                 Socket accept = this.serverSocket.accept();
                 DataInputStream dataInputStream = new DataInputStream(accept.getInputStream());
                 message = dataInputStream.readUTF();
+                dataInputStream.close();
+                accept.close();
                 super.communicationManager.newPushMessage(accept.getInetAddress().getHostAddress(), message);
             }
         } catch (IOException ex) {

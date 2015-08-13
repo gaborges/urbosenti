@@ -58,7 +58,7 @@ public class CommunicationManager extends ComponentManager {
      * reconexão</li></ul>
      *
      */
-    private static final int EVENT_INTERFACE_DISCONNECTION = 1;
+    public static final int EVENT_INTERFACE_DISCONNECTION = 1;
     /**
      * int EVENT_MESSAGE_DELIVERED = 2;
      *
@@ -67,7 +67,7 @@ public class CommunicationManager extends ComponentManager {
      * <li>parâmetros: Mensagem Wrapper; Destinatário; Interface;</li></ul>
      *
      */
-    private static final int EVENT_MESSAGE_DELIVERED = 2;
+    public static final int EVENT_MESSAGE_DELIVERED = 2;
     /**
      * int EVENT_MESSAGE_NOT_DELIVERED = 3;
      *
@@ -76,7 +76,7 @@ public class CommunicationManager extends ComponentManager {
      * <li>parâmetros: Mensagem Wrapper; Destinatário;</li></ul>
      *
      */
-    private static final int EVENT_MESSAGE_NOT_DELIVERED = 3;
+    public static final int EVENT_MESSAGE_NOT_DELIVERED = 3;
     /**
      * int EVENT_MESSAGE_RECEIVED = 4;
      *
@@ -85,7 +85,7 @@ public class CommunicationManager extends ComponentManager {
      * <li>parâmetros: Origem; Mensagem</li></ul>
      *
      */
-    private static final int EVENT_MESSAGE_RECEIVED = 4;
+    public static final int EVENT_MESSAGE_RECEIVED = 4;
     /**
      * int EVENT_MESSAGE_RECEIVED_INVALID_FORMAT = 5;
      *
@@ -94,7 +94,7 @@ public class CommunicationManager extends ComponentManager {
      * <li>parâmetros: Origem; Mensagem Bruta</li></ul>
      *
      */
-    private static final int EVENT_MESSAGE_RECEIVED_INVALID_FORMAT = 5;
+    public static final int EVENT_MESSAGE_RECEIVED_INVALID_FORMAT = 5;
     /**
      * int EVENT_ADDRESS_NOT_REACHABLE = 6;
      *
@@ -103,7 +103,7 @@ public class CommunicationManager extends ComponentManager {
      * <li>parâmetros: Mensagem Wrapper; Destinatário; Interface</li></ul>
      *
      */
-    private static final int EVENT_ADDRESS_NOT_REACHABLE = 6;
+    public static final int EVENT_ADDRESS_NOT_REACHABLE = 6;
     /**
      * int EVENT_INTERFACE_DISCONNECTION = 7;
      *
@@ -112,7 +112,7 @@ public class CommunicationManager extends ComponentManager {
      * <li>parâmetros: nenhum.</li></ul>
      *
      */
-    private static final int EVENT_DISCONNECTION = 7;
+    public static final int EVENT_DISCONNECTION = 7;
     /**
      * int EVENT_RESTORED_CONNECTION = 8;
      *
@@ -121,7 +121,7 @@ public class CommunicationManager extends ComponentManager {
      * <li>parâmetros: Interface ; (opcional) Serviço de reconexão</li></ul>
      *
      */
-    private static final int EVENT_CONNECTION_RESTORED = 8;
+    public static final int EVENT_CONNECTION_RESTORED = 8;
     /**
      * int EVENT_REPORT_AWAITING_APPROVAL = 9;
      *
@@ -130,7 +130,7 @@ public class CommunicationManager extends ComponentManager {
      * <li>parâmetros: Mensagem</li></ul>
      *
      */
-    static final int EVENT_REPORT_AWAITING_APPROVAL = 9;
+    public static final int EVENT_REPORT_AWAITING_APPROVAL = 9;
     /**
      * int EVENT_MESSAGE_STORED = 10;
      *
@@ -139,7 +139,7 @@ public class CommunicationManager extends ComponentManager {
      * <li>parâmetros: Mensagem Wrapper</li></ul>
      *
      */
-    private static final int EVENT_MESSAGE_STORED = 10;
+    public static final int EVENT_MESSAGE_STORED = 10;
     /**
      * int EVENT_MESSAGE_STORED_REMOVED = 11;
      *
@@ -148,7 +148,7 @@ public class CommunicationManager extends ComponentManager {
      * <li>parâmetros: Mensagem Wrapper</li></ul>
      *
      */
-    private static final int EVENT_MESSAGE_STORED_REMOVED = 11;
+    public static final int EVENT_MESSAGE_STORED_REMOVED = 11;
     /**
      * int EVENT_NEW_INPUT_COMMUNICATION_INTERFACE_ADDRESS = 15;
      *
@@ -157,7 +157,7 @@ public class CommunicationManager extends ComponentManager {
      * <li>parâmetros: Mensagem Wrapper</li></ul>
      *
      */
-    private static final int EVENT_NEW_INPUT_COMMUNICATION_INTERFACE_ADDRESS = 15;
+    public static final int EVENT_NEW_INPUT_COMMUNICATION_INTERFACE_ADDRESS = 15;
     /**
      * int EVENT_NEW_RECONNECTION_ATTEMPT = 16;
      *
@@ -166,7 +166,244 @@ public class CommunicationManager extends ComponentManager {
      * <li>parâmetros: Serviço de reconexão</li></ul>
      *
      */
-    private static final int EVENT_NEW_RECONNECTION_ATTEMPT = 16;
+    public static final int EVENT_NEW_RECONNECTION_ATTEMPT = 16;
+    /**
+     * int ACTION_REMOVE_REPORT_FROM_DATABASE = 1;
+     *
+     * <ul><li>id: 1</li>
+     * <li>ação: Remover relato da fila de upload e do banco de dados</li>
+     * <li>parâmetros: Id do Relato</li></ul>
+     *
+     */
+    public static final int ACTION_REMOVE_REPORT_FROM_DATABASE = 1;
+    /**
+     * int ACTION_UPDATE_QUANTITY_LIMIT_OF_REPORTS_STORED = 2;
+     *
+     * <ul><li>id: 2</li>
+     * <li>ação: Alterar limite de relatos armazenados</li>
+     * <li>parâmetros: Novo Limite</li></ul>
+     *
+     */
+    public static final int ACTION_UPDATE_QUANTITY_LIMIT_OF_REPORTS_STORED = 2;
+    /**
+     * int ACTION_UPDATE_TIME_LIMIT_OF_REPORTS_STORED = 3;
+     *
+     * <ul><li>id: 3</li>
+     * <li>ação: Alterar tempo limite de expiração de mensagens armazenadas</li>
+     * <li>parâmetros: Nova Política (de 1 a 4)</li></ul>
+     *
+     */
+    public static final int ACTION_UPDATE_TIME_LIMIT_OF_REPORTS_STORED = 3;
+    /**
+     * int ACTION_UPDATE_STORAGE_POLICY = 4;
+     *
+     * <ul><li>id: 4</li>
+     * <li>ação: Alterar política de relatos armazenados</li>
+     * <li>parâmetros: Nova Política (de 1 a 4)</li></ul>
+     *
+     */
+    public static final int ACTION_UPDATE_STORAGE_POLICY = 4;
+    /**
+     * int ACTION_UPDATE_RECONNECTION_SERVICE_INTERVAL = 5;
+     *
+     * <ul><li>id: 5</li>
+     * <li>ação: Alterar intervalo de reconexão</li>
+     * <li>parâmetros: Intervalo em ms; Id da instância</li></ul>
+     *
+     */
+    public static final int ACTION_UPDATE_RECONNECTION_SERVICE_INTERVAL = 5;
+    /**
+     * int ACTION_UPDATE_RECONNECTION_SERVICE_METHOD = 6;
+     *
+     * <ul><li>id: 6</li>
+     * <li>ação: Alterar metodo de reconexão</li>
+     * <li>parâmetros: método (1 ou 2); Id da instância</li></ul>
+     *
+     */
+    public static final int ACTION_UPDATE_RECONNECTION_SERVICE_METHOD = 6;
+    /**
+     * int ACTION_UPDATE_RECONNECTION_SERVICE_POLICY = 7;
+     *
+     * <ul><li>id: 7</li>
+     * <li>ação: Alterar política de reconexão</li>
+     * <li>parâmetros: política (1 ou 2)</li></ul>
+     *
+     */
+    public static final int ACTION_UPDATE_RECONNECTION_SERVICE_POLICY = 7;
+    /**
+     * int ACTION_UPDATE_UPLOAD_SERVICE_POLICY = 8;
+     *
+     * <ul><li>id: 8</li>
+     * <li>ação: Alterar política dos serviços de reconexão</li>
+     * <li>parâmetros: política (1,2,3 ou 4)</li></ul>
+     *
+     */
+    public static final int ACTION_UPDATE_UPLOAD_SERVICE_POLICY = 8;
+    /**
+     * int ACTION_UPDATE_UPLOAD_SERVICE_UPLOAD_RATE = 9;
+     *
+     * <ul><li>id: 9</li>
+     * <li>ação: Alterar taxa de upload do serviço de reconexão</li>
+     * <li>parâmetros: Nova Taxa; Id da instância</li></ul>
+     *
+     */
+    public static final int ACTION_UPDATE_UPLOAD_SERVICE_UPLOAD_RATE = 9;
+    /**
+     * int ACTION_UPDATE_UPLOAD_SERVICE_INTERVAL = 10;
+     *
+     * <ul><li>id: 10</li>
+     * <li>ação: Alterar tempo do intervalo entre ciclos de upload</li>
+     * <li>parâmetros: Novo intervalo; Id da instância</li></ul>
+     *
+     */
+    public static final int ACTION_UPDATE_UPLOAD_SERVICE_INTERVAL = 10;
+    /**
+     * int ACTION_UPDATE_UPLOAD_SERVICE_REPORTS_BY_INTERVAL = 11;
+     *
+     * <ul><li>id: 11</li>
+     * <li>ação: Alterar quantidade de relatos enviados simultaneamente por
+     * ciclo</li>
+     * <li>parâmetros: Nova quantidade; Id da instância</li></ul>
+     *
+     */
+    public static final int ACTION_UPDATE_UPLOAD_SERVICE_REPORTS_BY_INTERVAL = 11;
+    /**
+     * int ACTION_UPDATE_MOBILE_DATA_POLICY = 12;
+     *
+     * <ul><li>id: 2</li>
+     * <li>ação: Alterar política</li>
+     * <li>parâmetros: política (1,2,3,4,5 ou 6)</li></ul>
+     *
+     */
+    public static final int ACTION_UPDATE_MOBILE_DATA_POLICY = 12;
+    /**
+     * int ACTION_UPDATE_MOBILE_DATA_NORMAL_DATA_QUOTA = 13;
+     *
+     * <ul><li>id: 13</li>
+     * <li>ação: Alterar Limite de uso dos Dados Móveis com prioridade
+     * normal</li>
+     * <li>parâmetros: Novo limite</li></ul>
+     *
+     */
+    public static final int ACTION_UPDATE_MOBILE_DATA_NORMAL_DATA_QUOTA = 13;
+    /**
+     * int ACTION_UPDATE_MOBILE_DATA_PREFERENTIAL_DATA_QUOTA = 14;
+     *
+     * <ul><li>id: 14</li>
+     * <li>ação: Alterar Limite de uso dos Dados Móveis com prioridade
+     * preferêncial</li>
+     * <li>parâmetros: Novo limite</li></ul>
+     *
+     */
+    public static final int ACTION_UPDATE_MOBILE_DATA_PREFERENTIAL_DATA_QUOTA = 14;
+    /**
+     * int ACTION_COMMUNICATION_INTERFACE_ENABLE = 15;
+     *
+     * <ul><li>id: 15</li>
+     * <li>ação: Desabilitar interface</li>
+     * <li>parâmetros: Interface;Condição (true)</li></ul>
+     *
+     */
+    public static final int ACTION_COMMUNICATION_INTERFACE_ENABLE = 15;
+    /**
+     * int ACTION_COMMUNICATION_INTERFACE_DISABLE = 16;
+     *
+     * <ul><li>id: 16</li>
+     * <li>ação: Habilitar interface</li>
+     * <li>parâmetros: Interface;Condição (false)</li></ul>
+     *
+     */
+    public static final int ACTION_COMMUNICATION_INTERFACE_DISABLE = 16;
+    /**
+     * int ACTION_COMMUNICATION_INTERFACE_SET_CURRENT_INTERFACE = 17;
+     *
+     * <ul><li>id: 17</li>
+     * <li>ação: Definir interface como atual</li>
+     * <li>parâmetros: Interface</li></ul>
+     *
+     */
+    public static final int ACTION_COMMUNICATION_INTERFACE_SET_CURRENT_INTERFACE = 17;
+    /**
+     * int ACTION_COMMUNICATION_INTERFACE_POSITION_IN_QUEUE = 18;
+     *
+     * <ul><li>id: 18</li>
+     * <li>ação: Alterar ordem da interface</li>
+     * <li>parâmetros: Interface;Nova posição</li></ul>
+     *
+     */
+    public static final int ACTION_COMMUNICATION_INTERFACE_POSITION_IN_QUEUE = 18;
+    /**
+     * int ACTION_COMMUNICATION_INTERFACE_UPDATE_TIMEOUT = 19;
+     *
+     * <ul><li>id: 19</li>
+     * <li>ação: Alterar timeout</li>
+     * <li>parâmetros: Interface;Alterar timeout</li></ul>
+     *
+     */
+    public static final int ACTION_COMMUNICATION_INTERFACE_UPDATE_TIMEOUT = 19;
+    /**
+     * int ACTION_INPUT_COMMUNICATION_INTERFACE_ENABLE = 20;
+     *
+     * <ul><li>id: 20</li>
+     * <li>ação: Habilitar Interface</li>
+     * <li>parâmetros: Instância;Condição(true)</li></ul>
+     *
+     */
+    public static final int ACTION_INPUT_COMMUNICATION_INTERFACE_ENABLE = 20;
+    /**
+     * int ACTION_INPUT_COMMUNICATION_INTERFACE_DISABLE = 21;
+     *
+     * <ul><li>id: 21</li>
+     * <li>ação: Desabilitar Interface</li>
+     * <li>parâmetros: Instância;Condição(false)</li></ul>
+     *
+     */
+    public static final int ACTION_INPUT_COMMUNICATION_INTERFACE_DISABLE = 21;
+    /**
+     * int ACTION_SEND_SYNCHRONOUS_MESSAGE = 22;
+     *
+     * <ul><li>id: 22</li>
+     * <li>ação: Enviar mensagem síncrona</li>
+     * <li>parâmetros: Mensagem;Endereço</li></ul>
+     *
+     */
+    public static final int ACTION_SEND_SYNCHRONOUS_MESSAGE = 22;
+    /**
+     * int ACTION_SEND_ASSYNCHRONOUS_MESSAGE = 23;
+     *
+     * <ul><li>id: 23</li>
+     * <li>ação: Enviar mensagem assíncrona</li>
+     * <li>parâmetros: Mensagem;Endereço</li></ul>
+     *
+     */
+    public static final int ACTION_SEND_ASSYNCHRONOUS_MESSAGE = 23;
+    /**
+     * int ACTION_DELETE_EXPIRED_MESSAGES = 24;
+     *
+     * <ul><li>id: 24</li>
+     * <li>ação: Apagar mensagens expiradas</li>
+     * <li>parâmetros: Nenhum</li></ul>
+     *
+     */
+    public static final int ACTION_DELETE_EXPIRED_MESSAGES = 24;
+    /**
+     * int ACTION_UPDATE_UPLOAD_SERVICE_ALLOWED_TO_UPLOAD = 25;
+     *
+     * <ul><li>id: 25</li>
+     * <li>ação: Permissão de realizar upload alterada</li>
+     * <li>parâmetros: Nenhum</li></ul>
+     *
+     */
+    public static final int ACTION_UPDATE_UPLOAD_SERVICE_ALLOWED_TO_UPLOAD = 25;
+    /**
+     * int ACTION_UPDATE_UPLOAD_SERVICE_SUBSCRIBED_MAXIMUM_UPLOAD_RATE = 26;
+     *
+     * <ul><li>id: 26</li>
+     * <li>ação: Registrado para receber taxas máximas de upload</li>
+     * <li>parâmetros: Nenhum</li></ul>
+     *
+     */
+    public static final int ACTION_UPDATE_UPLOAD_SERVICE_SUBSCRIBED_MAXIMUM_UPLOAD_RATE = 26;
     private int limitPriorityMessage;
     private int limitNormalMessage;
 //    private List<MessageWrapper> messagesNotChecked;
@@ -231,6 +468,8 @@ public class CommunicationManager extends ComponentManager {
     private final List<ReconnectionService> reconnectionServices;
     private UploadService backendUploadService;
     private boolean completelyDisconnected;
+    private Integer quantityLimit;
+    private Integer timeLimit;
 
     public CommunicationManager(DeviceManager deviceManager) {
         super(deviceManager, CommunicationDAO.COMPONENT_ID);
@@ -241,6 +480,8 @@ public class CommunicationManager extends ComponentManager {
         this.reconnectionServices = new ArrayList();
         this.completelyDisconnected = false;
         this.backendUploadService = null;
+        this.quantityLimit = Integer.MAX_VALUE;
+        this.timeLimit = Integer.MAX_VALUE;
     }
 
     // if do not setted then when the method onCreate was activated it creates automatically
@@ -304,6 +545,15 @@ public class CommunicationManager extends ComponentManager {
             //Contadores do escalonador da fila de reports
             limitNormalMessage = 1;
             limitPriorityMessage = 4;
+            // armazenamento
+            this.quantityLimit = Integer.parseInt(getDeviceManager().getDataManager().getEntityStateDAO().getEntityState(
+                    CommunicationDAO.COMPONENT_ID,
+                    CommunicationDAO.ENTITY_ID_OF_REPORTS_STORAGE,
+                    CommunicationDAO.STATE_ID_OF_REPORTS_STORAGE_ABOUT_AMOUNT_LIMIT_OF_STORED_MESSAGES).getCurrentValue().toString());
+            this.timeLimit = Integer.parseInt(getDeviceManager().getDataManager().getEntityStateDAO().getEntityState(
+                    CommunicationDAO.COMPONENT_ID,
+                    CommunicationDAO.ENTITY_ID_OF_REPORTS_STORAGE,
+                    CommunicationDAO.STATE_ID_OF_REPORTS_STORAGE_ABOUT_MESSAGE_EXPIRATION_TIME).getCurrentValue().toString());
         } catch (SQLException ex) {
             Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
             throw new Error(ex);
@@ -320,6 +570,7 @@ public class CommunicationManager extends ComponentManager {
      * <li>02 - Alterar limite de relatos armazenados - limit</li>
      * <li>03 - Alterar tempo limite - limit</li>
      * <li>04 - Alterar política - policy - de 1 a 4</li>
+     * <li>24 - Apagar mensagens expiradas</li>
      * </ul>
      * <p>
      * <b>Entidade Alvo</b>: Função de Reconexão</p>
@@ -406,11 +657,11 @@ public class CommunicationManager extends ComponentManager {
                     answer = new FeedbackAnswer(FeedbackAnswer.ACTION_RESULT_FAILED, ex.toString());
                 }
                 break;
-            case 2: // Alterar limite de relatos armazenados *** tais estados são mantidos no módulo de adaptação, depois implementar
-
+            case 2: // Alterar limite de relatos armazenados
+                this.quantityLimit = (Integer) action.getParameters().get("limit");
                 break;
-            case 3: // Alterar tempo limite - Função de Armazenamento de relatos *** tais estados são mantidos no módulo de adaptação
-
+            case 3: // Alterar tempo limite - Função de Armazenamento de relatos
+                this.timeLimit = (Integer) action.getParameters().get("limit");
                 break;
             case 4: // Alterar política - Função de Armazenamento de relatos
                 // Parâmetro
@@ -640,6 +891,32 @@ public class CommunicationManager extends ComponentManager {
                     answer = new FeedbackAnswer(FeedbackAnswer.ACTION_RESULT_FAILED, ex.toString());
                 }
                 break;
+            case 24: // apagar mensagens expiradas
+                try {
+                    getDeviceManager().getDataManager().getReportDAO().deleteAllExpired(timeLimit);
+                } catch (SQLException ex) {
+                    Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+                    answer = new FeedbackAnswer(FeedbackAnswer.ACTION_RESULT_FAILED, ex.toString());
+                }
+                break;
+            case 25: // Permitir realizar upload
+                instanceId = (Integer) action.getParameters().get("instanceId");
+                for (UploadService us : uploadServices) {
+                    if (us.getInstance().getModelId() == instanceId) {
+                        us.setAllowedToPerformUpload((Boolean) action.getParameters().get("value"));
+                        break;
+                    }
+                }
+                break;
+            case 26: // Registrado para receber taxas máximas de upload
+                instanceId = (Integer) action.getParameters().get("instanceId");
+                for (UploadService us : uploadServices) {
+                    if (us.getInstance().getModelId() == instanceId) {
+                        us.setSubscribedMaximumUploadRate((Boolean) action.getParameters().get("value"));
+                        break;
+                    }
+                }
+                break;
         }
         // verifica se a ação existe ou se houve algum resultado durante a execução
         if (answer == null && action.getId() >= 1 && action.getId() <= 23) {
@@ -669,7 +946,7 @@ public class CommunicationManager extends ComponentManager {
         if (message.getOrigin() == null) {
             message.setOrigin(new Address());
             message.getOrigin().setLayer(Address.LAYER_APPLICATION);
-            message.getOrigin().setUid(getDeviceManager().getUID());
+            message.getOrigin().setUid(getDeviceManager().getBackendService().getApplicationUID());
         }
         MessageWrapper messageWrapper = new MessageWrapper(message);
         try {
@@ -734,7 +1011,7 @@ public class CommunicationManager extends ComponentManager {
         if (message.getOrigin() == null) {
             message.setOrigin(new Address());
             message.getOrigin().setLayer(Address.LAYER_APPLICATION);
-            message.getOrigin().setUid(getDeviceManager().getUID());
+            message.getOrigin().setUid(getDeviceManager().getBackendService().getApplicationUID());
         }
         // Adiciona na mensagem que ele requer resposta
         message.setRequireResponse(true);
@@ -803,7 +1080,7 @@ public class CommunicationManager extends ComponentManager {
         if (message.getOrigin() == null) {
             message.setOrigin(new Address());
             message.getOrigin().setLayer(Address.LAYER_APPLICATION);
-            message.getOrigin().setUid(getDeviceManager().getUID());
+            message.getOrigin().setUid(getDeviceManager().getBackendService().getApplicationUID());
         }
         MessageWrapper messageWrapper = new MessageWrapper(message);
         messageWrapper.setTimeout(timeout);
@@ -900,7 +1177,9 @@ public class CommunicationManager extends ComponentManager {
         try {
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             DocumentBuilder builder = factory.newDocumentBuilder();
-
+            // Tratar dados substituindo lixos
+            bruteMessage = bruteMessage.replace("&gt;", ">");
+            bruteMessage = bruteMessage.replace("&lt;", "<");
             // Criar o documento e com verte a String em DOC 
             Document doc = builder.parse(new InputSource(new StringReader(bruteMessage)));
             // Cria a mensagem para passar para o sistema
@@ -952,9 +1231,12 @@ public class CommunicationManager extends ComponentManager {
             } else {
                 msg.setAnonymousUpload(false);
             }
-
+            // converter elemento <content> para String
+            StringWriter stw = new StringWriter();
+            Transformer serializer = TransformerFactory.newInstance().newTransformer();
+            serializer.transform(new DOMSource(response.getElementsByTagName("content").item(0)), new StreamResult(stw));
             // <content> - conteúdo da mensagem
-            msg.setContent(response.getElementsByTagName("content").item(0).getTextContent());
+            msg.setContent(stw.getBuffer().toString());
 
             if (DeveloperSettings.SHOW_FUNCTION_DEBUG_ACTIVITY) {
                 System.out.println("Reveived message layer: " + msg.getTarget().getLayer());
@@ -969,6 +1251,9 @@ public class CommunicationManager extends ComponentManager {
             Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
             this.newInternalEvent(EVENT_MESSAGE_RECEIVED_INVALID_FORMAT, originAddress, bruteMessage);
         } catch (IOException ex) {
+            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            this.newInternalEvent(EVENT_MESSAGE_RECEIVED_INVALID_FORMAT, originAddress, bruteMessage);
+        } catch (TransformerException ex) {
             Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
             this.newInternalEvent(EVENT_MESSAGE_RECEIVED_INVALID_FORMAT, originAddress, bruteMessage);
         }
@@ -1064,10 +1349,10 @@ public class CommunicationManager extends ComponentManager {
      * Removida</li>
      * <li>CommunicationManager.EVENT_NEW_INPUT_COMMUNICATION_INTERFACE_ADDRESS
      * - novo endereço da interface de comunicação de entrada</li>
-     * <li>CommunicationManager.EVENT_NEW_RECONNECTION_ATTEMPT
-     * - Serviço de reconexão</li>
+     * <li>CommunicationManager.EVENT_NEW_RECONNECTION_ATTEMPT - Serviço de
+     * reconexão</li>
      * </ul>
-     * 
+     *
      *
      * @param eventId
      * @param parameters
@@ -1096,18 +1381,21 @@ public class CommunicationManager extends ComponentManager {
         switch (eventId) {
             case EVENT_INTERFACE_DISCONNECTION: // 1 - Desconexão - parâmetros: Interface desconectada + (optional) instanceId(reconectionService)
                 ci = (CommunicationInterface) parameters[0];
+                // cria o evento
+                event = new SystemEvent(this);// Event: new Message
+                event.setId(1);
+                event.setName("Desconexão");
+                event.setTime(new Date());
 
                 // Adiciona os valores que serão passados para serem tratados
                 values = new HashMap<String, Object>();
                 values.put("interface", ci);
                 if (parameters.length > 1) {
                     values.put("reconnectionService", parameters[1]);
+                    event.setEntityId(CommunicationDAO.ENTITY_ID_OF_RECONNECTION);
+                } else {
+                    event.setEntityId(CommunicationDAO.ENTITY_ID_OF_SENDING_MESSAGES);
                 }
-                // cria o evento
-                event = new SystemEvent(this);// Event: new Message
-                event.setId(1);
-                event.setName("Desconexão");
-                event.setTime(new Date());
                 event.setParameters(values);
 
                 // envia o evento
@@ -1131,6 +1419,7 @@ public class CommunicationManager extends ComponentManager {
                 event.setName("Mensagem entregue");
                 event.setTime(new Date());
                 event.setParameters(values);
+                event.setEntityId(CommunicationDAO.ENTITY_ID_OF_SENDING_MESSAGES);
 
                 // envia o evento
                 getEventManager().newEvent(event);
@@ -1151,6 +1440,7 @@ public class CommunicationManager extends ComponentManager {
                 event.setName("Mensagem não entregue");
                 event.setTime(new Date());
                 event.setParameters(values);
+                event.setEntityId(CommunicationDAO.ENTITY_ID_OF_SENDING_MESSAGES);
 
                 // Se foi enviado para aplicação avisa também a aplicação
                 if (mw.getMessage().getOrigin().getLayer() == Address.LAYER_APPLICATION) {
@@ -1190,6 +1480,7 @@ public class CommunicationManager extends ComponentManager {
                         event.setName("new message");
                         event.setTime(new Date());
                         event.setParameters(values);
+                        event.setEntityId(CommunicationDAO.ENTITY_ID_OF_INPUT_COMMUNICATION_INTERFACES);
 
                         // envia o evento
                         getEventManager().newEvent(event);
@@ -1213,6 +1504,7 @@ public class CommunicationManager extends ComponentManager {
                 event.setName("Message received with invalid format");
                 event.setTime(new Date());
                 event.setParameters(values);
+                event.setEntityId(CommunicationDAO.ENTITY_ID_OF_INPUT_COMMUNICATION_INTERFACES);
 
                 // envia o evento
                 getEventManager().newEvent(event);
@@ -1239,6 +1531,7 @@ public class CommunicationManager extends ComponentManager {
                 event.setName("Address not reachable");
                 event.setTime(new Date());
                 event.setParameters(values);
+                event.setEntityId(CommunicationDAO.ENTITY_ID_OF_SENDING_MESSAGES);
 
                 // envia o evento
                 getEventManager().newEvent(event);
@@ -1251,6 +1544,7 @@ public class CommunicationManager extends ComponentManager {
                 event.setId(7);
                 event.setName("The device was completely disconnected");
                 event.setTime(new Date());
+                event.setEntityId(CommunicationDAO.ENTITY_ID_OF_SENDING_MESSAGES);
 
                 // envia o evento
                 getEventManager().newEvent(event);
@@ -1272,6 +1566,7 @@ public class CommunicationManager extends ComponentManager {
                 event.setName("The interface connection was restored");
                 event.setTime(new Date());
                 event.setParameters(values);
+                event.setEntityId(CommunicationDAO.ENTITY_ID_OF_RECONNECTION);
 
                 // envia o evento
                 getEventManager().newEvent(event);
@@ -1289,6 +1584,7 @@ public class CommunicationManager extends ComponentManager {
                 event.setName("Report awaiting approval");
                 event.setTime(new Date());
                 event.setParameters(values);
+                event.setEntityId(CommunicationDAO.ENTITY_ID_OF_SERVICE_OF_UPLOAD_REPORTS);
 
                 // envia o evento
                 getEventManager().newEvent(event);
@@ -1306,6 +1602,7 @@ public class CommunicationManager extends ComponentManager {
                 event.setName("Message Stored");
                 event.setTime(new Date());
                 event.setParameters(values);
+                event.setEntityId(CommunicationDAO.ENTITY_ID_OF_REPORTS_STORAGE);
 
                 // envia o evento
                 getEventManager().newEvent(event);
@@ -1323,6 +1620,7 @@ public class CommunicationManager extends ComponentManager {
                 event.setName("Stored message was removed");
                 event.setTime(new Date());
                 event.setParameters(values);
+                event.setEntityId(CommunicationDAO.ENTITY_ID_OF_REPORTS_STORAGE);
 
                 // envia o evento
                 getEventManager().newEvent(event);
@@ -1337,6 +1635,7 @@ public class CommunicationManager extends ComponentManager {
                 values = new HashMap<String, Object>();
                 values.put("interface", receiver);
                 values.put("configurations", configurations);
+                event.setEntityId(CommunicationDAO.ENTITY_ID_OF_INPUT_COMMUNICATION_INTERFACES);
 
                 event.setId(15);
                 event.setName("The receiver's communication interfacer has changed the address configuration");
@@ -1357,6 +1656,7 @@ public class CommunicationManager extends ComponentManager {
                 event.setName("New attempt to reconnect on communicationinterface by reconnection service");
                 event.setTime(new Date());
                 event.setParameters(values);
+                event.setEntityId(CommunicationDAO.ENTITY_ID_OF_RECONNECTION);
 
                 // envia o evento
                 getEventManager().newEvent(event);
@@ -1430,7 +1730,7 @@ public class CommunicationManager extends ComponentManager {
     private synchronized CommunicationInterface getCommunicationInterfaceWithConnection() {
         // Se há uma interface atual testa se ela possuí conexão
         if (currentCommunicationInterface != null) {
-            if (currentCommunicationInterface.getStatus() != CommunicationInterface.STATUS_UNAVAILABLE 
+            if (currentCommunicationInterface.getStatus() != CommunicationInterface.STATUS_UNAVAILABLE
                     && currentCommunicationInterface.getStatus() != CommunicationInterface.STATUS_DISCONNECTED) {
                 try {
                     if (currentCommunicationInterface.testConnection()) {
@@ -1677,7 +1977,7 @@ public class CommunicationManager extends ComponentManager {
         for (UploadService us : uploadServices) {
             us.start();
         }
-        for(ReconnectionService rs : this.reconnectionServices){
+        for (ReconnectionService rs : this.reconnectionServices) {
             rs.start();
         }
     }
@@ -1689,7 +1989,7 @@ public class CommunicationManager extends ComponentManager {
         for (UploadService us : uploadServices) {
             us.stop();
         }
-        for(ReconnectionService rs : this.reconnectionServices){
+        for (ReconnectionService rs : this.reconnectionServices) {
             rs.stop();
         }
     }

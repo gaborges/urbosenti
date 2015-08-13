@@ -30,7 +30,6 @@ public abstract class PushServiceReceiver implements Runnable, InstanceRepresent
         this.communicationManager = communicationManager;
         this.t = null;
         this.status = STATUS_STOPPED;
-        this.communicationManager.addPushServiceReceiver(this);
         this.flag = true;
         this.interfaceConfigurations = new HashMap();
     }
@@ -111,4 +110,10 @@ public abstract class PushServiceReceiver implements Runnable, InstanceRepresent
      * @throws java.io.IOException
      */
     public abstract void addressDiscovery() throws IOException;
+
+    @Override
+    public String toString() {
+        return "PushServiceReceiver{" + "status=" + status + ", id=" + id + ", description=" + description + ", instance=" + instance.getId() + '}';
+    }
+
 }

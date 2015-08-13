@@ -32,7 +32,7 @@ public class MessageReportDAO {
         this.connection = (Connection) context;
     }
 
-    public void insert(MessageWrapper report, Service service) throws SQLException {
+    public synchronized void insert(MessageWrapper report, Service service) throws SQLException {
         String sql = "INSERT INTO reports (subject, content_type, priority, content, anonymous_upload, "
                 + " created_time, uses_urbosenti_xml_envelope, content_size, target_uid, "
                 + " target_layer, target_address, origin_uid, origin_layer, origin_address, "
@@ -630,6 +630,15 @@ public class MessageReportDAO {
      */
     void deleteAll(User user) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    public void deleteAllExpired(Integer timeLimit) throws SQLException {
+        Long limit = System.currentTimeMillis()+timeLimit;
+        String sql = "DELETE FROM reports WHERE created_time >= ? ;";
+        this.stmt = this.connection.prepareStatement(sql);
+        this.stmt.setLong(1, limit);
+        this.stmt.execute();
+        this.stmt.close();
     }
 
 }

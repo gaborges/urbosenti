@@ -69,7 +69,7 @@ public class Main {
          */
         // Processo de Descoberta, executa todos os onCreate's de todos os Componentes habilidatos do módudo de sensoriamento
         deviceManager.onCreate();
-
+        
         try {
             /**
              * *** Processo de inicialização dos serviços ****

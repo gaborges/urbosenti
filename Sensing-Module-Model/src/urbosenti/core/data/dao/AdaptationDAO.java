@@ -43,11 +43,21 @@ import urbosenti.core.events.Event;
 public final class AdaptationDAO {
 
     public final static int COMPONENT_ID = 5;
-    public static final int ENTITY_ID_OF_SYSTEM_PERFORMANCE_REPOSTS = 1;
-    public static final int STATE_ID_OF_SYSTEM_PERFORMANCE_REPOSTS_LAST_GENERATED_REPORT_DATED = 1;
-    public static final int STATE_ID_OF_SYSTEM_PERFORMANCE_REPOSTS_LAST_SENT_REPORT_DATED = 2;
-    public static final int ENTITY_ID_STATES_OF_CONTROL = 2;
-    public static final int STATE_ID_STATES_OF_CONTROL_IS_REGISTRATED_TO_RECEIVE_MAXIMUM_UPLOAD_RATE = 1; // vai para a instância
+    public static final int ENTITY_ID_OF_ADAPTATION_MANAGEMENT = 1;
+    public static final int STATE_ID_OF_ADAPTATION_MANAGEMENT_INTERVAL_TO_REPORT_SYSTEM_FUNCIONS = 1;
+    public static final int STATE_ID_OF_ADAPTATION_MANAGEMENT_INTERNAL_TO_DELETE_EXPIRED_MESSAGES = 2;
+    public static final int STATE_ID_OF_ADAPTATION_MANAGEMENT_ALLOWED_SEND_REPORT_SYSTEM_FUNCIONS = 3;
+    public static final int INTERACTION_TO_INFORM_NEW_MAXIMUM_UPLOAD_RATE = 1;
+    public static final int INTERACTION_TO_SUBSCRIBE_THE_MAXIMUM_UPLOAD_RATE = 2;
+    public static final int INTERACTION_TO_UNSUBSCRIBE_THE_MAXIMUM_UPLOAD_RATE = 3;
+    public static final int INTERACTION_OF_FAIL_ON_SUBSCRIBE = 4;
+    public static final int INTERACTION_OF_MESSAGE_WONT_UNDERSTOOD = 5;
+    public static final int INTERACTION_TO_CONFIRM_REGISTRATION = 6;
+    public static final int INTERACTION_TO_REFUSE_REGISTRATION = 7;
+    public static final int INTERACTION_TO_CANCEL_REGISTRATION = 8;
+    public static final int INTERACTION_TO_INFORM_NEW_INPUT_ADDRESS = 9;
+    public static final int INTERACTION_TO_REPORT_SENSING_MODULE_FUNCTIONALITY = 10;
+    
 
     private final Connection connection;
     private PreparedStatement stmt;
@@ -57,7 +67,7 @@ public final class AdaptationDAO {
     public AdaptationDAO(Connection connection, DataManager dataManager) {
         this.dataManager = dataManager;
         this.connection = connection;
-        this.acls = null ;
+        this.acls = null;
     }
 
     public void populateAcls() throws SQLException {
@@ -120,8 +130,9 @@ public final class AdaptationDAO {
      */
     public Event extractInteractionFromMessageEvent(Event event) throws ClassCastException, NumberFormatException, SQLException, Exception {
         Address sender = (Address) event.getParameters().get("sender");
-        Message message = (Message) event.getParameters().get("messege");
+        Message message = (Message) event.getParameters().get("message");
         AgentCommunicationLanguage usedAgentCommunicationLanguage = null;
+        boolean aclIsUnkown = false;
         /**
          * **** Validações ******
          */
@@ -165,12 +176,14 @@ public final class AdaptationDAO {
             if (dataManager.getAgentCommunicationLanguageDAO()
                     .isAgentCommunicationLanguageKnown(acl, root.getElementsByTagName("acl").item(0).getTextContent())) {
                 usedAgentCommunicationLanguage = acl;
+                aclIsUnkown = true;
                 break;
-            } else {
-                throw new Exception("Agent Communication Language '" + root.getElementsByTagName("acl").item(0).getTextContent()
-                        + "' from UID:'" + message.getOrigin().getUid()
-                        + "', addess: '" + message.getOrigin().getAddress() + "' is not supported.");
             }
+        }
+        if(!aclIsUnkown){
+            throw new Exception("Agent Communication Language '" + root.getElementsByTagName("acl").item(0).getTextContent()
+                        + "' from UID:'" + message.getOrigin().getUid()
+                        + "', address: '" + message.getOrigin().getAddress() + "' is not supported.");
         }
         // <interactionId>1</interactionId>
         int interactionId = Integer.parseInt(root.getElementsByTagName("interactionId").item(0).getTextContent());
@@ -245,7 +258,7 @@ public final class AdaptationDAO {
         finalString += "<content>";
         for (Parameter p : interactionModel.getParameters()) {
             finalString += "<" + p.getLabel() + ">";
-            finalString += p.getContent().getValue().toString();
+            finalString += action.getParameters().get(p.getLabel());
             finalString += "</" + p.getLabel() + ">";
         }
         finalString += "</content>";
@@ -282,32 +295,56 @@ public final class AdaptationDAO {
         // se a resposta da ação foi sucesso, verifica  se algum dos parâmetros do actionModel é relacionado com algum estado
         if (response.getId() == FeedbackAnswer.ACTION_RESULT_WAS_SUCCESSFUL) {
             Content content;
-            ActionModel actionModel = this.dataManager.getActionModelDAO().getAction(actionToExecute.getDataBaseId());
+            ActionModel actionModel = this.dataManager.getActionModelDAO().getAction(
+                    actionToExecute.getId(),
+                    actionToExecute.getTargetEntityId(),
+                    actionToExecute.getTargetComponentId());
+            // atualiza parâmetros
             for (Parameter p : actionModel.getParameters()) {
                 content = new Content(Content.parseContent(
-                        p.getRelatedState().getDataType(),
+                        p.getDataType(),
                         actionToExecute.getParameters().get(p.getLabel())),
                         response.getTime());
                 //verifica  se algum dos parâmetros do actionModel é relacionado com algum estado
                 if (p.getRelatedState() != null) {
                     // verifica se é estado de instância ou de entidade
                     if (p.getRelatedState().isStateInstance()) {
-                        Instance instance = dataManager.getInstanceDAO().getInstance(actionToExecute.getTargetComponentId(),actionToExecute.getTargetEntityId(),
-                                 (Integer)actionToExecute.getParameters().get("instanceId"));
-                        for(State s : instance.getStates()){
-                            if(s.getModelId() == p.getRelatedState().getModelId()){
+                        int instanceId;
+                        if (actionToExecute.getParameters().get("interface") != null) {
+                            instanceId = (Integer) actionToExecute.getParameters().get("interface");
+                        } else {
+                            instanceId = (Integer) actionToExecute.getParameters().get("instanceId");
+                        }
+                        // recuperar a instância
+                        Instance instance = dataManager.getInstanceDAO().getInstance(
+                                actionToExecute.getTargetComponentId(),
+                                actionToExecute.getTargetEntityId(),
+                                instanceId);
+                        // procurar o estado para salvar o conteúdo
+                        for (State s : instance.getStates()) {
+                            if (s.getModelId() == p.getRelatedState().getModelId()) {
                                 s.setContent(content);
                                 this.dataManager.getInstanceDAO().insertContent(s);
                                 break;
                             }
                         }
                     } else {
+                        // relacionado com estado de entidade. Atualiza diretamente
                         p.getRelatedState().setContent(content);
                         this.dataManager.getEntityStateDAO().insertContent(p.getRelatedState());
                     }
                 }
+                // Testa se o parâmetro existe e é objegratório, depois salva o conteúdo do parâmetro
+                if (actionToExecute.getParameters().get(p.getLabel()) == null && !p.isOptional()) {
+                    throw new Error("Parameter " + p.getLabel() + " from the event " + actionModel.getDescription() + " id " + actionModel.getId()
+                            + " was not found. Such parameter is not optional!");
+                } else {
+                    if (actionToExecute.getParameters().get(p.getLabel()) != null) {
+                        p.setContent(content);
+                        dataManager.getActionModelDAO().insertContent(p,actionToExecute);
+                    }
+                }
             }
-
         }
     }
 

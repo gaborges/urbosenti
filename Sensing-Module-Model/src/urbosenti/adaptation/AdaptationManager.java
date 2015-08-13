@@ -6,9 +6,9 @@ package urbosenti.adaptation;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Queue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -16,11 +16,12 @@ import urbosenti.context.ContextManager;
 import urbosenti.core.communication.Address;
 import urbosenti.core.communication.CommunicationInterface;
 import urbosenti.core.communication.CommunicationManager;
-import urbosenti.core.communication.Message;
 import urbosenti.core.communication.PushServiceReceiver;
+import urbosenti.core.communication.ReconnectionService;
+import urbosenti.core.communication.UploadService;
 import urbosenti.core.data.dao.AdaptationDAO;
 import urbosenti.core.data.dao.CommunicationDAO;
-import urbosenti.core.data.dao.EventModelDAO;
+import urbosenti.core.data.dao.EventDAO;
 import urbosenti.core.data.dao.UserDAO;
 import urbosenti.core.device.ComponentManager;
 import urbosenti.core.device.DeviceManager;
@@ -29,11 +30,11 @@ import urbosenti.core.device.model.EventModel;
 import urbosenti.core.device.model.FeedbackAnswer;
 import urbosenti.core.device.model.InteractionModel;
 import urbosenti.core.device.model.Parameter;
-import urbosenti.core.device.model.Service;
 import urbosenti.core.device.model.State;
 import urbosenti.core.events.Action;
 import urbosenti.core.events.Event;
 import urbosenti.core.events.EventManager;
+import urbosenti.core.events.SystemEvent;
 import urbosenti.core.events.SystemHandler;
 import urbosenti.user.User;
 import urbosenti.user.UserManager;
@@ -53,7 +54,7 @@ public class AdaptationManager extends ComponentManager implements Runnable, Sys
      * <li>parâmetros: string do evento</li></ul>
      *
      */
-    private static final int EVENT_UNKNOWN_EVENT_WARNING = 1;
+    public static final int EVENT_UNKNOWN_EVENT_WARNING = 1;
     /**
      * int EVENT_ADAPTATION_LOOP_ERROR = 2; </ br>
      *
@@ -62,15 +63,27 @@ public class AdaptationManager extends ComponentManager implements Runnable, Sys
      * <li>parâmetros: string do erro</li></ul>
      *
      */
-    private static final int EVENT_ADAPTATION_LOOP_ERROR = 2;
+    public static final int EVENT_ADAPTATION_LOOP_ERROR = 2;
     /**
+     * int EVENT_GENERATED_EVENT_TO_REPORTING_TRIGGED = 3; </ br>
      *
-     * @param This method receives a event from the Event Manager to process the
-     * event applying changes directly in the component.
+     * <ul><li>id: 3</li>
+     * <li>evento: nenhum</li>
+     * <li>parâmetros: nenhum</li></ul>
+     *
      */
+    public static final int EVENT_GENERATED_EVENT_TO_REPORTING_TRIGGED = 3;
+    /**
+     * int EVENT_START_TASK_OF_CLEANING_REPORS = 4; </ br>
+     *
+     * <ul><li>id: 4</li>
+     * <li>evento: nenhum</li>
+     * <li>parâmetros: nenhum</li></ul>
+     *
+     */
+    private static final int EVENT_START_TASK_OF_CLEANING_REPORS = 4;
     //private LocalKnowledge localKnowledge
     private Queue<Event> availableEvents;
-    private DeviceManager deviceManager;
     private ContextManager contextManager;
     private UserManager userManager;
     private boolean running;
@@ -79,10 +92,12 @@ public class AdaptationManager extends ComponentManager implements Runnable, Sys
     private DiscoveryAdapter discoveryAdapter;
     private AdaptationDAO adaptationDAO;
     // private AdaptationLoopControler adaptationLoopControler;
+    private boolean isAllowedReportingFunctionsToUploadService;
+    private Long intervalBetweenReports;
+    private Long intervalCleanReports;
 
     public AdaptationManager(DeviceManager deviceManager) {
         super(deviceManager, AdaptationDAO.COMPONENT_ID);
-        this.deviceManager = null;
         this.contextManager = null;
         this.userManager = null;
         this.running = true;
@@ -91,65 +106,6 @@ public class AdaptationManager extends ComponentManager implements Runnable, Sys
         this.monitor = true;
         this.discoveryAdapter = null;
         this.adaptationDAO = null;
-    }
-
-    public boolean discovery(DeviceManager deviceManager) {
-        if (running) {
-            return false;
-        }
-        this.deviceManager = deviceManager;
-
-        // descobre o modelo
-        return true;
-    }
-
-    public boolean discovery(DeviceManager deviceManager, ContextManager contextManager, UserManager userManager) {
-        if (running) {
-            return false;
-        }
-        this.deviceManager = deviceManager;
-        this.contextManager = contextManager;
-        this.userManager = userManager;
-
-        // descobre o modelo
-        // Device
-        // Componentes em funcionamento
-        // sensores e possíveis atuadores de cada componentes
-        // Políticas e estratédias (funcionalidades/comportamentos), define restrições
-        // User
-        // Preferências do usuário, para privacidade, etc... -- Podem ser alterados on the fly
-        // Restrições do usuário
-        // Context
-        // Descoberta de funções de contexto
-        // Predição de contextos
-        // Gerar conhecimento
-        // Modelos de aprendizagem
-        // Inferência
-        // Apoio a descoberta e identificação de novos recursos
-        // Possibilita gatinhos de eventos dinâmicos, como tempo etc...
-        return true;
-    }
-
-    public boolean discovery(DeviceManager deviceManager, UserManager userManager) {
-        if (running) {
-            return false;
-        }
-        this.deviceManager = deviceManager;
-        this.userManager = userManager;
-
-        // descobre o modelo
-        return true;
-    }
-
-    public boolean discovery(DeviceManager deviceManager, ContextManager contextManager) {
-        if (running) {
-            return false;
-        }
-        this.deviceManager = deviceManager;
-        this.contextManager = contextManager;
-
-        // descobre o modelo
-        return true;
     }
 
     @Override
@@ -181,16 +137,16 @@ public class AdaptationManager extends ComponentManager implements Runnable, Sys
     @Override
     public void run() {
         /* At first, the adaptation manager discovers the environment to rum*/
-        this.discovery(deviceManager);
+        //this.discovery(deviceManager);
         // discoveryAdapter.discovery(deviceManager);
         /* It begin the monitoring process of events */
-        //simplestAdaptationControlLoop();
-        try {
-            
-            monitoring();
-        } catch (InterruptedException ex) {
-            Logger.getLogger(AdaptationManager.class.getName()).log(Level.SEVERE, null, ex);
-        }
+        simplestAdaptationControlLoop();
+//        try {
+//            
+//            monitoring();
+//        } catch (InterruptedException ex) {
+//            Logger.getLogger(AdaptationManager.class.getName()).log(Level.SEVERE, null, ex);
+//        }
     }
 
     private void monitoring() throws InterruptedException {
@@ -202,7 +158,7 @@ public class AdaptationManager extends ComponentManager implements Runnable, Sys
             synchronized (this) {
                 event = availableEvents.poll();
                 if (event == null) {
-                   // System.out.println("Esperando;;;");
+                    // System.out.println("Esperando;;;");
                     wait();
                 }
             }
@@ -241,6 +197,17 @@ public class AdaptationManager extends ComponentManager implements Runnable, Sys
             if (this.discoveryAdapter == null) {
                 this.discoveryAdapter = new UrboSentiDiscoveryAdapter();
             }
+            // pegar diretamente do banco de dados depois de adicionado, por enquanto estático para testes
+            this.intervalBetweenReports = 30000L;
+            this.intervalCleanReports = 60000L;
+            this.isAllowedReportingFunctionsToUploadService = true;
+            // colocar dinâmico depois
+//            this.intervalBetweenReports = Long.parseLong(super.getDeviceManager().getDataManager().getEntityStateDAO()
+//                    .getEntityState(AdaptationDAO.COMPONENT_ID, AdaptationDAO.ENTITY_ID_OF_ADAPTATION_MANAGEMENT, AdaptationDAO.STATE_ID_OF_ADAPTATION_MANAGEMENT_INTERVAL_TO_REPORT_SYSTEM_FUNCIONS).getCurrentValue().toString());
+//            this.intervalCleanReports = Long.parseLong(super.getDeviceManager().getDataManager().getEntityStateDAO()
+//                    .getEntityState(AdaptationDAO.COMPONENT_ID, AdaptationDAO.ENTITY_ID_OF_ADAPTATION_MANAGEMENT, AdaptationDAO.STATE_ID_OF_ADAPTATION_MANAGEMENT_INTERNAL_TO_DELETE_EXPIRED_MESSAGES).getCurrentValue().toString());
+//            this.isAllowedReportingFunctionsToUploadService = Boolean.parseBoolean(super.getDeviceManager().getDataManager().getEntityStateDAO()
+//                    .getEntityState(AdaptationDAO.COMPONENT_ID, AdaptationDAO.ENTITY_ID_OF_ADAPTATION_MANAGEMENT, AdaptationDAO.STATE_ID_OF_ADAPTATION_MANAGEMENT_ALLOWED_SEND_REPORT_SYSTEM_FUNCIONS).getCurrentValue().toString());
             // Para tanto utilizar o DataManager para acesso aos dados.
             // retornar todos os extados
         } catch (SQLException ex) {
@@ -258,21 +225,24 @@ public class AdaptationManager extends ComponentManager implements Runnable, Sys
         this.discoveryAdapter = discoveryAdapter;
     }
 
-    private boolean isRegistredToReceiveMaximumUploadRates; // será colocado na interface de comunicação de saída
-
     protected void simplestAdaptationControlLoop() {
 
         EventModel eventModel;
         Plan plan;
         Diagnosis diagnosis;
         ArrayList<Action> actionList;
+        ArrayList<Action> actions;
         InteractionModel interactionModel;
         Action action;
         Content content;
         FeedbackAnswer response = null;
         HashMap<String, Object> values;
+        ExecutionPlan executionPlan;
+        Address target;
+        State entityState;
+        UploadService up = null;
         while (isRunning()) {
-            Event event = null;
+            Event event = null, generatedEvent;
             diagnosis = new Diagnosis();
             plan = new Plan();
             action = null;
@@ -345,6 +315,22 @@ public class AdaptationManager extends ComponentManager implements Runnable, Sys
                                                 break;
                                             }
                                         }
+                                    } else if (event.getParameters().get("reconnectionService") instanceof ReconnectionService) {
+                                        for (State instanceState : ((PushServiceReceiver) event.getParameters().get("reconnectionService")).getInstance().getStates()) {
+                                            if (p.getRelatedState().getModelId() == instanceState.getModelId()) {
+                                                instanceState.setContent(content);
+                                                super.getDeviceManager().getDataManager().getInstanceDAO().insertContent(instanceState);
+                                                break;
+                                            }
+                                        }
+                                    } else if (event.getParameters().get("uploadService") instanceof UploadService) {
+                                        for (State instanceState : ((PushServiceReceiver) event.getParameters().get("uploadService")).getInstance().getStates()) {
+                                            if (p.getRelatedState().getModelId() == instanceState.getModelId()) {
+                                                instanceState.setContent(content);
+                                                super.getDeviceManager().getDataManager().getInstanceDAO().insertContent(instanceState);
+                                                break;
+                                            }
+                                        }
                                     }
                                 } else if (event.getComponentManager().getComponentId() == UserDAO.COMPONENT_ID) {
                                     for (State instanceState : ((User) event.getParameters().get("user")).getInstance().getStates()) {
@@ -389,23 +375,93 @@ public class AdaptationManager extends ComponentManager implements Runnable, Sys
                 switch (event.getOriginType()) {
                     case Event.INTERATION_EVENT:
                         //InteractionEvent;
-
+                        if (event.getId() == AdaptationDAO.INTERACTION_TO_INFORM_NEW_MAXIMUM_UPLOAD_RATE) {
+                            // verifica se tem permitido alterar
+                            if (getDeviceManager().getDataManager().getCommunicationDAO().getCurrentPreferentialPolicy(CommunicationDAO.UPLOAD_REPORTS_POLICY) == 4) {
+                                for (UploadService uploadService : getDeviceManager().getCommunicationManager().getUploadServices()) {
+                                    // procura o serviço
+                                    if (uploadService.getService().getServiceUID().equals(event.getParameters().get("uid").toString())) {
+                                        // verifica se o valor é diferente do anterior
+                                        if (uploadService.getUploadRate() != Double.parseDouble(event.getParameters().get("uploadRate").toString())) {
+                                            // se sim
+                                            diagnosis.addChange(5);
+                                            up = uploadService;
+                                        }
+                                        break;
+                                    }
+                                }
+                            }
+                        } else if (event.getId() == AdaptationDAO.INTERACTION_OF_FAIL_ON_SUBSCRIBE) { // Falha ao assinar
+                            // não necessário agora
+                        } else if (event.getId() == AdaptationDAO.INTERACTION_OF_MESSAGE_WONT_UNDERSTOOD) { // Mensagem não entendida
+                            // não necessário agora
+                        } else if (event.getId() == AdaptationDAO.INTERACTION_TO_CONFIRM_REGISTRATION) { // Assinatura aceita
+                            for (UploadService uploadService : getDeviceManager().getCommunicationManager().getUploadServices()) {
+                                // procura o serviço
+                                if (uploadService.getService().getServiceUID().equals(event.getParameters().get("uid").toString())) {
+                                    // se encontrar plano estático para alteração
+                                    diagnosis.addChange(6);
+                                    up = uploadService;
+                                    break;
+                                }
+                            }
+                        } else if (event.getId() == AdaptationDAO.INTERACTION_TO_REFUSE_REGISTRATION) { // Assinatura recusada
+                            // não necessário agora
+                        } else if (event.getId() == AdaptationDAO.INTERACTION_TO_CANCEL_REGISTRATION) { // Assinatura cancelada
+                            // não necessáro agora
+                        }
                         /* Analysis -- Diagnosis */
                         /* Planning -- Plan */
                         break;
                     case Event.COMPONENT_EVENT:
                         /* Analysis -- Diagnosis */
-                        if (event.getId() == DeviceManager.EVENT_DEVICE_SERVICES_INITIATED) {
-                            // para cada serviço de upload, verificar se já estão registrados para receber atualizações do tempo de expiração dos relatos? Se não Adaptação
-                            // implementar
-                            // change=1;
-                            diagnosis.addChange(1);
-                            // inicializar contador de envio de relatos  de funcionamento ao servidor
-                            // change=2;
-                            diagnosis.addChange(2);
-                            // iniciar varredura para exclusão de mensagens expiradas
-                            // change=3;
-                            diagnosis.addChange(3);
+                        if (event.getComponentManager().getComponentId() == DeviceManager.DEVICE_COMPONENT_ID) {
+                            if (event.getId() == DeviceManager.EVENT_DEVICE_SERVICES_INITIATED) {
+                                // para cada serviço de upload, verificar se já estão registrados para receber atualizações do tempo de expiração dos relatos? Se não Adaptação
+                                // change=1;
+                                // testa se a política do serviço de upload é 4 = adaptativa, se não for não inicia isso
+                                if (getDeviceManager().getDataManager().getCommunicationDAO().getCurrentPreferentialPolicy(CommunicationDAO.UPLOAD_REPORTS_POLICY) == 4) {
+                                    // busca os serviços de upload, verifica se eles estão registrados para receber uploads
+                                    for (UploadService service : getDeviceManager().getCommunicationManager().getUploadServices()) {
+                                        if (!service.isSubscribedMaximumUploadRate()) {
+                                            diagnosis.addChange(1);
+                                            break;
+                                        }
+                                    }
+                                }
+                                // inicializar contador de envio de relatos  de funcionamento ao servidor
+                                // change=2;
+                                // verificar se é permitido
+                                if (isAllowedReportingFunctionsToUploadService) {
+                                    diagnosis.addChange(2);
+                                }
+                                // iniciar varredura para exclusão de mensagens expiradas
+                                // change=3;
+                                // se a política de armazenamento for 4 faz isso, senão não
+                                if (getDeviceManager().getDataManager().getCommunicationDAO().getCurrentPreferentialPolicy(CommunicationDAO.MESSAGE_STORAGE_POLICY) == 4) {
+                                    diagnosis.addChange(3);
+                                }
+                            }
+                        } else if (event.getComponentManager().getComponentId() == DeviceManager.COMMUNICATION_COMPONENT_ID) {
+                            if (event.getId() == CommunicationManager.EVENT_NEW_INPUT_COMMUNICATION_INTERFACE_ADDRESS) {
+                                // busca estado anterior. Se for o mesmo não envia.
+                                content = getDeviceManager().getDataManager().getInstanceDAO().getBeforeCurrentContentValue(
+                                        CommunicationDAO.STATE_ID_OF_INPUT_COMMUNICATION_INTERFACE_CONFIGURATIONS,
+                                        ((PushServiceReceiver) event.getParameters().get("interface")).getInstance().getModelId(),
+                                        CommunicationDAO.ENTITY_ID_OF_INPUT_COMMUNICATION_INTERFACES,
+                                        CommunicationDAO.COMPONENT_ID);
+                                // se forem iguais não há necessidade de atualizar
+                                if (!content.getValue().toString().equals(event.getParameters().get("configurations").toString())) {
+                                    // enviar novo endereço
+                                    diagnosis.addChange(4);
+                                }
+                            }
+                        } else if (event.getComponentManager().getComponentId() == DeviceManager.EVENTS_COMPONENT_ID) {
+
+                        } else if (event.getComponentManager().getComponentId() == DeviceManager.USER_COMPONENT_ID) {
+
+                        } else if (event.getComponentManager().getComponentId() == DeviceManager.ADAPTATION_COMPONENT_ID) {
+
                         }
                         // último diagnóstico a ser executado
                         if (diagnosis.getChanges().isEmpty()) {
@@ -420,16 +476,82 @@ public class AdaptationManager extends ComponentManager implements Runnable, Sys
                     for (Integer change : diagnosis.getChanges()) {
                         // vou bucar a mudança na verdade no banco de dados -- todas as ações estáticas por enquanto
                         switch (change) {
-                            case 1:
-                                // interação de subscribe
+                            case 1: // Subscribe no servidor
+                                // interação de subscribe -- fazer para cada uploadService
                                 interactionModel = (super.getDeviceManager().getDataManager().getAgentTypeDAO().getInteractionModel(2));
-                                interactionModel.setContentToParameter("address", deviceManager.getCommunicationManager().getMainPushServiceReceiver().getInterfaceConfigurations());
-                                interactionModel.setContentToParameter("interface", deviceManager.getCommunicationManager().getMainPushServiceReceiver().getInstance().getDescription());// pegar a interface principal ativa
-                                interactionModel.setContentToParameter("uid", deviceManager.getUID());
+                                interactionModel.setContentToParameter("address", getDeviceManager().getCommunicationManager().getMainPushServiceReceiver().getInterfaceConfigurations().toString());
+                                interactionModel.setContentToParameter("interface", getDeviceManager().getCommunicationManager().getMainPushServiceReceiver().getInstance().getDescription());// pegar a interface principal ativa
+                                interactionModel.setContentToParameter("uid", getDeviceManager().getBackendService().getApplicationUID());
                                 interactionModel.setContentToParameter("layer", "System");
-                                Address target = new Address(deviceManager.getBackendService().getAddress());
+                                target = new Address(getDeviceManager().getBackendService().getAddress());
                                 target.setLayer(Address.LAYER_SYSTEM);
-                                target.setUid(deviceManager.getBackendService().getServiceUID());
+                                target.setUid(getDeviceManager().getBackendService().getServiceUID());
+                                values = new HashMap<String, Object>();
+                                values.put("target", target);
+                                values.put("interactionModel", interactionModel);
+                                values.put("address", getDeviceManager().getCommunicationManager().getMainPushServiceReceiver().getInterfaceConfigurations());
+                                values.put("interface", getDeviceManager().getCommunicationManager().getMainPushServiceReceiver().getInstance().getDescription());
+                                values.put("uid", getDeviceManager().getBackendService().getApplicationUID());
+                                values.put("layer", "System");
+                                action = new Action();
+                                action.setId(2); // registro no servidor
+                                action.setActionType(Event.INTERATION_EVENT);
+                                action.setParameters(values);
+                                //action.setSynchronous(true);
+                                actions = new ArrayList<Action>();
+                                actions.add(action);
+                                executionPlan = new ExecutionPlan(actions);
+                                plan.addExecutionPlan(executionPlan);
+                                break;
+                            case 2: // inícializar o contador de envio de relatórios de funcionamento ao servidor
+                                generatedEvent = new SystemEvent(this);
+                                generatedEvent.setEntityId(AdaptationDAO.ENTITY_ID_OF_ADAPTATION_MANAGEMENT);
+                                generatedEvent.setId(EVENT_GENERATED_EVENT_TO_REPORTING_TRIGGED);
+                                values = new HashMap<String, Object>();
+                                values.put("event", generatedEvent);
+                                values.put("time", this.intervalBetweenReports); // 
+                                values.put("date", new Date());
+                                values.put("method", EventManager.METHOD_DATE_PLUS_REPEATED_INTERVALS);
+                                values.put("origin", this);
+                                action = new Action();
+                                action.setId(EventManager.ACTION_ADD_TEMPORAL_TRIGGER_EVENT); // registro no servidor
+                                action.setTargetComponentId(EventDAO.COMPONENT_ID);
+                                action.setTargetEntityId(EventDAO.ENTITY_ID_OF_TEMPORAL_TRIGGER_OF_DYNAMIC_EVENTS);
+                                action.setParameters(values);
+                                actions = new ArrayList<Action>();
+                                actions.add(action);
+                                executionPlan = new ExecutionPlan(actions);
+                                plan.addExecutionPlan(executionPlan);
+                                break;
+                            case 3:
+                                generatedEvent = new SystemEvent(this);
+                                generatedEvent.setEntityId(AdaptationDAO.ENTITY_ID_OF_ADAPTATION_MANAGEMENT);
+                                generatedEvent.setId(EVENT_START_TASK_OF_CLEANING_REPORS);
+                                values = new HashMap<String, Object>();
+                                values.put("event", generatedEvent);
+                                values.put("time", this.intervalCleanReports); // 
+                                values.put("date", new Date());
+                                values.put("method", EventManager.METHOD_DATE_PLUS_REPEATED_INTERVALS);
+                                values.put("origin", this);
+                                action = new Action();
+                                action.setId(EventManager.ACTION_ADD_TEMPORAL_TRIGGER_EVENT); // registro no servidor
+                                action.setTargetComponentId(EventDAO.COMPONENT_ID);
+                                action.setTargetEntityId(EventDAO.ENTITY_ID_OF_TEMPORAL_TRIGGER_OF_DYNAMIC_EVENTS);
+                                action.setParameters(values);
+                                actions = new ArrayList<Action>();
+                                actions.add(action);
+                                executionPlan = new ExecutionPlan(actions);
+                                plan.addExecutionPlan(executionPlan);
+                                break;
+                            case 4: // atualizar no servidor o novo endereço
+                                // fazer interação
+                                interactionModel = (super.getDeviceManager().getDataManager().getAgentTypeDAO().getInteractionModel(9));
+                                interactionModel.setContentToParameter("address", event.getParameters().get("address"));
+                                interactionModel.setContentToParameter("interface", ((PushServiceReceiver) event.getParameters().get("interface")).getDescription());
+                                interactionModel.setContentToParameter("uid", getDeviceManager().getBackendService().getApplicationUID());
+                                target = new Address(getDeviceManager().getBackendService().getAddress());
+                                target.setLayer(Address.LAYER_SYSTEM);
+                                target.setUid(getDeviceManager().getBackendService().getServiceUID());
                                 values = new HashMap<String, Object>();
                                 values.put("target", target);
                                 values.put("interactionModel", interactionModel);
@@ -437,10 +559,43 @@ public class AdaptationManager extends ComponentManager implements Runnable, Sys
                                 action.setId(2); // registro no servidor
                                 action.setActionType(Event.INTERATION_EVENT);
                                 action.setParameters(values);
+                                //action.setSynchronous(false);
+                                actions = new ArrayList<Action>();
+                                actions.add(action);
+                                executionPlan = new ExecutionPlan(actions);
+                                plan.addExecutionPlan(executionPlan);
                                 break;
-                            case 2:
+                            case 5: // atualiza taxa de upload do serviço
+                                //09	Alterar taxa de upload	Nova Taxa	double	entre 1 e 0	uploadRate
+                                //      Id da instância	inteito 	int	instanceId
+                                values = new HashMap<String, Object>();
+                                values.put("uploadRate", event.getParameters().get("uploadRate"));
+                                values.put("instanceId", up.getInstance().getModelId());
+                                action = new Action();
+                                action.setId(9); // atualizar taxa de upload
+                                action.setParameters(values);
+                                action.setTargetEntityId(CommunicationDAO.ENTITY_ID_OF_SERVICE_OF_UPLOAD_REPORTS);
+                                action.setTargetComponentId(CommunicationDAO.COMPONENT_ID);
+                                actions = new ArrayList<Action>();
+                                actions.add(action);
+                                executionPlan = new ExecutionPlan(actions);
+                                plan.addExecutionPlan(executionPlan);
                                 break;
-                            case 3:
+                            case 6: // atualiza taxa de upload do serviço
+                                //09	Alterar taxa de upload	Nova Taxa	double	entre 1 e 0	uploadRate
+                                //      Id da instância	inteito 	int	instanceId
+                                values = new HashMap<String, Object>();
+                                values.put("value", true);
+                                values.put("instanceId", up.getInstance().getModelId());
+                                action = new Action();
+                                action.setId(CommunicationManager.ACTION_UPDATE_UPLOAD_SERVICE_SUBSCRIBED_MAXIMUM_UPLOAD_RATE); // atualizar taxa de upload
+                                action.setParameters(values);
+                                action.setTargetEntityId(CommunicationDAO.ENTITY_ID_OF_SERVICE_OF_UPLOAD_REPORTS);
+                                action.setTargetComponentId(CommunicationDAO.COMPONENT_ID);
+                                actions = new ArrayList<Action>();
+                                actions.add(action);
+                                executionPlan = new ExecutionPlan(actions);
+                                plan.addExecutionPlan(executionPlan);
                                 break;
                             default:
                                 // evento de erro. Diagnóstico não conhecido
@@ -466,7 +621,7 @@ public class AdaptationManager extends ComponentManager implements Runnable, Sys
                                 actionToExecute = adaptationDAO.makeInteractionMessage(actionToExecute);
                             }
                             // encontrar o componente para envio, no caso de interação o Componente Communication
-                            for (ComponentManager cm : this.deviceManager.getComponentManagers()) {
+                            for (ComponentManager cm : getDeviceManager().getComponentManagers()) {
                                 if (cm.getComponentId() == actionToExecute.getTargetComponentId()) {
                                     // aplicar a ação e pegar o feedback
                                     response = cm.applyAction(actionToExecute);
@@ -504,5 +659,5 @@ public class AdaptationManager extends ComponentManager implements Runnable, Sys
             }
         }
     }
-    
+
 }

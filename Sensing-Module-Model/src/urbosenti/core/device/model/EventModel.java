@@ -21,12 +21,12 @@ public class EventModel {
         this.description = description;
         this.synchronous = false;
         this.implementation = implementation;
-        this.isNecessaryStore = true;
     }
 
     public EventModel() {
         this.parameters = new ArrayList();
         this.targets = new ArrayList();
+        this.isNecessaryStore = true;
     }
 
     public int getId() {

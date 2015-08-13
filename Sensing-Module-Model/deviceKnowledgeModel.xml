@@ -327,13 +327,10 @@
                     <content dataType="3" inferiorLimit="0"></content>
                 </state>
                 <state id="2" userCanChange="true" description="Quantidade limite de mensagens armazenadas">
-                    <content dataType="3" inferiorLimit="0" initialValue="10000"></content>
+                    <content dataType="3" inferiorLimit="0" initialValue="100000"></content>
                 </state>
-                <state id="3" userCanChange="true" description="Tempo limite de uma mensagem">
-                    <content dataType="10">
-                        <value default="true">null</value>
-                        <value>java.util.Date</value>
-                    </content>
+                <state id="3" userCanChange="true" description="Tempo limite de uma mensagem em ms">
+                    <content dataType="3" inferiorLimit="0" initialValue="0"></content>
                 </state>
                 <state id="4" userCanChange="true" description="Política" instaceState="false">
                     <content dataType="3">
@@ -375,12 +372,9 @@
                         <description>Nova quantidade limite</description>
                     </parameter>
                 </action>
-                <action id="3"  description="Alterar tempo limite">
-                    <parameter id="1" optional="false" dataType="10" label="limit" state="3">
-                        <description>Nova data limite</description>
-                        <possibleValues>
-                            <value>java.util.Date</value>
-                        </possibleValues>
+                <action id="3"  description="Alterar tempo limite em ms">
+                    <parameter id="1" optional="false" dataType="3" label="limit" state="3">
+                        <description>Novo tempo limite ms</description>
                     </parameter>
                 </action>
                 <action id="4"  description="Alterar política">
@@ -510,6 +504,9 @@
                 <state id="8" userCanChange="false" description="Id do serviço relacionado" instanceState="true">
                     <content dataType="3" initialValue="0"></content>
                 </state>
+                <state id="9" userCanChange="false" description="Registrado para receber taxas máximas de upload?" instanceState="true">
+                    <content dataType="7" initialValue="false"></content>
+                </state>
                 <!-- events -->
                 <event id="9" synchronous="false" implementation="1" description="Relato esperando Aprovação">
                     <target mandatory="true">1</target>
@@ -619,6 +616,22 @@
                     </parameter>
                     <parameter id="2" optional="false" dataType="3" label="instanceId">
                         <description>Id da instância de serviço de upload</description>
+                    </parameter>
+                </action>
+                <action id="25"  description="Permitir realizar upload">
+                    <parameter id="1" optional="false" dataType="3" label="instanceId">
+                        <description>Id da instância de serviço de upload</description>
+                    </parameter>
+                    <parameter id="2" optional="false" dataType="7" label="value" state="7">
+                        <description>Novo valor</description>
+                    </parameter>
+                </action>
+                <action id="26"  description="Registrado para receber taxas máximas de upload">
+                    <parameter id="1" optional="false" dataType="3" label="instanceId" >
+                        <description>Id da instância de serviço de upload</description>
+                    </parameter>
+                    <parameter id="2" optional="false" dataType="7" label="value" state="9">
+                        <description>Novo valor</description>
                     </parameter>
                 </action>
             </entity>
@@ -894,9 +907,76 @@
                         <description>Instância</description>
                     </parameter>
                 </action>    
+                <action id="22"  description="Enviar mensagem síncrona">
+                    <parameter id="1" optional="false" dataType="10" label="message">
+                        <description>Mensagem</description>
+                        <possibleValues>
+                            <value>urbosenti.core.communication.Message</value>
+                        </possibleValues>
+                    </parameter>
+                    <parameter id="2" optional="false" dataType="10" label="target">
+                        <description>Endereço</description>                        
+                        <possibleValues>
+                            <value>urbosenti.core.communication.Address</value>
+                        </possibleValues>
+                    </parameter>
+                </action>
+                <action id="23"  description="Enviar mensagem assíncrona">
+                    <parameter id="1" optional="false" dataType="10" label="message">
+                        <description>Mensagem</description>
+                        <possibleValues>
+                            <value>urbosenti.core.communication.Message</value>
+                        </possibleValues>
+                    </parameter>
+                    <parameter id="2" optional="false" dataType="10" label="target">
+                        <description>Endereço</description>                        
+                        <possibleValues>
+                            <value>urbosenti.core.communication.Address</value>
+                        </possibleValues>
+                    </parameter>
+                </action>
+                <action id="24" description="Apagar mensagens expiradas"></action>
             </entity>
         </component>
-        <component name="Adaptation" class="urbosenti.adaptation.AdaptationManger"></component>
+        <component name="Adaptation" class="urbosenti.adaptation.AdaptationManger">
+            <entity type="1" description="Função Geral de Adaptação">
+                <!-- status -->
+                <state id="1" userCanChange="false" description="Intervalo de envio de relatórios de funcionamento ao backend" >
+                    <content dataType="4" inferiorLimit="0" initialValue="3600"></content>
+                </state>
+                <state id="2" userCanChange="false" description="Intervalo para exclusão de mensagens expiradas" >
+                    <content dataType="4" inferiorLimit="0" initialValue="3600"></content>
+                </state>
+                <state id="3" userCanChange="false" description="Permitido enviar relatórios de funcionamento ao backend" >
+                    <content dataType="7" initialValue="true" userCanChange="false" ></content>
+                </state>
+                <!-- events -->
+                <event id="1" synchronous="false" implementation="1" description="Evento desconhecido">
+                    <target mandatory="true">2</target>
+                    <parameter id="1" optional="false" dataType="9" label="error">
+                        <description>Descrição do evento</description>
+                    </parameter>
+                </event>
+                <event id="2" synchronous="false" implementation="1" description="Erro no loop de adaptação">
+                    <target mandatory="true">2</target>
+                    <parameter id="1" optional="false" dataType="9" label="error">
+                        <description>Descrição do evento</description>
+                    </parameter>
+                </event>
+                <event id="3" synchronous="false" implementation="1" description="Gerar de relatórios de funcionamento agendados">
+                    <target mandatory="true">2</target>
+                </event>
+                <event id="4" synchronous="false" implementation="1" description="Iniciar exclusão de mensagens expirada">
+                    <target mandatory="true">2</target>
+                </event>
+                <!-- actions -->
+                <action id="1"  description="Alterar permissão de enviar relatórios de funcionamento">
+                    <parameter id="1" optional="false" dataType="7" label="value" state="3">
+                        <description>Novo valor</description>
+                    </parameter>
+                </action>
+            </entity>
+        </component>
         <component name="User" class="urbosenti.user.UserManager">
             <entity type="3" description="Gerenciamento do Usuário">
                 <!-- intances - Usuarios estaticos e iniciais podem ser adicionados aqui, contudo devem ter ids únicos entre todas as instâncias do sistema -->
@@ -1162,6 +1242,35 @@
                 </parameter>
                 <parameter id="4" optional="false" dataType="9" label="description">
                     <description>Descrição</description>
+                </parameter>
+            </interaction>
+            <interaction id="9" type="1" direction="2" description="Atualizar endereço de entrada">
+                <communicativeAct>8</communicativeAct>
+                <parameter id="1" optional="false" dataType="9" label="uid">
+                    <description>UID do assinante</description>
+                </parameter>
+                <parameter id="2" optional="false" dataType="9" label="interface">
+                    <description>Interface de entrada</description>
+                    <possibleValues>
+                        <value>GCM</value>
+                        <value>Socket</value>
+                    </possibleValues>
+                </parameter>
+                <parameter id="3" optional="false" dataType="9" label="address">
+                    <description>Endereço do Assinante</description>
+                </parameter>
+            </interaction>
+            <interaction id="10" type="1" direction="2" description="Atualizar endereço de entrada">
+                <communicativeAct>8</communicativeAct>
+                <parameter id="1" optional="false" dataType="9" label="uid">
+                    <description>UID do assinante</description>
+                </parameter>
+                <parameter id="2" optional="false" dataType="3" label="status">
+                    <description>Estado atual de execução do módulo de sensoriamento</description>
+                    <possibleValues superiorLimit="1" inferiorLimit="4" initialValue="1"></possibleValues>
+                </parameter>
+                <parameter id="3" optional="false" dataType="9" label="content">
+                    <description>Conteúdo capturado durante o intervalo</description>
                 </parameter>
             </interaction>
         </agentModel>

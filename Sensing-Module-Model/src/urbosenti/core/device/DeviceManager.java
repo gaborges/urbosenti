@@ -135,22 +135,9 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
     private LocalizationManager localizationManager = null;
     private ResourceManager resourceManager = null;
     private ConcernManager concernManager = null;
-    private String UID;
     private OperatingSystemDiscovery OSDiscovery = null;
     private List<ComponentManager> enabledComponentManagers;
     private Boolean isRunning;
-
-    /**
-     *
-     * @return
-     */
-    public String getUID() {
-        return UID;
-    }
-
-    public void setUID(String UID) {
-        this.UID = UID;
-    }
 
     public DeviceManager() {
         super();
@@ -384,7 +371,7 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
             }
             // dar start em todos os serviços (Adaptation, interfaces de entrada, etc...) ---- falta isso 
             // Executar evento - UrboSenti Serviços Iniciados
-            this.newInternalEvent(EVENT_DEVICE_SERVICES_INITIATED);
+            // this.newInternalEvent(EVENT_DEVICE_SERVICES_INITIATED);
         } catch (SQLException ex) {
             Logger.getLogger(DeviceManager.class.getName()).log(Level.SEVERE, null, ex);
             throw new Error(ex);
@@ -520,6 +507,7 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
                     event.setName("Registro efetuado com sucesso");
                     event.setTime(new Date());
                     event.setParameters(values);
+                    event.setEntityId(DeviceDAO.ENTITY_ID_OF_SERVICE_REGISTRATION);
 
                     // envia o evento
                     getEventManager().newEvent(event);
@@ -550,6 +538,7 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
                     event.setName("Erro ao registrar ao servidor");
                     event.setTime(new Date());
                     event.setParameters(values);
+                    event.setEntityId(DeviceDAO.ENTITY_ID_OF_SERVICE_REGISTRATION);
 
                     // envia o evento
                     getEventManager().newEvent(event);
@@ -561,6 +550,7 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
                 event.setName("Erro ao registrar ao servidor");
                 event.setTime(new Date());
                 event.setParameters(values);
+                event.setEntityId(DeviceDAO.ENTITY_ID_OF_SERVICE_REGISTRATION);
 
                 // envia o evento
                 getEventManager().newEvent(event);
@@ -572,6 +562,9 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
                 event.setId(3);
                 event.setName("Serviços Iniciados");
                 event.setTime(new Date());
+                event.setEntityId(DeviceDAO.ENTITY_ID_OF_URBOSENTI_SERVICES);
+                event.setParameters(new HashMap<String, Object>());
+                event.getParameters().put("serviceStatus", true);
                 // envia o evento
                 getEventManager().newEvent(event);
                 break;
@@ -582,6 +575,9 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
                 event.setId(4);
                 event.setName("Serviços Parados");
                 event.setTime(new Date());
+                event.setEntityId(DeviceDAO.ENTITY_ID_OF_URBOSENTI_SERVICES);
+                event.setParameters(new HashMap<String, Object>());
+                event.getParameters().put("serviceStatus", false);
                 // envia o evento
                 getEventManager().newEvent(event);
                 break;
@@ -603,6 +599,7 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
                 event.setName("Informações do dispositivo coletadas com sucesso");
                 event.setTime(new Date());
                 event.setParameters(values);
+                event.setEntityId(DeviceDAO.ENTITY_ID_OF_BASIC_DEVICE_INFORMATIONS);
 
                 // envia o evento
                 getEventManager().newEvent(event);
@@ -620,6 +617,7 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
                 event.setName("Não foi possível acessar as informações");
                 event.setTime(new Date());
                 event.setParameters(values);
+                event.setEntityId(DeviceDAO.ENTITY_ID_OF_BASIC_DEVICE_INFORMATIONS);
 
                 // envia o evento
                 getEventManager().newEvent(event);
@@ -1025,7 +1023,7 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
 
     private void inputCommunicationInterfacesDiscovery() throws SQLException {
         // Verifica interfaces disponíveis
-        for (PushServiceReceiver psr : this.dataManager.getCommunicationDAO().getInputCommunicationInterfaces()) {
+        for (PushServiceReceiver psr : this.communicationManager.getPushServiceReveivers()) {
             Content content = new Content();
             content.setTime(new Date());
             content.setValue(true);
@@ -1077,7 +1075,7 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
     }
 
     public void addSupportedInputCommunicationInterface(PushServiceReceiver inputCommunicationInterface) {
-        dataManager.addSupportedInputCommunicationInterface(inputCommunicationInterface);
+        communicationManager.addPushServiceReceiver(inputCommunicationInterface);
     }
 
     public List<Service> getRemoteServices() {
@@ -1195,7 +1193,7 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
              * ************** Iniciar os serviços *************
              */
             // interfaces de comunicação de entrada
-            for (PushServiceReceiver receivers : dataManager.getCommunicationDAO().getInputCommunicationInterfaces()) {
+            for (PushServiceReceiver receivers : communicationManager.getPushServiceReveivers()) {
                 receivers.start();
             }
             // tratador de eventos do sistema
@@ -1218,9 +1216,12 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
         // Para  serviço de Upload
         this.communicationManager.stopAllCommunicationServices();
         // Para os listeners
-        for (PushServiceReceiver receivers : dataManager.getCommunicationDAO().getInputCommunicationInterfaces()) {
+        for (PushServiceReceiver receivers : communicationManager.getPushServiceReveivers()) {
             receivers.stop();
         }
+        // Calcela todas as triggers de eventos
+        this.eventManager.stopAllTriggers();
+        // troca o estado atual para fora de execução
         this.isRunning = false;
         // Evento que os serviços estão parados
         this.newInternalEvent(EVENT_DEVICE_SERVICES_STOPPED);

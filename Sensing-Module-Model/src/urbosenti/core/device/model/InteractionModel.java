@@ -95,6 +95,7 @@ public class InteractionModel {
         for(Parameter p : parameters){
             if(p.getLabel().equals(label)){
                 content.setValue(Content.parseContent(p.getDataType(), value));
+                p.setContent(content);
                 break;
             }
         }

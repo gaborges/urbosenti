@@ -9,6 +9,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import urbosenti.adaptation.AdaptationManager;
+import urbosenti.core.data.dao.EventDAO;
 import urbosenti.core.device.ComponentManager;
 import urbosenti.core.device.DeviceManager;
 import urbosenti.core.device.model.FeedbackAnswer;
@@ -33,6 +34,24 @@ public class EventManager extends ComponentManager {
      * tempo</li></ul>
      */
     public static final int EVENT_TIME_TRIGGER_ACHIEVED = 1;
+    /**
+     * int ACTION_ADD_TEMPORAL_TRIGGER_EVENT = 1;
+     *
+     * <ul><li>id: 1</li>
+     * <li>Ação: Adicionar um gatilho temporal de evento </li>
+     * <li>parâmetros: Evento; Intervalo de tempo (ms); Data inicial do
+     * gatilho;Modo de operação;Tratador do evento</li></ul>
+     */
+    public static final int ACTION_ADD_TEMPORAL_TRIGGER_EVENT = 1;
+    /**
+     * int ACTION_CANCEL_TEMPORAL_TRIGGER_EVENT = 2;
+     *
+     * <ul><li>id: 2</li>
+     * <li>Ação: Cancelar gatilho</li>
+     * <li>parâmetros: Evento; Intervalo de tempo (ms); Data inicial do
+     * gatilho;Modo de operação;Tratador do evento</li></ul>
+     */
+    public static final int ACTION_CANCEL_TEMPORAL_TRIGGER_EVENT = 2;
     public static final int METHOD_ONLY_INTERVAL = 1;
     public static final int METHOD_ONLY_DATE = 2;
     public static final int METHOD_DATE_PLUS_REPEATED_INTERVALS = 3;
@@ -63,7 +82,7 @@ public class EventManager extends ComponentManager {
 
     @Override
     public void onCreate() {
-        if(DeveloperSettings.SHOW_FUNCTION_DEBUG_ACTIVITY){
+        if (DeveloperSettings.SHOW_FUNCTION_DEBUG_ACTIVITY) {
             System.out.println("Activating: " + getClass());
         }
     }
@@ -230,6 +249,7 @@ public class EventManager extends ComponentManager {
                     event.setName("Evento agendado");
                     event.setTime(new Date());
                     event.setParameters(values);
+                    event.setEntityId(EventDAO.ENTITY_ID_OF_TEMPORAL_TRIGGER_OF_DYNAMIC_EVENTS);
 
                     // Envia o evento para o tratador de sistema
                     ((SystemHandler) tr.getHandler()).newEvent(event);
@@ -243,6 +263,7 @@ public class EventManager extends ComponentManager {
                     event.setName("Evento agendado");
                     event.setTime(new Date());
                     event.setParameters(values);
+                    event.setEntityId(EventDAO.ENTITY_ID_OF_TEMPORAL_TRIGGER_OF_DYNAMIC_EVENTS);
 
                     // Envia o evento para o tratador da aplicação
                     ((ApplicationHandler) tr.getHandler()).newEvent(event);
@@ -258,5 +279,14 @@ public class EventManager extends ComponentManager {
      */
     public void setExternalEventTimer(EventTimerFactory externalEventTimerFactory) {
         this.eventTimerFactory = externalEventTimerFactory;
+    }
+
+    /**
+     * Para todos os gatilhos de tempo criados.
+     */
+    public void stopAllTriggers() {
+        for(EventTimer eventTimerWorker:this.eventTimerWorkers){
+            eventTimerWorker.cancel();
+        }
     }
 }

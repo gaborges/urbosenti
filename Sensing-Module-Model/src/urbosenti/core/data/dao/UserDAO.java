@@ -33,6 +33,8 @@ public class UserDAO {
 
     public static final int COMPONENT_ID = 6;
     public static final int ENTITY_ID_OF_USER_MANAGEMENT = 1;
+    public static final int ENTITY_ID_OF_USER_AUTHENTICATION = 2;
+    public static final int ENTITY_ID_OF_USER_PROFILE_PREFERENCES = 3;
     public static final int STATE_ID_OF_USER_MANAGEMENT_USER_POSITION = 1;
     public static final int STATE_ID_OF_USER_MANAGEMENT_USER_LOGIN = 2;
     public static final int STATE_ID_OF_USER_MANAGEMENT_USER_PASSWORD = 3;

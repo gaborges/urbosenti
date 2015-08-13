@@ -114,7 +114,7 @@ public class AgentCommunicationLanguageDAO {
             }
         } catch (NumberFormatException ex) {
             // se não for um número verifica pela descrição
-            if(acl.getDescription().equals(textContent)){
+            if(acl.getDescription().toLowerCase().equals(textContent.toLowerCase())){
                 return true;
             }
         }

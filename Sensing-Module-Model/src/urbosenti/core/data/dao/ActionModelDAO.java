@@ -262,15 +262,16 @@ public class ActionModelDAO {
         return content;
     }
 
-    public void insertContent(Parameter parameter) throws SQLException {
-        String sql = "INSERT INTO action_contents (reading_value,reading_time,action_parameter_id,score) "
-                + " VALUES (?,?,?,?);";
+    public void insertContent(Parameter parameter, Action action) throws SQLException {
+        String sql = "INSERT INTO action_contents (reading_value,reading_time,action_parameter_id,score,generated_action_id) "
+                + " VALUES (?,?,?,?,?);";
         this.stmt = this.connection.prepareStatement(sql,
                 Statement.RETURN_GENERATED_KEYS);
         this.stmt.setObject(1, parameter.getContent().getValue());
         this.stmt.setObject(2, parameter.getContent().getTime().getTime());
         this.stmt.setInt(3, parameter.getId());
         this.stmt.setDouble(4, parameter.getContent().getScore());
+        this.stmt.setInt(5, action.getDataBaseId());
         this.stmt.execute();
         ResultSet generatedKeys = stmt.getGeneratedKeys();
         if (generatedKeys.next()) {
@@ -325,6 +326,34 @@ public class ActionModelDAO {
                 + "WHERE actions.id = ? AND entity_id = entities.id;";
         stmt = this.connection.prepareStatement(sql);
         stmt.setInt(1, id);
+        ResultSet rs = stmt.executeQuery();
+        while (rs.next()) {
+            action = new ActionModel();
+            action.setId(rs.getInt("id"));
+            action.setDescription(rs.getString("description"));
+            action.setHasFeedback(rs.getBoolean("has_feedback"));
+            action.setModelId(rs.getInt("model_id"));
+            action.setEntity(new Entity());
+            action.getEntity().setDescription(
+                    rs.getString("entity_description"));
+            action.getEntity().setId(rs.getInt("entity_id"));
+            action.setFeedbackAnswers(this.getActionFeedbackAnswers(action));
+            action.setParameters(this.getActionParameters(action));
+        }
+        rs.close();
+        stmt.close();
+        return action;
+    }
+    
+    ActionModel getAction(int modelId, int entityModelId, int componentId) throws SQLException {
+        ActionModel action = null;
+        String sql = "SELECT actions.id, actions.model_id, actions.description, has_feedback, entities.description as entity_description, entity_id "
+                + "FROM actions, entities "
+                + " WHERE actions.model_id = ? AND entities.model_id = ? AND component_id = ? AND entity_id = entities.id; ";
+        stmt = this.connection.prepareStatement(sql);
+        stmt.setInt(1, modelId);
+        stmt.setInt(2, entityModelId);
+        stmt.setInt(3, componentId);
         ResultSet rs = stmt.executeQuery();
         while (rs.next()) {
             action = new ActionModel();
@@ -500,7 +529,7 @@ public class ActionModelDAO {
     void insertAction(FeedbackAnswer response, Event event, Action actionToExecute, ExecutionPlan ep) throws SQLException {
         String sql = "INSERT INTO generated_actions (action_model_id, entity_id, component_id, parameters, "
                 + " response_time, feedback_id, feedback_description, action_type, execution_plan_id, event_id, event_type) "
-                + " VALUES (?,?,?,?,?,?,?,?,?,?);";
+                + " VALUES (?,?,?,?,?,?,?,?,?,?,?);";
         PreparedStatement statement = this.connection.prepareStatement(sql,
                 Statement.RETURN_GENERATED_KEYS);
         statement.setInt(1, actionToExecute.getId());

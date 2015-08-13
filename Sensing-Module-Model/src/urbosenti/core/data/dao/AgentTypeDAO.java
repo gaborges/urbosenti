@@ -397,18 +397,18 @@ public class AgentTypeDAO {
     private List<Parameter> getInteractionParameters(InteractionModel interaction) throws SQLException {
         List<Parameter> parameters = new ArrayList();
         Parameter parameter = null;
-        String sql = "SELECT interaction_parameters.id as interation_id, label, interaction_parameters.description as parameter_desc, \n"
+        String sql = "SELECT interaction_parameters.id as id, label, interaction_parameters.description as parameter_desc, \n"
                 + "                optional, superior_limit, inferior_limit, agent_state_id,\n"
                 + "                interaction_parameters.initial_value, data_type_id, data_types.initial_value as data_initial_value,\n"
                 + "                data_types.description as data_desc\n"
                 + "                FROM interaction_parameters, data_types\n"
-                + "                WHERE interation_id = ? and data_types.id = data_type_id;";
+                + "                WHERE interaction_id = ? and data_types.id = data_type_id;";
         stmt = this.connection.prepareStatement(sql);
         stmt.setInt(1, interaction.getId());
         ResultSet rs = stmt.executeQuery();
         while (rs.next()) {
             parameter = new Parameter();
-            parameter.setId(rs.getInt("interation_id"));
+            parameter.setId(rs.getInt("id"));
             parameter.setDescription(rs.getString("parameter_desc"));
             parameter.setLabel(rs.getString("label"));
             DataType type = new DataType();

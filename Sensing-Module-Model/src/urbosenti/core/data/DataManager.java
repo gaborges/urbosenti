@@ -175,8 +175,6 @@ public class DataManager extends ComponentManager {
                 Logger.getLogger(DataManager.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
-        // Carrega interfaces de comunicação de entrada
-        this.communicationDAO.addAvailableInputCommunicationInterfaces(supportedInputCommunicationInterfaces);
         // Verifica se o conhecimento foi adicionado, se não foi busca o padrão
         if (this.knowledgeRepresentation == null) {
             this.knowledgeRepresentation = new File("deviceKnowledgeModel.xml");
@@ -359,10 +357,6 @@ public class DataManager extends ComponentManager {
 
     public MessageReportDAO getReportDAO() {
         return reportDAO;
-    }
-
-    public void addSupportedInputCommunicationInterface(PushServiceReceiver inputCommunicationInterface) {
-        this.supportedInputCommunicationInterfaces.add(inputCommunicationInterface);
     }
 
 }

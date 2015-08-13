@@ -172,4 +172,10 @@ public abstract class CommunicationInterface<Object> implements InstanceRepresen
     public abstract Object sendMessageWithResponse(CommunicationManager communicationManager, MessageWrapper messageWrapper) throws java.net.SocketTimeoutException,IOException;
     public abstract Object receiveMessage() throws java.net.SocketTimeoutException,IOException;
     public abstract Object receiveMessage(int timeout) throws java.net.SocketTimeoutException,IOException;
+
+    @Override
+    public String toString() {
+        return "CommunicationInterface{" + "id=" + id + ", instance=" + instance.getId() + ", name=" + name + ", status=" + status + '}';
+    }
+
 }

@@ -171,13 +171,14 @@ public class EventModelDAO {
         return content;
     }
 
-    public void insertContent(Parameter parameter) throws SQLException {
-        String sql = "INSERT INTO event_contents (reading_value,reading_time,event_parameter_id) "
-                + " VALUES (?,?,?);";
+    public void insertContent(Parameter parameter,Event event) throws SQLException {
+        String sql = "INSERT INTO event_contents (reading_value,reading_time,event_parameter_id, generated_event_id) "
+                + " VALUES (?,?,?,?);";
         this.stmt = this.connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
         this.stmt.setObject(1, Content.parseContent(parameter.getDataType(), parameter.getContent().getValue()));
         this.stmt.setObject(2, parameter.getContent().getTime().getTime());
         this.stmt.setInt(3, parameter.getId());
+        this.stmt.setInt(4, event.getDatabaseId());
         this.stmt.execute();
         ResultSet generatedKeys = stmt.getGeneratedKeys();
         if (generatedKeys.next()) {
@@ -347,7 +348,7 @@ public class EventModelDAO {
                 + " VALUES (?,?,?,?,?);";
         this.stmt = this.connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
         this.stmt.setInt(1, eventModel.getId());
-        this.stmt.setInt(2, eventModel.getEntity().getId());
+        this.stmt.setInt(2, event.getEntityId());
         this.stmt.setInt(3, event.getComponentManager().getComponentId());
         this.stmt.setObject(4, event.getTime());
         this.stmt.setObject(5, event.getTimeout());
@@ -369,7 +370,7 @@ public class EventModelDAO {
                     p.setContent(new Content(
                             Content.parseContent(p.getDataType(), event.getParameters().get(p.getLabel())),
                             event.getTime()));
-                    this.insertContent(p);
+                    this.insertContent(p,event);
                 }
             }
         }

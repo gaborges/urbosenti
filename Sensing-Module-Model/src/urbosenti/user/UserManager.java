@@ -177,6 +177,7 @@ public class UserManager extends ComponentManager {
                 event.setName("Usuário incluído");
                 event.setTime(new Date());
                 event.setParameters(values);
+                event.setEntityId(UserDAO.ENTITY_ID_OF_USER_MANAGEMENT);
 
                 // envia o evento
                 getEventManager().newEvent(event);
@@ -195,6 +196,7 @@ public class UserManager extends ComponentManager {
                 event.setName("Usuário alterado");
                 event.setTime(new Date());
                 event.setParameters(values);
+                event.setEntityId(UserDAO.ENTITY_ID_OF_USER_MANAGEMENT);
 
                 // envia o evento
                 getEventManager().newEvent(event);
@@ -212,6 +214,7 @@ public class UserManager extends ComponentManager {
                 event.setName("Usuário excluído");
                 event.setTime(new Date());
                 event.setParameters(values);
+                event.setEntityId(UserDAO.ENTITY_ID_OF_USER_MANAGEMENT);
 
                 // envia o evento
                 getEventManager().newEvent(event);
@@ -229,6 +232,7 @@ public class UserManager extends ComponentManager {
                 event.setName("Usuário acessado para leitura");
                 event.setTime(new Date());
                 event.setParameters(values);
+                event.setEntityId(UserDAO.ENTITY_ID_OF_USER_MANAGEMENT);
 
                 // envia o evento
                 getEventManager().newEvent(event);
@@ -246,6 +250,7 @@ public class UserManager extends ComponentManager {
                 event.setName("Perfil escolhido de usuário a ser monitorado");
                 event.setTime(new Date());
                 event.setParameters(values);
+                event.setEntityId(UserDAO.ENTITY_ID_OF_USER_MANAGEMENT);
 
                 // envia o evento
                 getEventManager().newEvent(event);
@@ -263,6 +268,7 @@ public class UserManager extends ComponentManager {
                 event.setName("Usuário Executou Login");
                 event.setTime(new Date());
                 event.setParameters(values);
+                event.setEntityId(UserDAO.ENTITY_ID_OF_USER_AUTHENTICATION);
 
                 // envia o evento
                 getEventManager().newEvent(event);
@@ -280,6 +286,7 @@ public class UserManager extends ComponentManager {
                 event.setName("Usuário Executou Logoff");
                 event.setTime(new Date());
                 event.setParameters(values);
+                event.setEntityId(UserDAO.ENTITY_ID_OF_USER_AUTHENTICATION);
 
                 // envia o evento
                 getEventManager().newEvent(event);
@@ -301,6 +308,7 @@ public class UserManager extends ComponentManager {
                 event.setName("Configuração de sistema alterada pelo usuário");
                 event.setTime(new Date());
                 event.setParameters(values);
+                event.setEntityId(UserDAO.ENTITY_ID_OF_USER_PROFILE_PREFERENCES);
 
                 // envia o evento
                 getEventManager().newEvent(event);
@@ -320,6 +328,7 @@ public class UserManager extends ComponentManager {
                 event.setName("Configuração de privacidade alterada");
                 event.setTime(new Date());
                 event.setParameters(values);
+                event.setEntityId(UserDAO.ENTITY_ID_OF_USER_PROFILE_PREFERENCES);
 
                 // envia o evento
                 getEventManager().newEvent(event);

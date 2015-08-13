@@ -166,7 +166,27 @@ public class ServiceDAO {
         stmt.close();
     }
 
-    public Service getServiceByUid(String uid) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    public Service getServiceByUid(String uid) throws SQLException {
+        Service service = null;
+        String sql = "SELECT services.id as service_id, services.description as service_description, service_uid, application_uid, address, "
+                + " service_type_id, service_types.description as type_description\n"
+                + " FROM services, service_types\n"
+                + " WHERE services.service_uid = ? AND service_types.id = service_type_id ;";
+        stmt = this.connection.prepareStatement(sql);
+        stmt.setString(1, uid);
+        ResultSet rs = stmt.executeQuery();
+        if (rs.next()) {
+            service = new Service();
+            service.setId(rs.getInt("service_id"));
+            service.setDescription(rs.getString("service_description"));
+            service.setAddress(rs.getString("address"));
+            service.setServiceUID(rs.getString("service_uid"));
+            service.setApplicationUID((rs.getString("application_uid").length() <= 6) ? "" : rs.getString("application_uid"));
+            service.setServiceType(new ServiceType(rs.getInt("service_type_id"), rs.getString("type_description")));
+            service.setAgent(this.getServiceAgent(service));
+        }
+        rs.close();
+        stmt.close();
+        return service;
     }
 }

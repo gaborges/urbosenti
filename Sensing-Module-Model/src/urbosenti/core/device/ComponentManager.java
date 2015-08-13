@@ -102,4 +102,10 @@ public abstract class ComponentManager {
     public int getComponentId() {
         return componentId;
     }
+
+    @Override
+    public String toString() {
+        return "ComponentManager{" + "componentId=" + componentId + ", deviceManager=" + deviceManager + '}';
+    }
+    
 }

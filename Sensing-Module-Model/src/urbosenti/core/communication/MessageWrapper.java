@@ -221,5 +221,10 @@ public class MessageWrapper {
     public String getTargetAddress(){
         return message.getTarget().getAddress();
     }
+
+    @Override
+    public String toString() {
+        return "MessageWrapper{" + "id=" + id + ", timeout=" + timeout + ", createdTime=" + createdTime + ", sentTime=" + sentTime + ", checked=" + checked + '}';
+    }
     
 }

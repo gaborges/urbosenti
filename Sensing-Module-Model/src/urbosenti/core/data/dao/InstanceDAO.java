@@ -552,5 +552,32 @@ public class InstanceDAO {
         stmt.close();
         return instances;
     }
+    
+    public Content getBeforeCurrentContentValue(int stateModelId, int instanceModelId, int entityModelId, int componentModelId) throws SQLException {
+        Content content = null;
+        String sql = "SELECT instance_state_contents.id as id, reading_value, reading_time, data_type_id " +
+"                FROM instance_state_contents, instance_states, instances, entities\n" +
+"                WHERE state_model_id = ? AND instances.model_id = ? AND entities.model_id = ? AND component_id = ?" +
+"                AND entity_id = entities.id AND instance_state_id == instance_states.id AND instance_id = instances.id " +
+"                AND data_types.id = data_type_id ORDER BY id DESC LIMIT 2;";
+        this.stmt = this.connection.prepareStatement(sql);
+        this.stmt.setInt(1, stateModelId);
+        this.stmt.setInt(2, instanceModelId);
+        this.stmt.setInt(3, entityModelId);
+        this.stmt.setInt(4, componentModelId);
+        ResultSet rs = stmt.executeQuery();
+        // somente o último é que interessa
+        if (rs.next()) {
+            rs.next();
+            content = new Content();
+            // pegar o valor atual
+            content.setId(rs.getInt("id"));
+            content.setTime(new Date(Long.parseLong(rs.getString("reading_time"))));
+            content.setValue(Content.parseContent(new DataType(rs.getInt("data_type_id"), sql), rs.getObject("reading_value")));
+        }
+        rs.close();
+        stmt.close();
+        return content;
+    }
 
 }

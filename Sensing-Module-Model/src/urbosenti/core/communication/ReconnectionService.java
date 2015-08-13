@@ -217,4 +217,9 @@ public class ReconnectionService extends UrboSentiService implements Runnable, I
             }
         }
     }
+
+    @Override
+    public String toString() {
+        return "ReconnectionService{" + "communicationInterfacesSize=" + communicationInterfaces.size() + ", instance=" + instance.getId() + '}';
+    }
 }

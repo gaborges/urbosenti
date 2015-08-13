@@ -146,5 +146,10 @@ public final class User implements InstanceRepresentative{
     public void setUserPosition(int userPosition) {
         this.userPosition = userPosition;
     }
+
+    @Override
+    public String toString() {
+        return "User{" + "id=" + id + ", isBeingMonitored=" + isBeingMonitored + ", instance=" + instance.getId() + '}';
+    }
     
 }

@@ -53,6 +53,7 @@ public final class CommunicationDAO {
     public static final int STATE_ID_OF_UPLOAD_PERIODIC_REPORTS_POLICY = 6;
     public static final int STATE_ID_OF_UPLOAD_PERIODIC_REPORTS_ALLOWED_TO_PERFORM_UPLOAD = 7;
     public static final int STATE_ID_OF_UPLOAD_PERIODIC_REPORTS_SERVICE_ID = 8;
+    public static final int STATE_ID_OF_UPLOAD_PERIODIC_REPORTS_SUBSCRIBED_MAXIMUM_UPLOAD_RATE = 9;
     public static final int STATE_ID_OF_OUTPUT_COMMUNICATION_INTERFACE_POSITION = 1;
     public static final int STATE_ID_OF_OUTPUT_COMMUNICATION_INTERFACE_IS_ENABLED = 2;
     public static final int STATE_ID_OF_OUTPUT_COMMUNICATION_INTERFACE_TIMEOUT = 3;
@@ -197,14 +198,6 @@ public final class CommunicationDAO {
         rs.close();
         stmt.close();
         return deviceComponent;
-    }
-
-    public void addAvailableInputCommunicationInterfaces(List<PushServiceReceiver> supportedInputCommunicationInterfaces) {
-        this.inputCommunicationInterfaces = supportedInputCommunicationInterfaces;
-    }
-    
-    public List<PushServiceReceiver> getInputCommunicationInterfaces() {
-        return inputCommunicationInterfaces;
     }
 
     public void deleteUserReports(User user) {
