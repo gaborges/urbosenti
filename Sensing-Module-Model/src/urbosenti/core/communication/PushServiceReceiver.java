@@ -5,6 +5,7 @@
 package urbosenti.core.communication;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.HashMap;
 import urbosenti.core.device.model.Instance;
 import urbosenti.core.device.model.InstanceRepresentative;
@@ -13,7 +14,7 @@ import urbosenti.core.device.model.InstanceRepresentative;
  *
  * @author Guilherme
  */
-public abstract class PushServiceReceiver implements Runnable, InstanceRepresentative {
+public abstract class PushServiceReceiver implements Runnable, InstanceRepresentative, Serializable  {
 
     public static final boolean STATUS_LISTENING = true;
     public static final boolean STATUS_STOPPED = false;
@@ -107,13 +108,14 @@ public abstract class PushServiceReceiver implements Runnable, InstanceRepresent
     /**
      * Descobre o endereço e adiciona nas configurações de interface
      * (HashMap<String,String> interfaceConfigurations;)
+     *
      * @throws java.io.IOException
      */
     public abstract void addressDiscovery() throws IOException;
 
     @Override
     public String toString() {
-        return "PushServiceReceiver{" + "status=" + status + ", id=" + id + ", description=" + description + ", instance=" + instance.getId() + '}';
+        return String.valueOf(instance.getId());
     }
 
 }

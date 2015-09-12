@@ -19,6 +19,7 @@ import urbosenti.core.device.DeviceManager;
 import urbosenti.core.device.model.Service;
 import urbosenti.test.ConcreteApplicationHandler;
 import urbosenti.test.DesktopOperationalSystemDiscovery;
+import urbosenti.test.TestAdaptationComponente;
 import urbosenti.test.TestCommunication;
 
 /**
@@ -33,7 +34,7 @@ import urbosenti.test.TestCommunication;
 public class Main {
 
     public static void main(String[] args) {
-
+        
         /**
          * *** Configuração do middleware pelo framework ****
          */

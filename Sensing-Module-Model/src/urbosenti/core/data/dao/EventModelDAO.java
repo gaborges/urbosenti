@@ -13,6 +13,8 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import urbosenti.core.device.BaseComponentManager;
+import urbosenti.core.device.ComponentManager;
 import urbosenti.core.device.model.Content;
 import urbosenti.core.device.model.DataType;
 import urbosenti.core.device.model.Entity;
@@ -22,7 +24,9 @@ import urbosenti.core.device.model.Implementation;
 import urbosenti.core.device.model.Parameter;
 import urbosenti.core.device.model.PossibleContent;
 import urbosenti.core.device.model.TargetOrigin;
+import urbosenti.core.events.Action;
 import urbosenti.core.events.Event;
+import urbosenti.core.events.SystemEvent;
 import urbosenti.util.DeveloperSettings;
 
 /**
@@ -171,22 +175,20 @@ public class EventModelDAO {
         return content;
     }
 
-    public void insertContent(Parameter parameter,Event event) throws SQLException {
+    public void insertContent(Parameter parameter, Event event) throws SQLException {
         String sql = "INSERT INTO event_contents (reading_value,reading_time,event_parameter_id, generated_event_id) "
                 + " VALUES (?,?,?,?);";
-        this.stmt = this.connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
-        this.stmt.setObject(1, Content.parseContent(parameter.getDataType(), parameter.getContent().getValue()));
-        this.stmt.setObject(2, parameter.getContent().getTime().getTime());
-        this.stmt.setInt(3, parameter.getId());
-        this.stmt.setInt(4, event.getDatabaseId());
-        this.stmt.execute();
-        ResultSet generatedKeys = stmt.getGeneratedKeys();
+        PreparedStatement preparedStatement = this.connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+        preparedStatement.setObject(1, Content.parseContent(parameter.getDataType(), parameter.getContent().getValue()));
+        preparedStatement.setObject(2, parameter.getContent().getTime().getTime());
+        preparedStatement.setInt(3, parameter.getId());
+        preparedStatement.setInt(4, event.getDatabaseId());
+        preparedStatement.execute();
+        ResultSet generatedKeys = preparedStatement.getGeneratedKeys();
         if (generatedKeys.next()) {
             parameter.getContent().setId(generatedKeys.getInt(1));
-        } else {
-            throw new SQLException("Creating user failed, no ID obtained.");
         }
-        stmt.close();
+        preparedStatement.close();
         if (DeveloperSettings.SHOW_DAO_SQL) {
             System.out.println("INSERT INTO event_contents (id,reading_value,reading_time,event_parameter_id) "
                     + " VALUES (" + parameter.getContent().getId() + ",'" + Content.parseContent(parameter.getDataType(), parameter.getContent().getValue()) + "',"
@@ -297,7 +299,7 @@ public class EventModelDAO {
         stmt.setInt(2, entityModelId);
         stmt.setInt(3, componentId);
         ResultSet rs = stmt.executeQuery();
-        if(rs.next()) {
+        if (rs.next()) {
             event = new EventModel();
             event.setId(rs.getInt("event_id"));
             event.setDescription(rs.getString("event_description"));
@@ -321,7 +323,7 @@ public class EventModelDAO {
         stmt = this.connection.prepareStatement(sql);
         stmt.setInt(1, id);
         ResultSet rs = stmt.executeQuery();
-        if(rs.next()) {
+        if (rs.next()) {
             event = new EventModel();
             event.setId(rs.getInt("event_id"));
             event.setDescription(rs.getString("event_description"));
@@ -335,44 +337,230 @@ public class EventModelDAO {
         stmt.close();
         return event;
     }
+
     /**
-     * Gera o evento e salva o valor do parâmetros. Se algum parâmetro obrigatório estiver com valor nulo é gerada uma exceção.
+     * Gera o evento e salva o valor do parâmetros. Se algum parâmetro
+     * obrigatório estiver com valor nulo é gerada uma exceção.
+     *
      * @param event
      * @param eventModel
      * @throws SQLException
-     * @throws Exception 
+     * @throws Exception
      */
     public void insert(Event event, EventModel eventModel) throws SQLException, Exception {
         // Criar evento
-        String sql = "INSERT INTO generated_events (event_id,entity_id,component_id,time,timeout) "
-                + " VALUES (?,?,?,?,?);";
+        String sql = "INSERT INTO generated_events (event_id,entity_id,component_id,time,timeout,event_type) "
+                + " VALUES (?,?,?,?,?,?);";
         this.stmt = this.connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
         this.stmt.setInt(1, eventModel.getId());
         this.stmt.setInt(2, event.getEntityId());
         this.stmt.setInt(3, event.getComponentManager().getComponentId());
         this.stmt.setObject(4, event.getTime());
         this.stmt.setObject(5, event.getTimeout());
+        this.stmt.setInt(6, event.getEventType());
         this.stmt.execute();
-        ResultSet generatedKeys = stmt.getGeneratedKeys();
-        if (generatedKeys.next()) {
-            event.setDatabaseId(generatedKeys.getInt(1));
+        this.stmt.close();
+        int lastGeneratedEventId = this.getGeneratedIdByTime(eventModel.getId(),event.getTime());
+        if (lastGeneratedEventId > 0) {
+            event.setDatabaseId(lastGeneratedEventId);
         } else {
             throw new SQLException("Creating user failed, no ID obtained.");
         }
         stmt.close();
         // adicionar conteúdos dos parâmetros
-        for(Parameter p : eventModel.getParameters()){
-            if(event.getParameters().get(p.getLabel())== null && !p.isOptional()){
-                throw new Exception("Parameter "+p.getLabel()+" from the event "+eventModel.getDescription()+" id "+eventModel.getId()
-                        +" was not found. Such parameter is not optional!");
-            } else{
-                if(event.getParameters().get(p.getLabel())!= null){
+        for (Parameter p : eventModel.getParameters()) {
+            if (event.getParameters().get(p.getLabel()) == null && !p.isOptional()) {
+                throw new Exception("Parameter " + p.getLabel() + " from the event " + eventModel.getDescription() + " id " + eventModel.getId()
+                        + " was not found. Such parameter is not optional!");
+            } else {
+                if (event.getParameters().get(p.getLabel()) != null) {
                     p.setContent(new Content(
                             Content.parseContent(p.getDataType(), event.getParameters().get(p.getLabel())),
                             event.getTime()));
-                    this.insertContent(p,event);
+                    this.insertContent(p, event);
                 }
             }
         }
+    }
+
+    public Date getLastEventTime(int eventModelId, int entityModelId, int componentModelId) throws SQLException, Exception {
+        Date eventTime = null;
+        String sql = "SELECT time FROM  enerated_events "
+                + " WHERE event_id = ? AND entity_id = ? AND component_id = ? ORDER BY time DESC "
+                + " LIMIT 1;";
+        this.stmt = this.connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+        this.stmt.setInt(1, eventModelId);
+        this.stmt.setInt(2, entityModelId);
+        this.stmt.setInt(3, componentModelId);;
+        this.stmt.execute();
+        ResultSet rs = stmt.getGeneratedKeys();
+        if (rs.next()) {
+            eventTime = new Date(rs.getLong("time"));
+        } else {
+            throw new SQLException("Creating user failed, no ID obtained.");
+        }
+        stmt.close();
+        return eventTime;
+    }
+
+    public Content getLastEventContentByLabelAndValue(Object value, String label, int eventModelId, int entityModelId, int componentModelId) throws SQLException, Exception {
+        Content content = null;
+        String sql = " SELECT event_contents.id as id, reading_value, time "
+                + " FROM  generated_events, event_contents , event_parameters, events "
+                + " WHERE reading_value = ? AND parameter_label = ? AND events.model_id = ? AND generated_events.entity_id = ? AND component_id = ? "
+                + " AND generated_event_id = generated_events.id AND event_parameter_id = event_parameters.id AND events.id = generated_events.event_id "
+                + " ORDER BY time DESC LIMIT 1;";
+        PreparedStatement stmt = this.connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+        stmt.setObject(1, value);
+        stmt.setString(2, label);
+        stmt.setInt(3, eventModelId);
+        stmt.setInt(4, entityModelId);
+        stmt.setInt(5, componentModelId);;
+        stmt.execute();
+        ResultSet rs = stmt.getResultSet();
+        if (rs.next()) {
+            content = new Content();
+            content.setTime(new Date(rs.getLong("time")));
+            content.setId(rs.getInt("id"));
+            content.setValue(value);
+        }
+        stmt.close();
+        return content;
+    }
+
+    public Event getEvent(Action action, BaseComponentManager bcm) throws SQLException{
+        return getEvent(action.getDataBaseId(),bcm);
+    }
+
+    public Event getEvent(int dataBaseEventId,BaseComponentManager bcm) throws SQLException {
+        Event event = null;
+        String sql = " SELECT generated_events.id, generated_events.event_id, generated_events.entity_id, generated_events.component_id, generated_events.time, "
+                + " timeout, generated_events.event_type, description, synchronous "
+                + " FROM generated_events, generated_actions, events "
+                + " WHERE generated_actions.id = ? AND events.id = generated_events.event_id AND generated_actions.event_id = generated_events.id;";
+        
+        PreparedStatement stmt = this.connection.prepareStatement(sql);
+        stmt.setInt(1, dataBaseEventId);
+        ResultSet rs = stmt.executeQuery();
+        if (rs.next()) {
+            for(ComponentManager cm : bcm.getComponentManagers()){
+                if(rs.getInt("component_id")==cm.getComponentId()){
+                    event = new SystemEvent(cm);
+                }
+            }          
+            event.setId(rs.getInt("event_id"));
+            event.setDatabaseId(rs.getInt("id"));
+            event.setEventType(rs.getInt("event_type"));
+            event.setEntityId(rs.getInt("entity_id"));
+            event.setTime(new Date(rs.getLong("time")));
+            event.setTimeout(rs.getInt("timeout"));
+            event.setName(rs.getString("description"));
+            event.setSynchronous(rs.getBoolean("synchronous"));
+        }
+        rs.close();
+        stmt.close();
+        return event;
+    }
+
+    public List<Parameter> getEventParameterContents(Action action) throws SQLException {
+        return getEventParameterContents(action.getDataBaseId());
+    }
+    
+    public List<Parameter> getEventParameterContents(int dataBaseEventId) throws SQLException {
+        List<Parameter> parameters = new ArrayList();
+        Parameter parameter;
+        Content content;
+        String sql = "SELECT event_contents.id as content_id, reading_value, reading_time, event_parameters.id as parameter_id, "
+                + " parameter_label as label, event_parameters.description as parameter_desc, optional, superior_limit, "
+                + " inferior_limit, entity_state_id, event_parameters.initial_value, data_type_id, "
+                + " data_types.initial_value as data_initial_value, data_types.description as data_desc "
+                + " FROM event_contents, event_parameters, data_types "
+                + " WHERE generated_event_id = ?  AND event_parameter_id = event_parameters.id AND data_types.id = data_type_id "
+                + " ORDER BY generated_event_id ; ";
+        stmt = this.connection.prepareStatement(sql);
+        stmt.setInt(1, dataBaseEventId);
+        ResultSet rs = stmt.executeQuery();
+        while (rs.next()) {
+            parameter = new Parameter();
+            parameter.setId(rs.getInt("parameter_id"));
+            parameter.setDescription(rs.getString("parameter_desc"));
+            parameter.setLabel(rs.getString("label"));
+            DataType type = new DataType();
+            type.setId(rs.getInt("data_type_id"));
+            type.setDescription(rs.getString("data_desc"));
+            type.setInitialValue(rs.getObject("data_initial_value"));
+            parameter.setDataType(type);
+            // trata o tipo de dado do estado
+            parameter.setSuperiorLimit(Content.parseContent(
+                    parameter.getDataType(), parameter.getSuperiorLimit()));
+            parameter.setInferiorLimit(Content.parseContent(
+                    parameter.getDataType(), parameter.getInferiorLimit()));
+            parameter.setInitialValue(Content.parseContent(
+                    parameter.getDataType(), parameter.getInitialValue()));
+            parameter.setInferiorLimit(rs.getObject("inferior_limit"));
+            parameter.setSuperiorLimit(rs.getObject("superior_limit"));
+            parameter.setInitialValue(rs.getObject("initial_value"));
+            parameter.setOptional(rs.getBoolean("optional"));
+            if (rs.getInt("entity_state_id") > 0) {
+                EntityStateDAO dao = new EntityStateDAO(connection);
+                parameter.setRelatedState(dao.getState(rs
+                        .getInt("entity_state_id")));
+            }
+            // pega o valor utilizado na ação
+            content = new Content();
+            content.setId(rs.getInt("content_id"));
+            content.setTime(new Date(Long.parseLong(rs.getString("reading_time"))));
+            content.setValue(Content.parseContent(parameter.getDataType(),
+                    rs.getObject("reading_value")));
+            parameter.setContent(content);
+
+            parameter.setPossibleContents(this.getPossibleContents(parameter));
+            parameters.add(parameter);
+        }
+        rs.close();
+        stmt.close();
+        return parameters;
+    }
+    
+    private List<PossibleContent> getPossibleContents(Parameter parameter)
+            throws SQLException {
+        List<PossibleContent> possibleContents = new ArrayList();
+        String sql = " SELECT id, possible_value, default_value "
+                + " FROM possible_event_contents\n"
+                + " WHERE event_parameter_id = ?;";
+        stmt = this.connection.prepareStatement(sql);
+        stmt.setInt(1, parameter.getId());
+        ResultSet rs = stmt.executeQuery();
+        while (rs.next()) {
+            possibleContents.add(new PossibleContent(rs.getInt("id"), Content
+                    .parseContent(parameter.getDataType(),
+                            rs.getString("possible_value")), rs
+                    .getBoolean("default_value")));
+        }
+        rs.close();
+        stmt.close();
+        return possibleContents;
+    }
+    
+    public int getLastGeneratedEventId() throws SQLException{
+        Integer id = 0;
+        PreparedStatement ps = this.connection.prepareStatement("SELECT id FROM generated_events ORDER BY id DESC LIMIT 1;");
+        ResultSet rs = ps.executeQuery();
+        if(rs.next()){
+            id = rs.getInt("id");
+        }
+        return id;
+    }
+
+    private int getGeneratedIdByTime(int databaseEventId, Date time) throws SQLException {
+        Integer id = 0;
+        PreparedStatement ps = this.connection.prepareStatement("SELECT id FROM generated_events WHERE time = ? AND event_id = ? ;");
+        ps.setLong(1, time.getTime());
+        ps.setInt(2, databaseEventId);
+        ResultSet rs = ps.executeQuery();
+        if(rs.next()){
+            id = rs.getInt("id");
+        }
+        return id;
     }
 }

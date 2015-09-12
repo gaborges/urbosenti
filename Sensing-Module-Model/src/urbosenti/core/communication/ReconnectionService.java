@@ -123,7 +123,7 @@ public class ReconnectionService extends UrboSentiService implements Runnable, I
             synchronized (this) {
                 if (reconnectionTime > 0) {
                     wait(reconnectionTime);
-                }
+                }             
             }
             if (this.methodOfReconnection == METHOD_ONE_BY_TIME) {
                 Iterator<CommunicationInterface> iterator = communicationInterfaces.iterator();
@@ -168,6 +168,19 @@ public class ReconnectionService extends UrboSentiService implements Runnable, I
     public void start() {
         if (!service.isAlive()) {
             this.service.start();
+        }
+        // testa conexões, se uma estiver conectada adiciona true em reconnected para não necessitar executar o processo
+        for(CommunicationInterface ci : communicationInterfaces){
+            try {
+                if(ci.testConnection()){
+                    this.reconnected = true;
+                    break;
+                }
+            } catch (IOException ex) {
+                Logger.getLogger(ReconnectionService.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (UnsupportedOperationException ex) {
+                Logger.getLogger(ReconnectionService.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }
     }
 
@@ -220,6 +233,23 @@ public class ReconnectionService extends UrboSentiService implements Runnable, I
 
     @Override
     public String toString() {
-        return "ReconnectionService{" + "communicationInterfacesSize=" + communicationInterfaces.size() + ", instance=" + instance.getId() + '}';
+        return String.valueOf(instance.getId());
+    }
+
+    public int getMethodOfReconnection() {
+        return methodOfReconnection;
+    }
+    
+    /**
+     * 
+     * @return retorna se alguma interface desse serviço tem conexão
+     */
+    public boolean hasSomeInterfaceConnection(){
+        for(CommunicationInterface ci : communicationInterfaces){
+            if(ci.getStatus() == CommunicationInterface.STATUS_CONNECTED){
+                return true;
+            }
+        }
+        return false;
     }
 }

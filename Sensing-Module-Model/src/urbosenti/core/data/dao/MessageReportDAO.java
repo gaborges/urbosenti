@@ -57,20 +57,19 @@ public class MessageReportDAO {
         this.stmt.setBoolean(16, report.isSent());// sent boolean not null,
         this.stmt.setInt(17, service.getId());// service_id integer not null,
         this.stmt.setInt(18, report.getTimeout());// timeout integer
-
         this.stmt.execute();
-        ResultSet generatedKeys = stmt.getGeneratedKeys();
-        if (generatedKeys.next()) {
-            report.setId(generatedKeys.getInt(1));
-        } else {
-            throw new SQLException("Creating report failed, no ID obtained.");
-        }
+//        ResultSet generatedKeys = stmt.getGeneratedKeys();
+//        if (generatedKeys.next()) {
+//            report.setId(generatedKeys.getInt(1));
+//        } else {
+//            throw new SQLException("Creating report failed, no ID obtained.");
+//        }
         stmt.close();
 
     }
 
     //updateChecked
-    public void updateChecked(MessageWrapper report) throws SQLException {
+    public synchronized void updateChecked(MessageWrapper report) throws SQLException {
         String sql = "UPDATE reports SET checked = ? WHERE id = ? ;";
         this.stmt = this.connection.prepareStatement(sql);
         report.setChecked();
@@ -92,7 +91,7 @@ public class MessageReportDAO {
     }
 
     //delete by id
-    public void delete(MessageWrapper report) throws SQLException {
+    public synchronized void delete(MessageWrapper report) throws SQLException {
         String sql = "DELETE FROM reports WHERE id = ? ;";
         this.stmt = this.connection.prepareStatement(sql);
         this.stmt.setInt(1, report.getId());
@@ -101,7 +100,7 @@ public class MessageReportDAO {
     }
 
     //delete by id
-    public void delete(int reportId) throws SQLException {
+    public synchronized void delete(int reportId) throws SQLException {
         String sql = "DELETE FROM reports WHERE id = ? ;";
         this.stmt = this.connection.prepareStatement(sql);
         this.stmt.setInt(1, reportId);
@@ -110,7 +109,7 @@ public class MessageReportDAO {
     }
 
     //delete all by params
-    private void deleteAll(boolean unCheckedOnly, boolean isSentOnly, Service service) throws SQLException {
+    private synchronized void deleteAll(boolean unCheckedOnly, boolean isSentOnly, Service service) throws SQLException {
         String sql = "DELETE FROM reports ";
         if (unCheckedOnly && isSentOnly && service != null) {
             sql += " WHERE checked = ? AND sent = ? AND service_id = ? ;";
@@ -197,7 +196,7 @@ public class MessageReportDAO {
     }
 
     //get by id
-    public MessageWrapper get(int id) throws SQLException {
+    public synchronized MessageWrapper get(int id) throws SQLException {
         MessageWrapper report = null;
         Message message = new Message();
         String sql = " SELECT subject, content_type, priority, content, anonymous_upload, "
@@ -244,7 +243,7 @@ public class MessageReportDAO {
     }
     
     //get by id
-    public MessageWrapper get(Date createdTime) throws SQLException {
+    public synchronized MessageWrapper get(Date createdTime) throws SQLException {
         MessageWrapper report = null;
         Message message = new Message();
         String sql = " SELECT id, subject, content_type, priority, content, anonymous_upload, "
@@ -292,7 +291,7 @@ public class MessageReportDAO {
     }
 
     //get the oldest [not sent, not checked]
-    public MessageWrapper getOldest() throws SQLException {
+    public synchronized MessageWrapper getOldest() throws SQLException {
         MessageWrapper report = null;
         Message message = new Message();
         String sql = " SELECT id, subject, content_type, priority, content, anonymous_upload, "
@@ -359,7 +358,7 @@ public class MessageReportDAO {
     }
 
     //get the oldest [not sent, not checked]
-    public MessageWrapper getOldest(boolean sent, boolean checked, int priority, Service service) throws SQLException {
+    public synchronized MessageWrapper getOldest(boolean sent, boolean checked, int priority, Service service) throws SQLException {
         MessageWrapper report = null;
         Message message = new Message();
         String sql;
@@ -437,7 +436,7 @@ public class MessageReportDAO {
     }
 
     //get all by service
-    public List<MessageWrapper> getList(Service service) throws SQLException {
+    public synchronized List<MessageWrapper> getList(Service service) throws SQLException {
         List<MessageWrapper> messages = new ArrayList();
         MessageWrapper report = null;
         Message message = new Message();
@@ -489,7 +488,7 @@ public class MessageReportDAO {
     }
 
     //get all by service
-    public List<MessageWrapper> getList(boolean sent, boolean checked, int priority, Service service) throws SQLException {
+    public synchronized List<MessageWrapper> getList(boolean sent, boolean checked, int priority, Service service) throws SQLException {
         List<MessageWrapper> messages = new ArrayList();
         MessageWrapper report = null;
         Message message = new Message();
@@ -570,17 +569,19 @@ public class MessageReportDAO {
     }
 
     //counting reports from service
-    public int reportsCount(Service service) throws SQLException {
-        String sql = "SELECT count(id) count FROM reports WHERE service_id = ? ;";
-        this.stmt = this.connection.prepareStatement(sql);
-        this.stmt.setInt(1, service.getId());
-        this.stmt.execute();
-        this.stmt.close();
-        ResultSet rs = this.stmt.getResultSet();
+    public synchronized int reportsCount(Service service) throws SQLException {
+        int returnedValue = 0;
+        String sql = "SELECT count(id) as count FROM reports WHERE service_id = ? ;";
+        PreparedStatement prepareStatement = this.connection.prepareStatement(sql);
+        prepareStatement.setInt(1, service.getId());
+        prepareStatement.execute();
+        ResultSet rs = prepareStatement.getResultSet();
         if (rs.next()) {
-            return rs.getInt("count");
+            returnedValue = rs.getInt("count");
         }
-        return 0;
+        rs.close();
+        prepareStatement.close();
+        return returnedValue;
     }
 
     //counting reports
@@ -632,7 +633,7 @@ public class MessageReportDAO {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
-    public void deleteAllExpired(Integer timeLimit) throws SQLException {
+    public synchronized void deleteAllExpired(Integer timeLimit) throws SQLException {
         Long limit = System.currentTimeMillis()+timeLimit;
         String sql = "DELETE FROM reports WHERE created_time >= ? ;";
         this.stmt = this.connection.prepareStatement(sql);

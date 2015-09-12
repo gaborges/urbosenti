@@ -5,11 +5,13 @@
  */
 package urbosenti.core.device;
 
+import java.io.Serializable;
+
 /**
  *
  * @author Guilherme
  */
-public abstract class UrboSentiService {
+public abstract class UrboSentiService implements Serializable  {
     public abstract void start();
     public abstract void stop();
     public abstract void wakeUp();

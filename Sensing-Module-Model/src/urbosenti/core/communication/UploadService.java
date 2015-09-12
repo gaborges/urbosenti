@@ -107,6 +107,7 @@ public class UploadService extends UrboSentiService implements Runnable, Instanc
                     }
                 }
                 if (upload) {
+                    communicationManager.newInternalEvent(CommunicationManager.EVENT_NEW_START_OF_UPLOAD_SERVICE_FUNCTION_LOOP, this.getInstance().getModelId());
                     communicationManager.uploadServiceFunction(service, this,this.uploadInterval,this.uploadRate,this.limitOfReportsSentByUploadInterval);
                 }
             }
@@ -410,7 +411,7 @@ public class UploadService extends UrboSentiService implements Runnable, Instanc
     
     @Override
     public String toString() {
-        return "UploadService{" + "service=" + service + ", instance=" + instance.getId() + '}';
+        return String.valueOf(instance.getId());
     }
 
 }

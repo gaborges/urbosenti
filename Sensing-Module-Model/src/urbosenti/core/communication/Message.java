@@ -4,13 +4,14 @@
  */
 package urbosenti.core.communication;
 
+import java.io.Serializable;
 import java.util.Date;
 
 /**
  *
  * @author Guilherme
  */
-public class Message {
+public class Message  implements Serializable  {
     
     public static final int NORMAL_PRIORITY = 1;
     public static final int PREFERENTIAL_PRIORITY = 2;  

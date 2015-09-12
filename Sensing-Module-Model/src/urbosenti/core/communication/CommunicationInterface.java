@@ -5,6 +5,7 @@
 package urbosenti.core.communication;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.Date;
 import urbosenti.core.device.model.Instance;
 import urbosenti.core.device.model.InstanceRepresentative;
@@ -14,7 +15,7 @@ import java.net.URL;
  *
  * @author Guilherme
  */
-public abstract class CommunicationInterface<Object> implements InstanceRepresentative {
+public abstract class CommunicationInterface<Object> implements InstanceRepresentative, Serializable  {
     
     public final static int STATUS_DISCONNECTED = 0;
     public final static int STATUS_CONNECTED = 1;
@@ -124,6 +125,14 @@ public abstract class CommunicationInterface<Object> implements InstanceRepresen
         }  
     }
 
+     /**
+      * 
+      * @return  retorna o estado da interface
+      * @see #STATUS_CONNECTED
+      * @see #STATUS_DISCONNECTED
+      * @see #STATUS_AVAILABLE
+      * @see #STATUS_UNAVAILABLE
+      */
     public int getStatus() {
         return status;
     }
@@ -175,7 +184,7 @@ public abstract class CommunicationInterface<Object> implements InstanceRepresen
 
     @Override
     public String toString() {
-        return "CommunicationInterface{" + "id=" + id + ", instance=" + instance.getId() + ", name=" + name + ", status=" + status + '}';
+        return String.valueOf(instance.getId());
     }
 
 }

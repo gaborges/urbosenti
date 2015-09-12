@@ -245,7 +245,7 @@ public class EventManager extends ComponentManager {
 
                     // criação do evento
                     event = new SystemEvent(this);
-                    event.setId(1);
+                    event.setId(EventManager.EVENT_TIME_TRIGGER_ACHIEVED);
                     event.setName("Evento agendado");
                     event.setTime(new Date());
                     event.setParameters(values);
@@ -259,7 +259,7 @@ public class EventManager extends ComponentManager {
 
                     // criação do evento
                     event = new ApplicationEvent(this);
-                    event.setId(1);
+                    event.setId(EventManager.EVENT_TIME_TRIGGER_ACHIEVED);
                     event.setName("Evento agendado");
                     event.setTime(new Date());
                     event.setParameters(values);
@@ -285,7 +285,7 @@ public class EventManager extends ComponentManager {
      * Para todos os gatilhos de tempo criados.
      */
     public void stopAllTriggers() {
-        for(EventTimer eventTimerWorker:this.eventTimerWorkers){
+        for (EventTimer eventTimerWorker : this.eventTimerWorkers) {
             eventTimerWorker.cancel();
         }
     }

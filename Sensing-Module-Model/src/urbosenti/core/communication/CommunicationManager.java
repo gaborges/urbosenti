@@ -168,6 +168,20 @@ public class CommunicationManager extends ComponentManager {
      */
     public static final int EVENT_NEW_RECONNECTION_ATTEMPT = 16;
     /**
+     * int EVENT_NEW_START_OF_UPLOAD_SERVICE_FUNCTION_LOOP = 17;
+     *
+     * <ul><li>id: 17</li>
+     * <li>evento: Novo início do loop de serviço de upload</li>
+     * <li>parâmetros: Serviço de upload</li></ul>
+     *
+     */
+    public static final int EVENT_NEW_START_OF_UPLOAD_SERVICE_FUNCTION_LOOP = 17;
+    /*
+     *********************************************************************
+     ***************************** Actions ******************************* 
+     *********************************************************************
+     */
+    /**
      * int ACTION_REMOVE_REPORT_FROM_DATABASE = 1;
      *
      * <ul><li>id: 1</li>
@@ -555,7 +569,9 @@ public class CommunicationManager extends ComponentManager {
                     CommunicationDAO.ENTITY_ID_OF_REPORTS_STORAGE,
                     CommunicationDAO.STATE_ID_OF_REPORTS_STORAGE_ABOUT_MESSAGE_EXPIRATION_TIME).getCurrentValue().toString());
         } catch (SQLException ex) {
-            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
+                Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            }
             throw new Error(ex);
         }
     }
@@ -652,7 +668,9 @@ public class CommunicationManager extends ComponentManager {
                     this.newInternalEvent(EVENT_MESSAGE_STORED_REMOVED, mw);
                     // retorno sucesso
                 } catch (SQLException ex) {
-                    Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+                    if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
+                        Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+                    }
                     // retorno erro
                     answer = new FeedbackAnswer(FeedbackAnswer.ACTION_RESULT_FAILED, ex.toString());
                 }
@@ -860,13 +878,19 @@ public class CommunicationManager extends ComponentManager {
                 try {
                     this.sendMessage(message);
                 } catch (SocketTimeoutException ex) {
-                    Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+                    if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
+                        Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+                    }
                     answer = new FeedbackAnswer(FeedbackAnswer.ACTION_RESULT_FAILED_TIMEOUT, ex.toString());
                 } catch (ConnectException ex) {
-                    Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+                    if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
+                        Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+                    }
                     answer = new FeedbackAnswer(FeedbackAnswer.ACTION_RESULT_FAILED, ex.toString());
                 } catch (IOException ex) {
-                    Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+                    if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
+                        Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+                    }
                     answer = new FeedbackAnswer(FeedbackAnswer.ACTION_RESULT_FAILED, ex.toString());
                 }
                 break;
@@ -887,7 +911,9 @@ public class CommunicationManager extends ComponentManager {
                         answer = new FeedbackAnswer(FeedbackAnswer.ACTION_RESULT_FAILED, "Upload Service UID:" + message.getTarget().getUid() + " was not found!");
                     }
                 } catch (SQLException ex) {
-                    Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+                    if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
+                        Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+                    }
                     answer = new FeedbackAnswer(FeedbackAnswer.ACTION_RESULT_FAILED, ex.toString());
                 }
                 break;
@@ -895,7 +921,9 @@ public class CommunicationManager extends ComponentManager {
                 try {
                     getDeviceManager().getDataManager().getReportDAO().deleteAllExpired(timeLimit);
                 } catch (SQLException ex) {
-                    Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+                    if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
+                        Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+                    }
                     answer = new FeedbackAnswer(FeedbackAnswer.ACTION_RESULT_FAILED, ex.toString());
                 }
                 break;
@@ -919,7 +947,7 @@ public class CommunicationManager extends ComponentManager {
                 break;
         }
         // verifica se a ação existe ou se houve algum resultado durante a execução
-        if (answer == null && action.getId() >= 1 && action.getId() <= 23) {
+        if (answer == null && action.getId() >= 1 && action.getId() <= 26) {
             answer = new FeedbackAnswer(FeedbackAnswer.ACTION_RESULT_WAS_SUCCESSFUL);
         } else if (answer == null) {
             answer = new FeedbackAnswer(FeedbackAnswer.ACTION_DOES_NOT_EXIST);
@@ -953,11 +981,17 @@ public class CommunicationManager extends ComponentManager {
             // 2 - Cria o envelope XML da UrboSenti correspondente da mensagem
             messageWrapper.build();
         } catch (ParserConfigurationException ex) {
-            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
+                Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            }
         } catch (TransformerConfigurationException ex) {
-            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
+                Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            }
         } catch (TransformerException ex) {
-            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
+                Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }
         // 3 - Verifica se alguma interface de comunicação está disponível
         CommunicationInterface ci = this.getCommunicationInterfaceWithConnection(); // Método traz a interface de comunicação atual
@@ -984,20 +1018,26 @@ public class CommunicationManager extends ComponentManager {
             // Evento: Timeout
             // thows Timeout exception   
             this.newInternalEvent(EVENT_ADDRESS_NOT_REACHABLE, messageWrapper, message.getTarget(), ci);
-            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
+                Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            }
             throw ex;
         } catch (java.net.ConnectException ex) {
             // Evento: Timeout
             // thows Timeout exception   
             this.newInternalEvent(EVENT_ADDRESS_NOT_REACHABLE, messageWrapper, message.getTarget(), ci);
-            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
+                Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            }
             throw ex;
         } catch (IOException ex) {
             //[Erro de IO]
             // Evento: Mensagem não entregue
             // throws Excessção d IO
             this.newInternalEvent(EVENT_MESSAGE_NOT_DELIVERED, messageWrapper, message.getTarget());
-            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
+                Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            }
             throw ex;
         }
     }
@@ -1020,11 +1060,17 @@ public class CommunicationManager extends ComponentManager {
             // 2 - Cria o envelope XML da UrboSenti correspondente da mensagem
             messageWrapper.build();
         } catch (ParserConfigurationException ex) {
-            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
+                Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            }
         } catch (TransformerConfigurationException ex) {
-            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
+                Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            }
         } catch (TransformerException ex) {
-            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
+                Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }
         // 3 - Verifica se alguma interface de comunicação está disponível
         CommunicationInterface ci = this.getCommunicationInterfaceWithConnection(); // Método traz a interface de comunicação atual
@@ -1053,20 +1099,26 @@ public class CommunicationManager extends ComponentManager {
             // Evento: Timeout
             // thows Timeout exception   
             this.newInternalEvent(EVENT_ADDRESS_NOT_REACHABLE, messageWrapper, message.getTarget(), ci);
-            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
+                Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            }
             throw ex;
         } catch (java.net.ConnectException ex) {
             // Evento: Timeout
             // thows Timeout exception   
             this.newInternalEvent(EVENT_ADDRESS_NOT_REACHABLE, messageWrapper, message.getTarget(), ci);
-            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
+                Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            }
             throw ex;
         } catch (IOException ex) {
             //[Erro de IO]
             // Evento: Mensagem não entregue
             // throws Excessção d IO
             this.newInternalEvent(EVENT_MESSAGE_NOT_DELIVERED, messageWrapper, message.getTarget());
-            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
+                Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            }
             throw ex;
         }
     }
@@ -1088,11 +1140,17 @@ public class CommunicationManager extends ComponentManager {
             // 2 - Cria o envelope XML da UrboSenti correspondente da mensagem
             messageWrapper.build();
         } catch (ParserConfigurationException ex) {
-            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
+                Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            }
         } catch (TransformerConfigurationException ex) {
-            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
+                Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            }
         } catch (TransformerException ex) {
-            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
+                Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }
         // 3 - Verifica se alguma interface de comunicação está disponível
         CommunicationInterface ci = this.getCommunicationInterfaceWithConnection(); // Método traz a interface de comunicação atual
@@ -1121,20 +1179,26 @@ public class CommunicationManager extends ComponentManager {
             // Evento: Timeout
             // thows Timeout exception   
             this.newInternalEvent(EVENT_ADDRESS_NOT_REACHABLE, messageWrapper, message.getTarget(), ci);
-            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
+                Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            }
             throw ex;
         } catch (java.net.ConnectException ex) {
             // Evento: Timeout
             // thows Timeout exception   
             this.newInternalEvent(EVENT_ADDRESS_NOT_REACHABLE, messageWrapper, message.getTarget(), ci);
-            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
+                Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            }
             throw ex;
         } catch (IOException ex) {
             //[Erro de IO]
             // Evento: Mensagem não entregue
             // throws Excessção d IO
             this.newInternalEvent(EVENT_MESSAGE_NOT_DELIVERED, messageWrapper, message.getTarget());
-            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
+                Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            }
             throw ex;
         }
     }
@@ -1245,16 +1309,24 @@ public class CommunicationManager extends ComponentManager {
             this.newInternalEvent(EVENT_MESSAGE_RECEIVED, msg.getOrigin(), msg);
 
         } catch (ParserConfigurationException ex) {
-            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
+                Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            }
             this.newInternalEvent(EVENT_MESSAGE_RECEIVED_INVALID_FORMAT, originAddress, bruteMessage);
         } catch (SAXException ex) {
-            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
+                Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            }
             this.newInternalEvent(EVENT_MESSAGE_RECEIVED_INVALID_FORMAT, originAddress, bruteMessage);
         } catch (IOException ex) {
-            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
+                Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            }
             this.newInternalEvent(EVENT_MESSAGE_RECEIVED_INVALID_FORMAT, originAddress, bruteMessage);
         } catch (TransformerException ex) {
-            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
+                Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            }
             this.newInternalEvent(EVENT_MESSAGE_RECEIVED_INVALID_FORMAT, originAddress, bruteMessage);
         }
 
@@ -1331,14 +1403,15 @@ public class CommunicationManager extends ComponentManager {
      * <ul>
      * <li>CommunicationManager.EVENT_INTERFACE_DISCONNECTION - Interface
      * Desconectada</li>
-     * <li>CommunicationManager.EVENT_MESSAGE_DELIVERED - Mensagem Entregue</li>
+     * <li>CommunicationManager.EVENT_MESSAGE_DELIVERED - Mensagem Entregue;
+     * (Opcional) UploadService</li>
      * <li>CommunicationManager.EVENT_MESSAGE_NOT_DELIVERED - Mensagem não
-     * Entregue</li>
+     * Entregue; (Opcional) UploadService</li>
      * <li>CommunicationManager.EVENT_MESSAGE_RECEIVED - Mensagem recebida</li>
      * <li>CommunicationManager.EVENT_MESSAGE_RECEIVED_INVALID_FORMAT - Mensagem
      * recebida em formato inválido</li>
      * <li>CommunicationManager.EVENT_ADDRESS_NOT_REACHABLE - Endereço não
-     * acessível</li>
+     * acessível; (Opcional) UploadService</li>
      * <li>CommunicationManager.EVENT_DISCONNECTION - Desconexão geral</li>
      * <li>CommunicationManager.EVENT_RESTORED_CONNECTION - Conexão
      * reestabelecida</li>
@@ -1351,6 +1424,8 @@ public class CommunicationManager extends ComponentManager {
      * - novo endereço da interface de comunicação de entrada</li>
      * <li>CommunicationManager.EVENT_NEW_RECONNECTION_ATTEMPT - Serviço de
      * reconexão</li>
+     * <li>CommunicationManager.EVENT_NEW_START_OF_UPLOAD_SERVICE_FUNCTION_LOOP
+     * - Serviço de upload</li>
      * </ul>
      *
      *
@@ -1369,6 +1444,7 @@ public class CommunicationManager extends ComponentManager {
      * @see #EVENT_MESSAGE_STORED_REMOVED
      * @see #EVENT_NEW_INPUT_COMMUNICATION_INTERFACE_ADDRESS
      * @see #EVENT_NEW_RECONNECTION_ATTEMPT
+     * @see #EVENT_NEW_START_OF_UPLOAD_SERVICE_FUNCTION_LOOP
      */
     protected synchronized void newInternalEvent(int eventId, Object... parameters) {
         Address address;
@@ -1402,7 +1478,7 @@ public class CommunicationManager extends ComponentManager {
                 getEventManager().newEvent(event);
 
                 break;
-            case EVENT_MESSAGE_DELIVERED: // 2 - Mensagem Entregue - parâmetros: Mensagem; Destinatário; Interface;
+            case EVENT_MESSAGE_DELIVERED: // 2 - Mensagem Entregue - parâmetros: Mensagem; Destinatário; Interface; (Opcional) UploadService
                 mw = (MessageWrapper) parameters[0];
                 address = (Address) parameters[1];
                 ci = (CommunicationInterface) parameters[2];
@@ -1412,6 +1488,9 @@ public class CommunicationManager extends ComponentManager {
                 values.put("messageWrapper", mw);
                 values.put("target", address);
                 values.put("interface", ci);
+                if (parameters.length > 3) {
+                    values.put("uploadServiceId", parameters[3]);
+                }
 
                 // cria o evento
                 event = new SystemEvent(this);// Event: new Message
@@ -1420,12 +1499,15 @@ public class CommunicationManager extends ComponentManager {
                 event.setTime(new Date());
                 event.setParameters(values);
                 event.setEntityId(CommunicationDAO.ENTITY_ID_OF_SENDING_MESSAGES);
+                if (parameters.length > 3) {
+                    event.setEntityId(CommunicationDAO.ENTITY_ID_OF_SERVICE_OF_UPLOAD_REPORTS);
+                }
 
                 // envia o evento
                 getEventManager().newEvent(event);
 
                 break;
-            case EVENT_MESSAGE_NOT_DELIVERED: // 3 - Mensagem Não Entregue - parâmetros: Mensagem; Destinatário;
+            case EVENT_MESSAGE_NOT_DELIVERED: // 3 - Mensagem Não Entregue - parâmetros: Mensagem; Destinatário; (Opcional) UploadService
                 mw = (MessageWrapper) parameters[0];
                 address = (Address) parameters[1];
 
@@ -1433,6 +1515,9 @@ public class CommunicationManager extends ComponentManager {
                 values = new HashMap<String, Object>();
                 values.put("messageWrapper", mw);
                 values.put("target", address);
+                if (parameters.length > 2) {
+                    values.put("uploadServiceId", parameters[2]);
+                }
 
                 // cria o evento de Sistema
                 event = new SystemEvent(this);// Event: new Message
@@ -1441,6 +1526,9 @@ public class CommunicationManager extends ComponentManager {
                 event.setTime(new Date());
                 event.setParameters(values);
                 event.setEntityId(CommunicationDAO.ENTITY_ID_OF_SENDING_MESSAGES);
+                if (parameters.length > 2) {
+                    event.setEntityId(CommunicationDAO.ENTITY_ID_OF_SERVICE_OF_UPLOAD_REPORTS);
+                }
 
                 // Se foi enviado para aplicação avisa também a aplicação
                 if (mw.getMessage().getOrigin().getLayer() == Address.LAYER_APPLICATION) {
@@ -1509,7 +1597,7 @@ public class CommunicationManager extends ComponentManager {
                 // envia o evento
                 getEventManager().newEvent(event);
                 break;
-            case EVENT_ADDRESS_NOT_REACHABLE: // 6 - Endereço não acessível - Mensagem; Destinatário; Interface
+            case EVENT_ADDRESS_NOT_REACHABLE: // 6 - Endereço não acessível - Mensagem; Destinatário; Interface; (Opcional) UploadService
                 address = (Address) parameters[1];
                 mw = (MessageWrapper) parameters[0];
                 ci = (CommunicationInterface) parameters[2];
@@ -1519,6 +1607,9 @@ public class CommunicationManager extends ComponentManager {
                 values.put("messageWrapper", mw);
                 values.put("interface", ci);
                 values.put("target", address);
+                if (parameters.length > 3) {
+                    values.put("uploadServiceId", parameters[3]);
+                }
 
                 // Event: new Message
                 if (mw.getMessage().getOrigin().getLayer() == Address.LAYER_SYSTEM) {
@@ -1532,6 +1623,9 @@ public class CommunicationManager extends ComponentManager {
                 event.setTime(new Date());
                 event.setParameters(values);
                 event.setEntityId(CommunicationDAO.ENTITY_ID_OF_SENDING_MESSAGES);
+                if (parameters.length > 3) {
+                    event.setEntityId(CommunicationDAO.ENTITY_ID_OF_SERVICE_OF_UPLOAD_REPORTS);
+                }
 
                 // envia o evento
                 getEventManager().newEvent(event);
@@ -1661,6 +1755,22 @@ public class CommunicationManager extends ComponentManager {
                 // envia o evento
                 getEventManager().newEvent(event);
                 break;
+            case EVENT_NEW_START_OF_UPLOAD_SERVICE_FUNCTION_LOOP:
+                event = new SystemEvent(this);
+
+                // Adiciona os valores que serão passados para serem tratados
+                values = new HashMap<String, Object>();
+                values.put("uploadServiceId", parameters[0]);
+
+                event.setId(17);
+                event.setName("New start of upload service function loop");
+                event.setTime(new Date());
+                event.setParameters(values);
+                event.setEntityId(CommunicationDAO.ENTITY_ID_OF_SERVICE_OF_UPLOAD_REPORTS);
+
+                // envia o evento
+                getEventManager().newEvent(event);
+                break;
         }
         // inserir métricas e medidas no evento
     }
@@ -1737,9 +1847,13 @@ public class CommunicationManager extends ComponentManager {
                         return currentCommunicationInterface;
                     }
                 } catch (IOException ex) {
-                    Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+                    if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
+                        Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+                    }
                 } catch (UnsupportedOperationException ex) {
-                    Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+                    if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
+                        Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+                    }
                 }
             }
         }
@@ -1754,9 +1868,13 @@ public class CommunicationManager extends ComponentManager {
                         return ci;
                     }
                 } catch (IOException ex) {
-                    Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+                    if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
+                        Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+                    }
                 } catch (UnsupportedOperationException ex) {
-                    Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+                    if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
+                        Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+                    }
                 }
             }
         }
@@ -1861,7 +1979,7 @@ public class CommunicationManager extends ComponentManager {
                     // Marca como mensagem enviada e algumas métricas
                     ci.updateEvaluationMetrics(mw, initialTime);
                     // Evento: Mensagem Entregue
-                    this.newInternalEvent(EVENT_MESSAGE_DELIVERED, mw, mw.getMessage().getTarget(), currentCommunicationInterface);
+                    this.newInternalEvent(EVENT_MESSAGE_DELIVERED, mw, mw.getMessage().getTarget(), currentCommunicationInterface, uploadService.getInstance().getModelId());
                     // Política de Armazenamento
                     this.storagePolice(mw, server);
                     // confirmação do funcionamento sem erros
@@ -1870,20 +1988,26 @@ public class CommunicationManager extends ComponentManager {
                 } catch (java.net.ConnectException ex) {
                     // Evento: Timeout
                     // thows Timeout exception   
-                    this.newInternalEvent(EVENT_ADDRESS_NOT_REACHABLE, mw, mw.getMessage().getTarget(), currentCommunicationInterface);
-                    Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+                    this.newInternalEvent(EVENT_ADDRESS_NOT_REACHABLE, mw, mw.getMessage().getTarget(), currentCommunicationInterface, uploadService.getInstance().getModelId());
+                    if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
+                        Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+                    }
                     ci.setStatus(CommunicationInterface.STATUS_DISCONNECTED);
                 } catch (SocketTimeoutException ex) {
                     //[Timeout]
                     // Evento: Timeout
-                    this.newInternalEvent(EVENT_ADDRESS_NOT_REACHABLE, mw, mw.getMessage().getTarget(), currentCommunicationInterface);
-                    Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+                    this.newInternalEvent(EVENT_ADDRESS_NOT_REACHABLE, mw, mw.getMessage().getTarget(), currentCommunicationInterface, uploadService.getInstance().getModelId());
+                    if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
+                        Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+                    }
                     ci.setStatus(CommunicationInterface.STATUS_DISCONNECTED);
                 } catch (IOException ex) {
                     //[Erro de IO]
                     // Evento: Mensagem não entregue
-                    this.newInternalEvent(EVENT_MESSAGE_NOT_DELIVERED, mw, mw.getMessage().getTarget());
-                    Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+                    this.newInternalEvent(EVENT_MESSAGE_NOT_DELIVERED, mw, mw.getMessage().getTarget(), uploadService.getInstance().getModelId());
+                    if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
+                        Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+                    }
                     ci.setStatus(CommunicationInterface.STATUS_DISCONNECTED);
                 }
             } else {
@@ -1904,15 +2028,21 @@ public class CommunicationManager extends ComponentManager {
                 }
             }
         } catch (SQLException ex) {
-            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
+                Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            }
             // criar
-            // this.newInternalEvent(EVENT_SERVICE_FUNCTION_ERROR, CommunicationDAO.UPLOAD_MESSAGING_POLICY, ex ,uploadServer);// fazer depois
+            //this.newInternalEvent(EVENT_SERVICE_FUNCTION_ERROR, CommunicationDAO.UPLOAD_MESSAGING_POLICY, ex ,uploadServer);// fazer depois
         } catch (ParserConfigurationException ex) {
-            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
+                Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            }
             // criar
             // this.newInternalEvent(EVENT_SERVICE_FUNCTION_ERROR, CommunicationDAO.UPLOAD_MESSAGING_POLICY, ex ,uploadServer);// fazer depois
         } catch (TransformerException ex) {
-            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
+                Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            }
             // criar
             // this.newInternalEvent(EVENT_SERVICE_FUNCTION_ERROR, CommunicationDAO.UPLOAD_MESSAGING_POLICY, ex ,uploadServer);// fazer depois
         }
@@ -1955,13 +2085,21 @@ public class CommunicationManager extends ComponentManager {
 
             return map;
         } catch (SAXException ex) {
-            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
+                Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            }
         } catch (IOException ex) {
-            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
+                Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            }
         } catch (ParserConfigurationException ex) {
-            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
+                Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            }
         } catch (TransformerException ex) {
-            Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
+                Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }
         return null;
     }
@@ -2033,6 +2171,10 @@ public class CommunicationManager extends ComponentManager {
 
     public List<ReconnectionService> getReconnectionServices() {
         return reconnectionServices;
+    }
+
+    public List<CommunicationInterface> getCommunicationInterfaces() {
+        return communicationInterfaces;
     }
 
 }

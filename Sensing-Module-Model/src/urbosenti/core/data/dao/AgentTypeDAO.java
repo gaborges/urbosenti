@@ -27,6 +27,7 @@ import urbosenti.core.device.model.InteractionType;
 import urbosenti.core.device.model.Parameter;
 import urbosenti.core.device.model.PossibleContent;
 import urbosenti.core.device.model.State;
+import urbosenti.core.events.Action;
 import urbosenti.core.events.Event;
 import urbosenti.util.DeveloperSettings;
 
@@ -638,5 +639,84 @@ public class AgentTypeDAO {
 
     public InteractionModel getInteractionModel(int interactionId) throws SQLException {
         return getInteraction(interactionId);
+    }
+    
+    public List<Parameter> getInteractionParameterContents(Action action) throws SQLException {
+        return getInteractionParameterContents(action.getDataBaseId());
+    }
+    
+    public List<Parameter> getInteractionParameterContents(int dataBaseEventId) throws SQLException {
+        List<Parameter> parameters = new ArrayList();
+        Parameter parameter;
+        Content content;
+        String sql = "interaction_contents.id as content_id, reading_value, reading_time, interaction_parameters.id as parameter_id, "
+                + " label, interaction_parameters.description as parameter_desc, optional, superior_limit, "
+                + " inferior_limit, agent_state_id, interaction_parameters.initial_value, data_type_id, "
+                + " data_types.initial_value as data_initial_value, data_types.description as data_desc "
+                + " FROM interaction_contents, interaction_parameters, data_types "
+                + " WHERE generated_event_id = 1  AND interaction_parameter_id = interaction_parameters.id AND data_types.id = data_type_id "
+                + " ORDER BY generated_event_id ; ";
+        stmt = this.connection.prepareStatement(sql);
+        stmt.setInt(1, dataBaseEventId);
+        ResultSet rs = stmt.executeQuery();
+        while (rs.next()) {
+            parameter = new Parameter();
+            parameter.setId(rs.getInt("parameter_id"));
+            parameter.setDescription(rs.getString("parameter_desc"));
+            parameter.setLabel(rs.getString("label"));
+            DataType type = new DataType();
+            type.setId(rs.getInt("data_type_id"));
+            type.setDescription(rs.getString("data_desc"));
+            type.setInitialValue(rs.getObject("data_initial_value"));
+            parameter.setDataType(type);
+            // trata o tipo de dado do estado
+            parameter.setSuperiorLimit(Content.parseContent(
+                    parameter.getDataType(), parameter.getSuperiorLimit()));
+            parameter.setInferiorLimit(Content.parseContent(
+                    parameter.getDataType(), parameter.getInferiorLimit()));
+            parameter.setInitialValue(Content.parseContent(
+                    parameter.getDataType(), parameter.getInitialValue()));
+            parameter.setInferiorLimit(rs.getObject("inferior_limit"));
+            parameter.setSuperiorLimit(rs.getObject("superior_limit"));
+            parameter.setInitialValue(rs.getObject("initial_value"));
+            parameter.setOptional(rs.getBoolean("optional"));
+            if (rs.getInt("agent_state_id") > 0) {
+                parameter.setRelatedState(getInteractionState(rs
+                        .getInt("agent_state_id")));
+            }
+            // pega o valor utilizado na ação
+            content = new Content();
+            content.setId(rs.getInt("content_id"));
+            content.setTime(new Date(Long.parseLong(rs.getString("reading_time"))));
+            content.setValue(Content.parseContent(parameter.getDataType(),
+                    rs.getObject("reading_value")));
+            parameter.setContent(content);
+
+            parameter.setPossibleContents(this.getPossibleContents(parameter));
+            parameters.add(parameter);
+        }
+        rs.close();
+        stmt.close();
+        return parameters;
+    }
+    
+    private List<PossibleContent> getPossibleContents(Parameter parameter)
+            throws SQLException {
+        List<PossibleContent> possibleContents = new ArrayList();
+        String sql = " SELECT id, possible_value, default_value "
+                + " FROM possible_interaction_contents\n"
+                + " WHERE interaction_parameter_id = ?;";
+        stmt = this.connection.prepareStatement(sql);
+        stmt.setInt(1, parameter.getId());
+        ResultSet rs = stmt.executeQuery();
+        while (rs.next()) {
+            possibleContents.add(new PossibleContent(rs.getInt("id"), Content
+                    .parseContent(parameter.getDataType(),
+                            rs.getString("possible_value")), rs
+                    .getBoolean("default_value")));
+        }
+        rs.close();
+        stmt.close();
+        return possibleContents;
     }
 }

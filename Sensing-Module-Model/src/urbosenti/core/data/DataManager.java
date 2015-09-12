@@ -116,17 +116,19 @@ public class DataManager extends ComponentManager {
             System.exit(0);
         }
         System.out.println("Opened database successfully");
-            // conecta
+        // conecta
         // Gerente do conhecimento
         StoringGlobalKnowledgeModel kp = new StoringGlobalKnowledgeModel(this);
         try {
             // Cria o banco de dados
             kp.createDataBase(connection);
         } catch (SQLException ex) {
-            Logger.getLogger(DataManager.class.getName()).log(Level.SEVERE, null, ex);
+            if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
+                Logger.getLogger(DataManager.class.getName()).log(Level.SEVERE, null, ex);
+            }
             throw new Error("Error during the database creation!");
         }
-            // Cria uma instância para cada DAO;
+        // Cria uma instância para cada DAO;
         // DAO dos componentes
         deviceDAO = new DeviceDAO(connection, this);
         communicationDAO = new CommunicationDAO(connection, this);
@@ -172,7 +174,9 @@ public class DataManager extends ComponentManager {
                 System.out.println("Not implemented yet: " + ci.getName());
                 //Logger.getLogger(DataManager.class.getName()).log(Level.SEVERE, "Not implemented yet.", ex);
             } catch (IOException ex) {
-                Logger.getLogger(DataManager.class.getName()).log(Level.SEVERE, null, ex);
+                if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
+                    Logger.getLogger(DataManager.class.getName()).log(Level.SEVERE, null, ex);
+                }
             }
         }
         // Verifica se o conhecimento foi adicionado, se não foi busca o padrão
@@ -210,16 +214,22 @@ public class DataManager extends ComponentManager {
                 kp.saveDevice(connection);
                 kp.saveAgentModels(connection);
             } catch (ParserConfigurationException ex) {
-                Logger.getLogger(DeviceManager.class.getName()).log(Level.SEVERE, null, ex);
+                if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
+                    Logger.getLogger(DeviceManager.class.getName()).log(Level.SEVERE, null, ex);
+                }
             } catch (IOException ex) {
-                Logger.getLogger(DeviceManager.class.getName()).log(Level.SEVERE, null, ex);
+                if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
+                    Logger.getLogger(DeviceManager.class.getName()).log(Level.SEVERE, null, ex);
+                }
             } catch (SAXException ex) {
-                Logger.getLogger(DeviceManager.class.getName()).log(Level.SEVERE, null, ex);
+                if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
+                    Logger.getLogger(DeviceManager.class.getName()).log(Level.SEVERE, null, ex);
+                }
             }
         } else {
             throw new Error("Knowledge data type specified not supported!");
         }
-            // Preparar configurações inicias para execução
+        // Preparar configurações inicias para execução
         // Para tanto utilizar o DataManager para acesso aos dados.
         // Descobrir todo o conhecimento e criar o banco
     }

@@ -4,6 +4,7 @@
  */
 package urbosenti.core.communication;
 
+import java.io.Serializable;
 import java.io.StringWriter;
 import java.util.Date;
 import javax.xml.parsers.DocumentBuilder;
@@ -22,7 +23,7 @@ import org.w3c.dom.Element;
  *
  * @author Guilherme
  */
-public class MessageWrapper {
+public class MessageWrapper implements Serializable  {
 
     private int id; // id of in te local storage system
     private Message message;

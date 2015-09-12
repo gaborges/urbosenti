@@ -5,12 +5,14 @@
  */
 package urbosenti.core.communication;
 
+import java.io.Serializable;
+
 
 /**
  * Alvo baseados em IP
  * @author Guilherme
  */
-public class Address {
+public class Address implements Serializable {
     
     public static final int LAYER_SYSTEM = 2;
     public static final int LAYER_APPLICATION = 1;

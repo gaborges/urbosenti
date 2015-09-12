@@ -4,6 +4,7 @@
  */
 package urbosenti.core.device;
 
+import java.io.Serializable;
 import urbosenti.core.device.model.FeedbackAnswer;
 import urbosenti.core.events.Action;
 import urbosenti.core.events.EventManager;
@@ -12,7 +13,7 @@ import urbosenti.core.events.EventManager;
  *
  * @author Guilherme
  */
-public abstract class ComponentManager {
+public abstract class ComponentManager  implements Serializable  {
 
     /**
      *

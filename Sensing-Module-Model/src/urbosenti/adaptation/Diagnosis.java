@@ -13,17 +13,18 @@ import java.util.ArrayList;
  */
 public class Diagnosis {
     public static final int DIAGNOSIS_NO_ADAPTATION_NEEDED = 0;
-    private final ArrayList<Integer> changes;
+    private final ArrayList<Change> objectChanges;
 
     public Diagnosis() {
-        this.changes = new ArrayList<Integer>();
+        this.objectChanges = new ArrayList();
     }
     
-    public void addChange(Integer changeId){
-        this.changes.add(changeId);
+    public void addChange(Change change){
+        this.objectChanges.add(change);
+    }
+
+    public ArrayList<Change> getChanges() {
+        return objectChanges;
     }
     
-    public ArrayList<Integer> getChanges(){
-        return this.changes;
-    }
 }

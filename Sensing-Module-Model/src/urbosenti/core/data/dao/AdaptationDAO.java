@@ -11,16 +11,19 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Date;
 import java.util.List;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.xml.sax.InputSource;
+import urbosenti.adaptation.AdaptationManager;
 import urbosenti.adaptation.ExecutionPlan;
 import urbosenti.core.communication.Address;
 import urbosenti.core.communication.Message;
 import urbosenti.core.data.DataManager;
+import urbosenti.core.device.BaseComponentManager;
 import urbosenti.core.device.model.ActionModel;
 import urbosenti.core.device.model.AgentCommunicationLanguage;
 import urbosenti.core.device.model.Component;
@@ -47,6 +50,7 @@ public final class AdaptationDAO {
     public static final int STATE_ID_OF_ADAPTATION_MANAGEMENT_INTERVAL_TO_REPORT_SYSTEM_FUNCIONS = 1;
     public static final int STATE_ID_OF_ADAPTATION_MANAGEMENT_INTERNAL_TO_DELETE_EXPIRED_MESSAGES = 2;
     public static final int STATE_ID_OF_ADAPTATION_MANAGEMENT_ALLOWED_SEND_REPORT_SYSTEM_FUNCIONS = 3;
+    public static final int STATE_ID_OF_ADAPTATION_MANAGEMENT_LAST_REPORTED_DATE = 4;
     public static final int INTERACTION_TO_INFORM_NEW_MAXIMUM_UPLOAD_RATE = 1;
     public static final int INTERACTION_TO_SUBSCRIBE_THE_MAXIMUM_UPLOAD_RATE = 2;
     public static final int INTERACTION_TO_UNSUBSCRIBE_THE_MAXIMUM_UPLOAD_RATE = 3;
@@ -57,7 +61,9 @@ public final class AdaptationDAO {
     public static final int INTERACTION_TO_CANCEL_REGISTRATION = 8;
     public static final int INTERACTION_TO_INFORM_NEW_INPUT_ADDRESS = 9;
     public static final int INTERACTION_TO_REPORT_SENSING_MODULE_FUNCTIONALITY = 10;
-    
+    public static final int FUNCTIONALITY_STATUS_TYPE_INFO = 1;
+    public static final int FUNCTIONALITY_STATUS_TYPE_WARNING = 1;
+    public static final int FUNCTIONALITY_STATUS_TYPE_ERROR = 1;
 
     private final Connection connection;
     private PreparedStatement stmt;
@@ -180,10 +186,10 @@ public final class AdaptationDAO {
                 break;
             }
         }
-        if(!aclIsUnkown){
+        if (!aclIsUnkown) {
             throw new Exception("Agent Communication Language '" + root.getElementsByTagName("acl").item(0).getTextContent()
-                        + "' from UID:'" + message.getOrigin().getUid()
-                        + "', address: '" + message.getOrigin().getAddress() + "' is not supported.");
+                    + "' from UID:'" + message.getOrigin().getUid()
+                    + "', address: '" + message.getOrigin().getAddress() + "' is not supported.");
         }
         // <interactionId>1</interactionId>
         int interactionId = Integer.parseInt(root.getElementsByTagName("interactionId").item(0).getTextContent());
@@ -289,13 +295,13 @@ public final class AdaptationDAO {
         return action;
     }
 
-    public void updateDecision(FeedbackAnswer response, Event event, Action actionToExecute, ExecutionPlan ep) throws SQLException {
+    public void updateDecision(FeedbackAnswer response, Event event, Action actionToExecute, ExecutionPlan ep) throws SQLException,java.lang.NullPointerException {
         // regsitra a ação
         this.dataManager.getActionModelDAO().insertAction(response, event, actionToExecute, ep);
         // se a resposta da ação foi sucesso, verifica  se algum dos parâmetros do actionModel é relacionado com algum estado
         if (response.getId() == FeedbackAnswer.ACTION_RESULT_WAS_SUCCESSFUL) {
             Content content;
-            ActionModel actionModel = this.dataManager.getActionModelDAO().getAction(
+            ActionModel actionModel = this.dataManager.getActionModelDAO().getActionModel(
                     actionToExecute.getId(),
                     actionToExecute.getTargetEntityId(),
                     actionToExecute.getTargetComponentId());
@@ -341,11 +347,151 @@ public final class AdaptationDAO {
                 } else {
                     if (actionToExecute.getParameters().get(p.getLabel()) != null) {
                         p.setContent(content);
-                        dataManager.getActionModelDAO().insertContent(p,actionToExecute);
+                        dataManager.getActionModelDAO().insertContent(p, actionToExecute);
                     }
                 }
             }
         }
+    }
+
+    /**
+     *
+     * @param instanceId instância
+     * @param lastIntervalOfServiceErrors intervalo para busca
+     * @return null if do not find any record or the generated action ID if was
+     * find.
+     * @throws SQLException
+     */
+    public Integer getLastRecordedErrorFromInstance(int instanceId, long lastIntervalOfServiceErrors) throws SQLException {
+        String sql = "SELECT  feedback_id, generated_actions.id as id FROM generated_actions, action_contents, action_parameters "
+                + " WHERE  generated_action_id = generated_actions.id AND action_parameter_id = action_parameters.id AND reading_time > ? "
+                + " AND reading_value = ? AND label = ? AND action_model_id = ? AND  entity_id = ? AND component_id = ? "
+                + " ORDER BY reading_time DESC;";
+        stmt = this.connection.prepareStatement(sql);
+        this.stmt.setObject(1, (System.currentTimeMillis() - (lastIntervalOfServiceErrors * 1.3)));
+        this.stmt.setObject(2, instanceId);
+        this.stmt.setString(3, "instanceId");
+        this.stmt.setInt(4, AdaptationManager.ACTION_STORE_INTERNAL_ERROR);
+        this.stmt.setInt(5, AdaptationDAO.ENTITY_ID_OF_ADAPTATION_MANAGEMENT);
+        this.stmt.setInt(6, AdaptationDAO.COMPONENT_ID);
+        ResultSet rs = stmt.executeQuery();
+        while (rs.next()) {
+            return rs.getInt("id");
+        }
+        rs.close();
+        stmt.close();
+        return null;
+    }
+
+    public String getErrorReporting(Date startDate,Date endDate) throws SQLException {
+        String json = "{ ";
+        // buscar todas as ações de erro a partir da última data até a data atual
+        List<Action> actions = dataManager.getActionModelDAO()
+                .getActions(AdaptationManager.ACTION_STORE_INTERNAL_ERROR,
+                        ENTITY_ID_OF_ADAPTATION_MANAGEMENT, COMPONENT_ID, startDate, endDate);
+        List<Action> feedbackErros = dataManager.getActionModelDAO()
+                .getActionsFeedbackErrors(startDate, endDate);
+        List<Parameter> parameters;
+        // se não houver nenhuma ação com erro, cria uma de sucesso. 
+        if (actions.isEmpty() && feedbackErros.isEmpty()) {
+            json += "\"nodeStatusReported\" : \"stable\"";
+        } else {
+            // cria erros
+            json += "\"nodeStatusReported\" : \"error\", ";
+            // para cada ação buscar os parâmetros
+            json += "\"errors\" : [ ";
+            /*
+             Para o erro:
+             - Tipo de erro
+             - Descrição
+             - Tempo
+             - Instance id (se houver)
+             "message" : ["type":"2", "description":"Instância demorou para iniciar", "time":"1439426402937", "instanceId": 1 ] ,
+             */
+            for (Action action : actions) {
+                json += " { \"message\" : [ ";
+                parameters = this.dataManager.getActionModelDAO().getActionParameterContents(action);
+                for (Parameter parameter : parameters) {
+                    json += " {\"" + parameter.getLabel() + "\": \"" + parameter.getContent().getValue().toString() + "\" }"
+                            + ((parameters.get(parameters.size() - 1).getId() == parameter.getId()) ? "" : " ,");
+
+                }
+                json += " ] } " + ((actions.get(actions.size() - 1).getDataBaseId() == action.getDataBaseId()) ? "" : ", ");
+            }
+            if(!feedbackErros.isEmpty()){
+                 json += ", ";
+            }
+            /*
+             Para cada feedback error
+             - tempo de resposta
+             - modelo de ação
+             - entidade_acao
+             - componente_acao
+             - parâmetros_acao
+             - modelo de evento inicial, 
+             - entidade_evento,
+             - componente_evento,
+             - parâmetros_evento,
+             "feedback" : ["responseTime":560 , "actionType":0, "actionModel":1 , "actionEntity":1 , "actionComponent": 1, 
+                "actionParameters": ["param1":"value1","param2":"value2"], "eventType":0, "eventModel": 1, "eventEntity":1, 
+                "eventComponent":1, "eventTime":1439426402937 , "eventParameters" : ["param1":"value1","param2":"value2"] ] ,
+             "feedback" : ["responseTime":931 , "actionType":1, "interactionModel":1 , "targetServiceId":1 , 
+                "interactionParameters":["param1":"value1", "param2":"value2"], "eventType":0, "eventModel": 1, "eventEntity":1,
+                "eventComponent":1, "eventParameters" : ["param1":"value1", "param2":"value2"] , "eventTime": 1439426402937   ] 
+             */
+            for (Action action : feedbackErros) {
+                Event event = this.dataManager.getEventModelDAO().getEvent(action,(BaseComponentManager)this.dataManager.getDeviceManager());
+                json += " {\"feedback\" : [ ";
+                // se a ação é interação
+                if(event.getEventType()==Event.INTERATION_EVENT){
+                    parameters = this.dataManager.getAgentTypeDAO().getInteractionParameterContents(action);
+                    json += "\"{ responseTime\":"+(action.getFeedbackAnswer().getTime().getTime()-event.getTime().getTime())+", ";
+                    for (Parameter parameter : parameters) {
+                        json += " \"" + parameter.getLabel() + "\": \"" + parameter.getContent().getValue().toString() + "\"}"
+                                + (parameters.get(parameters.size() - 1).getId() == parameter.getId() ? "" : " ,");
+                    }
+                } else {
+                    json += "\"{ responseTime\":"+(action.getFeedbackAnswer().getTime().getTime()-event.getTime().getTime())+", ";
+                    json += "\"actionType\":"+(action.getActionType())+", ";
+                    json += "\"actionModel\":"+(action.getId())+", ";
+                    json += "\"actionEntity\":"+(action.getTargetEntityId())+", ";
+                    json += "\"actionComponent\":"+(action.getTargetComponentId())+", ";
+                    json += "\"actionParameters\":[";
+                    parameters = this.dataManager.getActionModelDAO().getActionParameterContents(action);
+                    for (Parameter parameter : parameters) {
+                        json += " {\"" + parameter.getLabel() + "\": \"" + parameter.getContent().getValue().toString() + "\"}"
+                                + (parameters.get(parameters.size() - 1).getId() == parameter.getId() ? "" : " ,");
+
+                    }
+                    json += " ] ";
+                    json += "\"eventTime\":"+(event.getTime().getTime())+", ";
+                    json += "\"eventType\":"+(event.getEventType())+", ";
+                    json += "\"eventModel\":"+(event.getId())+", ";
+                    json += "\"eventEntity\":"+(event.getEntityId())+", ";
+                    json += "\"eventComponent\":"+(event.getComponentManager().getComponentId())+", ";
+                    json += "\"eventParameters\":[";
+                    parameters = this.dataManager.getEventModelDAO().getEventParameterContents(action);
+                    for (Parameter parameter : parameters) {
+                        json += " {\"" + parameter.getLabel() + "\": \"" + parameter.getContent().getValue().toString() + "\"}"
+                                + (parameters.get(parameters.size() - 1).getId() == parameter.getId() ? "" : " ,");
+                    }
+                }
+                json += " ] } " + ((actions.get(actions.size() - 1).getDataBaseId() == action.getDataBaseId() || feedbackErros.isEmpty()) ? "" : ", ");
+            }
+            json += " ] } ";
+        }
+        json += "}";
+        return json;
+    }
+
+    /**
+     * Remove todas os relatos de funcionamento armazenados até a data epecificada (Ainda falta terminar)
+     * @param date 
+     */
+    public void removeSentReportedErrors(Date date) throws Exception {
+        // fazer mais tarde.
+        throw new Exception("Exceção para teste.");
+        //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
 }

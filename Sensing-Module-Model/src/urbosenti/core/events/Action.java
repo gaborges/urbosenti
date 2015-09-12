@@ -5,13 +5,15 @@
 package urbosenti.core.events;
 
 import java.util.HashMap;
+import urbosenti.core.device.model.FeedbackAnswer;
 import urbosenti.user.User;
+import java.io.Serializable;
 
 /**
  *
  * @author Guilherme
  */
-public class Action {
+public class Action implements Serializable {
     
     private int id;
     private int dataBaseId;
@@ -20,6 +22,7 @@ public class Action {
     private int targetEntityId;
     private int targetComponentId;
     private User user;
+    private FeedbackAnswer feedbackAnswer;
     private HashMap<String, Object>  parameters;
     private int actionType;
     private boolean synchronous;
@@ -107,6 +110,19 @@ public class Action {
 
     public void setDataBaseId(int dataBaseId) {
         this.dataBaseId = dataBaseId;
+    }
+
+    public FeedbackAnswer getFeedbackAnswer() {
+        return feedbackAnswer;
+    }
+
+    public void setFeedbackAnswer(FeedbackAnswer feedbackAnswer) {
+        this.feedbackAnswer = feedbackAnswer;
+    }
+
+    @Override
+    public String toString() {
+        return "Action{" + "id=" + id + ", dataBaseId=" + dataBaseId + ", name=" + name + ", targetEntityId=" + targetEntityId + ", targetComponentId=" + targetComponentId + ", parameters=" + parameters + ", actionType=" + actionType + ", synchronous=" + synchronous + '}';
     }
     
 }

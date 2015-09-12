@@ -115,6 +115,39 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
      * <li>parâmetros: Código do Erro, Descrição</li></ul>
      */
     public static final int EVENT_DEVICE_ERROR_WHILE_COLLECTING_INFORMATION = 6;
+
+    /*
+     *********************************************************************
+     ***************************** Actions ******************************* 
+     *********************************************************************
+     */
+    /**
+     * int ACTION_WAKE_UP_SERVICE = 1;
+     *
+     * <ul><li>id: 1</li>
+     * <li>ação: Acordar um serviço</li>
+     * <li>parâmetros: componentId, entityId, instanceId</li></ul>
+     *
+     */
+    public static final int ACTION_WAKE_UP_SERVICE = 1;
+    /**
+     * int ACTION_RESTART_SERVICE = 1;
+     *
+     * <ul><li>id: 2</li>
+     * <li>ação: Reiniciar um serviço</li>
+     * <li>parâmetros: componentId, entityId, instanceId</li></ul>
+     *
+     */
+    public static final int ACTION_RESTART_SERVICE = 2;
+    /**
+     * int ACTION_STOP_SERVICE = 1;
+     *
+     * <ul><li>id: 3</li>
+     * <li>ação: Parar um serviço</li>
+     * <li>parâmetros: componentId, entityId, instanceId</li></ul>
+     *
+     */
+    public static final int ACTION_STOP_SERVICE = 3;
     /* Identificadores dos componentes internos */
     public static int DEVICE_COMPONENT_ID;
     public static int EVENTS_COMPONENT_ID;
@@ -373,7 +406,9 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
             // Executar evento - UrboSenti Serviços Iniciados
             // this.newInternalEvent(EVENT_DEVICE_SERVICES_INITIATED);
         } catch (SQLException ex) {
-            Logger.getLogger(DeviceManager.class.getName()).log(Level.SEVERE, null, ex);
+            if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
+                Logger.getLogger(DeviceManager.class.getName()).log(Level.SEVERE, null, ex);
+            }
             throw new Error(ex);
         }
         this.enabledComponentManagers.add(this);
@@ -384,12 +419,14 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
 
     /**
      * Ações disponibilizadas por esse componente por função:
-     * <p><b>Entidade Alvo</b>: Função dos Serviços UrboSenti</p>
+     * <p>
+     * <b>Entidade Alvo</b>: Função dos Serviços UrboSenti</p>
      * <ul>
      * <li>01 - Acordar um serviço - componentId, entityId, instanceId</li>
      * <li>02 - Reiniciar um serviço - componentId, entityId, instanceId</li>
      * <li>03 - Parar serviço - componentId, entityId, instanceId</li>
      * </ul>
+     *
      * @param action contém objeto ação.
      * @return
      *
@@ -397,65 +434,65 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
     @Override
     public FeedbackAnswer applyAction(Action action) {
         FeedbackAnswer answer = null;
-        Integer componentId = Integer.parseInt((action.getParameters().get("componentId").toString())), 
-                entityId = Integer.parseInt((action.getParameters().get("entityId").toString())), 
+        Integer componentId = Integer.parseInt((action.getParameters().get("componentId").toString())),
+                entityId = Integer.parseInt((action.getParameters().get("entityId").toString())),
                 instanceId = Integer.parseInt((action.getParameters().get("instanceId").toString()));
-        switch(action.getId()){
+        switch (action.getId()) {
             case 1: // Acordar um serviço
-                if(componentId == CommunicationDAO.COMPONENT_ID){
-                    if(entityId == CommunicationDAO.ENTITY_ID_OF_RECONNECTION){
-                        for(ReconnectionService rs : communicationManager.getReconnectionServices()){
-                            if(instanceId == rs.getInstance().getModelId()){
+                if (componentId == CommunicationDAO.COMPONENT_ID) {
+                    if (entityId == CommunicationDAO.ENTITY_ID_OF_RECONNECTION) {
+                        for (ReconnectionService rs : communicationManager.getReconnectionServices()) {
+                            if (instanceId == rs.getInstance().getModelId()) {
                                 rs.wakeUp();
                             }
-                        }                            
-                    } else if(entityId == CommunicationDAO.ENTITY_ID_OF_SERVICE_OF_UPLOAD_REPORTS){
-                        for(UploadService up : communicationManager.getUploadServices()){
-                            if(instanceId == up.getInstance().getModelId()){
+                        }
+                    } else if (entityId == CommunicationDAO.ENTITY_ID_OF_SERVICE_OF_UPLOAD_REPORTS) {
+                        for (UploadService up : communicationManager.getUploadServices()) {
+                            if (instanceId == up.getInstance().getModelId()) {
                                 up.wakeUp();
                             }
-                        }   
-                    }             
+                        }
+                    }
                 }
                 break;
             case 2: // Reiniciar um serviço
-                if(componentId == CommunicationDAO.COMPONENT_ID){
-                    if(entityId == CommunicationDAO.ENTITY_ID_OF_RECONNECTION){
-                        for(ReconnectionService rs : communicationManager.getReconnectionServices()){
-                            if(instanceId == rs.getInstance().getModelId()){
+                if (componentId == CommunicationDAO.COMPONENT_ID) {
+                    if (entityId == CommunicationDAO.ENTITY_ID_OF_RECONNECTION) {
+                        for (ReconnectionService rs : communicationManager.getReconnectionServices()) {
+                            if (instanceId == rs.getInstance().getModelId()) {
                                 rs.stop();
                                 rs.start();
                             }
-                        }                            
-                    } else if(entityId == CommunicationDAO.ENTITY_ID_OF_SERVICE_OF_UPLOAD_REPORTS){
-                        for(UploadService up : communicationManager.getUploadServices()){
-                            if(instanceId == up.getInstance().getModelId()){
+                        }
+                    } else if (entityId == CommunicationDAO.ENTITY_ID_OF_SERVICE_OF_UPLOAD_REPORTS) {
+                        for (UploadService up : communicationManager.getUploadServices()) {
+                            if (instanceId == up.getInstance().getModelId()) {
                                 up.stop();
                                 up.start();
                             }
-                        }   
-                    }             
+                        }
+                    }
                 }
                 break;
             case 4: // Parar serviço
-                if(componentId == CommunicationDAO.COMPONENT_ID){
-                    if(entityId == CommunicationDAO.ENTITY_ID_OF_RECONNECTION){
-                        for(ReconnectionService rs : communicationManager.getReconnectionServices()){
-                            if(instanceId == rs.getInstance().getModelId()){
+                if (componentId == CommunicationDAO.COMPONENT_ID) {
+                    if (entityId == CommunicationDAO.ENTITY_ID_OF_RECONNECTION) {
+                        for (ReconnectionService rs : communicationManager.getReconnectionServices()) {
+                            if (instanceId == rs.getInstance().getModelId()) {
                                 rs.start();
                             }
-                        }                            
-                    } else if(entityId == CommunicationDAO.ENTITY_ID_OF_SERVICE_OF_UPLOAD_REPORTS){
-                        for(UploadService up : communicationManager.getUploadServices()){
-                            if(instanceId == up.getInstance().getModelId()){
+                        }
+                    } else if (entityId == CommunicationDAO.ENTITY_ID_OF_SERVICE_OF_UPLOAD_REPORTS) {
+                        for (UploadService up : communicationManager.getUploadServices()) {
+                            if (instanceId == up.getInstance().getModelId()) {
                                 up.start();
                             }
-                        }   
-                    }             
+                        }
+                    }
                 }
                 break;
         }
-         // verifica se a ação existe ou se houve algum resultado durante a execução
+        // verifica se a ação existe ou se houve algum resultado durante a execução
         if (answer == null && action.getId() >= 1 && action.getId() <= 3) {
             answer = new FeedbackAnswer(FeedbackAnswer.ACTION_RESULT_WAS_SUCCESSFUL);
         } else if (answer == null) {
@@ -768,16 +805,24 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
             // retorna true
             return true;
         } catch (SQLException ex) {
-            Logger.getLogger(DeviceManager.class.getName()).log(Level.SEVERE, null, ex);
+            if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
+                Logger.getLogger(DeviceManager.class.getName()).log(Level.SEVERE, null, ex);
+            }
             this.newInternalEvent(EVENT_DEVICE_REGISTRATION_UNSUCCESSFUL, 1, ex.toString());
         } catch (ParserConfigurationException ex) {
-            Logger.getLogger(DeviceManager.class.getName()).log(Level.SEVERE, null, ex);
+            if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
+                Logger.getLogger(DeviceManager.class.getName()).log(Level.SEVERE, null, ex);
+            }
             this.newInternalEvent(EVENT_DEVICE_REGISTRATION_UNSUCCESSFUL, 2, ex.toString());
         } catch (TransformerException ex) {
-            Logger.getLogger(DeviceManager.class.getName()).log(Level.SEVERE, null, ex);
+            if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
+                Logger.getLogger(DeviceManager.class.getName()).log(Level.SEVERE, null, ex);
+            }
             this.newInternalEvent(EVENT_DEVICE_REGISTRATION_UNSUCCESSFUL, 3, ex.toString());
         } catch (SAXException ex) {
-            Logger.getLogger(DeviceManager.class.getName()).log(Level.SEVERE, null, ex);
+            if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
+                Logger.getLogger(DeviceManager.class.getName()).log(Level.SEVERE, null, ex);
+            }
             this.newInternalEvent(EVENT_DEVICE_REGISTRATION_UNSUCCESSFUL, 4, ex.toString());
         }
         return false;
@@ -963,7 +1008,9 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
             }
             // gera um evento contendo todos dados descobertos -- não necessário, pois é realizado antes do módulo de adaptação ser descoberto    
         } catch (SQLException ex) {
-            Logger.getLogger(DeviceManager.class.getName()).log(Level.SEVERE, null, ex);
+            if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
+                Logger.getLogger(DeviceManager.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }
     }
 
@@ -1069,7 +1116,9 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
                     }
                 }
             } catch (IOException ex) {
-                Logger.getLogger(DeviceManager.class.getName()).log(Level.SEVERE, null, ex);
+                if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
+                    Logger.getLogger(DeviceManager.class.getName()).log(Level.SEVERE, null, ex);
+                }
             }
         }
     }
@@ -1082,7 +1131,9 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
         try {
             return this.getDataManager().getServiceDAO().getDeviceServices();
         } catch (SQLException ex) {
-            Logger.getLogger(DeviceManager.class.getName()).log(Level.SEVERE, null, ex);
+            if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
+                Logger.getLogger(DeviceManager.class.getName()).log(Level.SEVERE, null, ex);
+            }
             throw new Error(ex);
         }
     }
@@ -1091,7 +1142,9 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
         try {
             return this.getDataManager().getServiceDAO().getService(1);
         } catch (SQLException ex) {
-            Logger.getLogger(DeviceManager.class.getName()).log(Level.SEVERE, null, ex);
+            if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
+                Logger.getLogger(DeviceManager.class.getName()).log(Level.SEVERE, null, ex);
+            }
             throw new Error(ex);
         }
     }
@@ -1136,7 +1189,9 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
                 this.dataManager.getAgentDAO().insert(agent);
             }
         } catch (SQLException ex) {
-            Logger.getLogger(DeviceManager.class.getName()).log(Level.SEVERE, null, ex);
+            if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
+                Logger.getLogger(DeviceManager.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }
     }
 
@@ -1149,7 +1204,9 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
         try {
             return this.dataManager.getDeviceDAO().getDeviceModel(dataManager);
         } catch (SQLException ex) {
-            Logger.getLogger(DeviceManager.class.getName()).log(Level.SEVERE, null, ex);
+            if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
+                Logger.getLogger(DeviceManager.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }
         return null;
     }
@@ -1248,10 +1305,10 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
         }
         // atribui a instância de serviço de upload
         this.communicationManager.addUploadServer(new UploadService(this.getBackendService(), communicationManager, instance));
-            // cria a instância dos demais serviços de upload --- Trabalho futuro
+        // cria a instância dos demais serviços de upload --- Trabalho futuro
         // cria as instâncias de serviços de reconexão
-        instance = dataManager.getInstanceDAO().getInstance(1,CommunicationDAO.ENTITY_ID_OF_RECONNECTION, COMMUNICATION_COMPONENT_ID);
-        this.communicationManager.setGeneralReconectionService(new ReconnectionService(communicationManager, dataManager.getCommunicationDAO().getAvailableInterfaces(),instance));
+        instance = dataManager.getInstanceDAO().getInstance(1, CommunicationDAO.ENTITY_ID_OF_RECONNECTION, COMMUNICATION_COMPONENT_ID);
+        this.communicationManager.setGeneralReconectionService(new ReconnectionService(communicationManager, dataManager.getCommunicationDAO().getAvailableInterfaces(), instance));
     }
-    
+
 }

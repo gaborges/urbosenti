@@ -4,6 +4,7 @@
  */
 package urbosenti.core.events;
 
+import java.io.Serializable;
 import java.util.Date;
 import java.util.HashMap;
 import urbosenti.core.device.ComponentManager;
@@ -12,7 +13,7 @@ import urbosenti.core.device.ComponentManager;
  *
  * @author Guilherme
  */
-public abstract class Event {
+public abstract class Event implements Serializable  {
     /*
      * Types of event:
      * * COMPONENT_EVENT is used in events from components
@@ -209,6 +210,10 @@ public abstract class Event {
 
     public void setDatabaseId(int databaseId) {
         this.databaseId = databaseId;
+    }
+
+    public void newTime() {
+        this.time = new Date();
     }
     
 }

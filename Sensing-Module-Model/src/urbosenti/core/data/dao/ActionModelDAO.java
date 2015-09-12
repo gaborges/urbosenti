@@ -319,7 +319,7 @@ public class ActionModelDAO {
         return actions;
     }
 
-    ActionModel getAction(int id) throws SQLException {
+    ActionModel getActionModel(int id) throws SQLException {
         ActionModel action = null;
         String sql = "SELECT actions.id, actions.model_id, actions.description, has_feedback, entities.description as entity_description, entity_id "
                 + "FROM actions, entities "
@@ -344,8 +344,8 @@ public class ActionModelDAO {
         stmt.close();
         return action;
     }
-    
-    ActionModel getAction(int modelId, int entityModelId, int componentId) throws SQLException {
+
+    ActionModel getActionModel(int modelId, int entityModelId, int componentId) throws SQLException {
         ActionModel action = null;
         String sql = "SELECT actions.id, actions.model_id, actions.description, has_feedback, entities.description as entity_description, entity_id "
                 + "FROM actions, entities "
@@ -552,5 +552,246 @@ public class ActionModelDAO {
                     "Creating user failed, no ID obtained. ");
         }
         statement.close();
+    }
+
+    public ArrayList<Action> getActions(int actionModelId, int entityId, int componentId) throws SQLException {
+        ArrayList<Action> actions = new ArrayList<Action>();
+        Action action;
+        FeedbackAnswer feedbackAnswer;
+        String sql = "SELECT id, action_model_id, entity_id, component_id, action_type, response_time, feedback_id "
+                + " FROM generated_actions WHERE action_model_id = ? AND entity_id = ? AND component_id = ?;";
+        stmt = this.connection.prepareStatement(sql);
+        this.stmt.setInt(1, actionModelId);
+        this.stmt.setInt(2, entityId);
+        this.stmt.setInt(3, componentId);
+        ResultSet rs = stmt.executeQuery();
+        while (rs.next()) {
+            action = new Action();
+            feedbackAnswer = new FeedbackAnswer(rs.getInt("feedback_id"));
+            feedbackAnswer.setTime(new Date(rs.getLong("response_time")));
+            action.setId(rs.getInt("action_model_id"));
+            action.setDataBaseId(rs.getInt("id"));
+            action.setActionType(rs.getInt("action_type"));
+            action.setFeedbackAnswer(feedbackAnswer);
+            action.setTargetEntityId(rs.getInt("entity_id"));
+            action.setTargetComponentId(rs.getInt("component_id"));
+            actions.add(action);
+        }
+        rs.close();
+        stmt.close();
+        return actions;
+    }
+
+    public ArrayList<Action> getActions(int feedbackId) throws SQLException {
+        ArrayList<Action> actions = new ArrayList<Action>();
+        Action action;
+        FeedbackAnswer feedbackAnswer;
+        String sql = "SELECT  id, action_model_id, entity_id, component_id, action_type, response_time, feedback_id "
+                + " FROM generated_actions "
+                + " WHERE feedback_id = ? ORDER BY id;";
+        stmt = this.connection.prepareStatement(sql);
+        this.stmt.setInt(1, feedbackId);
+        ResultSet rs = stmt.executeQuery();
+        while (rs.next()) {
+            action = new Action();
+            feedbackAnswer = new FeedbackAnswer(rs.getInt("feedback_id"));
+            feedbackAnswer.setTime(new Date(rs.getLong("response_time")));
+            action.setId(rs.getInt("action_model_id"));
+            action.setDataBaseId(rs.getInt("id"));
+            action.setActionType(rs.getInt("action_type"));
+            action.setFeedbackAnswer(feedbackAnswer);
+            action.setTargetEntityId(rs.getInt("entity_id"));
+            action.setTargetComponentId(rs.getInt("component_id"));
+            actions.add(action);
+        }
+        rs.close();
+        stmt.close();
+        return actions;
+    }
+
+    public ArrayList<Action> getActions(int feedbackId, Date startDate, Date lastDate) throws SQLException {
+        return this.getActions(feedbackId, startDate.getTime(), lastDate.getTime());
+    }
+
+    public ArrayList<Action> getActions(int feedbackId, long startDate, long lastDate) throws SQLException {
+        ArrayList<Action> actions = new ArrayList<Action>();
+        Action action;
+        FeedbackAnswer feedbackAnswer;
+        String sql = "SELECT  id, action_model_id, entity_id, component_id, action_type, response_time, feedback_id "
+                + " FROM generated_actions "
+                + " WHERE feedback_id = ? AND response_time >= ? AND response_time <= ?  ORDER BY id;";
+        stmt = this.connection.prepareStatement(sql);
+        this.stmt.setInt(1, feedbackId);
+        this.stmt.setLong(2, startDate);
+        this.stmt.setLong(3, lastDate);
+        ResultSet rs = stmt.executeQuery();
+        while (rs.next()) {
+            action = new Action();
+            feedbackAnswer = new FeedbackAnswer(rs.getInt("feedback_id"));
+            feedbackAnswer.setTime(new Date(rs.getLong("response_time")));
+            action.setId(rs.getInt("action_model_id"));
+            action.setDataBaseId(rs.getInt("id"));
+            action.setActionType(rs.getInt("action_type"));
+            action.setFeedbackAnswer(feedbackAnswer);
+            action.setTargetEntityId(rs.getInt("entity_id"));
+            action.setTargetComponentId(rs.getInt("component_id"));
+            actions.add(action);
+        }
+        rs.close();
+        stmt.close();
+        return actions;
+    }
+
+    public ArrayList<Action> getActionsFeedbackErrors(Date startDate, Date lastDate) throws SQLException {
+        return getActionsFeedbackErros(startDate.getTime(), lastDate.getTime());
+    }
+
+    public ArrayList<Action> getActionsFeedbackErros(long startDate, long lastDate) throws SQLException {
+        ArrayList<Action> actions = new ArrayList<Action>();
+        Action action;
+        FeedbackAnswer feedbackAnswer;
+        String sql = "SELECT  id, action_model_id, entity_id, component_id, action_type, response_time, feedback_id "
+                + " FROM generated_actions "
+                + " WHERE feedback_id <> ? AND response_time >= ? AND response_time <= ?  ORDER BY id;";
+        stmt = this.connection.prepareStatement(sql);
+        this.stmt.setInt(1, FeedbackAnswer.ACTION_RESULT_WAS_SUCCESSFUL);
+        this.stmt.setLong(2, startDate);
+        this.stmt.setLong(3, lastDate);
+        ResultSet rs = stmt.executeQuery();
+        while (rs.next()) {
+            action = new Action();
+            feedbackAnswer = new FeedbackAnswer(rs.getInt("feedback_id"));
+            feedbackAnswer.setTime(new Date(rs.getLong("response_time")));
+            action.setId(rs.getInt("action_model_id"));
+            action.setDataBaseId(rs.getInt("id"));
+            action.setActionType(rs.getInt("action_type"));
+            action.setFeedbackAnswer(feedbackAnswer);
+            action.setTargetEntityId(rs.getInt("entity_id"));
+            action.setTargetComponentId(rs.getInt("component_id"));
+            actions.add(action);
+        }
+        rs.close();
+        stmt.close();
+        return actions;
+    }
+
+    public ArrayList<Action> getActions(int actionModelId, int entityId, int componentId, Date startDate, Date lastDate) throws SQLException {
+        return this.getActions(actionModelId, entityId, componentId, startDate.getTime(), lastDate.getTime());
+    }
+
+    public ArrayList<Action> getActions(int actionModelId, int entityId, int componentId, long startDate, long lastDate) throws SQLException {
+        ArrayList<Action> actions = new ArrayList<Action>();
+        Action action;
+        FeedbackAnswer feedbackAnswer;
+        String sql = "SELECT id, action_model_id, entity_id, component_id, action_type, response_time, feedback_id "
+                + " FROM generated_actions WHERE action_model_id = ? AND entity_id = ? AND component_id = ?"
+                + " AND response_time >= ? AND response_time <= ? ORDER BY id;";
+        stmt = this.connection.prepareStatement(sql);
+        this.stmt.setInt(1, actionModelId);
+        this.stmt.setInt(2, entityId);
+        this.stmt.setInt(3, componentId);
+        this.stmt.setLong(4, startDate);
+        this.stmt.setLong(5, lastDate);
+        ResultSet rs = stmt.executeQuery();
+        while (rs.next()) {
+            action = new Action();
+            feedbackAnswer = new FeedbackAnswer(rs.getInt("feedback_id"));
+            feedbackAnswer.setTime(new Date(rs.getLong("response_time")));
+            action.setId(rs.getInt("action_model_id"));
+            action.setDataBaseId(rs.getInt("id"));
+            action.setActionType(rs.getInt("action_type"));
+            action.setFeedbackAnswer(feedbackAnswer);
+            action.setTargetEntityId(rs.getInt("entity_id"));
+            action.setTargetComponentId(rs.getInt("component_id"));
+            actions.add(action);
+        }
+        rs.close();
+        stmt.close();
+        return actions;
+    }
+
+    public Action getAction(int actionId) throws SQLException {
+        Action action = null;
+        FeedbackAnswer feedbackAnswer;
+        String sql = "SELECT id, action_model_id, entity_id, component_id, action_type, response_time, feedback_id "
+                + " FROM generated_actions WHERE id = ? ;";
+        stmt = this.connection.prepareStatement(sql);
+        this.stmt.setInt(1, actionId);
+        ResultSet rs = stmt.executeQuery();
+        while (rs.next()) {
+            action = new Action();
+            feedbackAnswer = new FeedbackAnswer(rs.getInt("feedback_id"));
+            feedbackAnswer.setTime(new Date(rs.getLong("response_time")));
+            action.setId(rs.getInt("action_model_id"));
+            action.setDataBaseId(rs.getInt("id"));
+            action.setActionType(rs.getInt("action_type"));
+            action.setFeedbackAnswer(feedbackAnswer);
+            action.setTargetEntityId(rs.getInt("entity_id"));
+            action.setTargetComponentId(rs.getInt("component_id"));
+        }
+        rs.close();
+        stmt.close();
+        return action;
+    }
+
+    public List<Parameter> getActionParameterContents(Action action) throws SQLException {
+        return getActionParameterContents(action.getDataBaseId());
+    }
+
+    public List<Parameter> getActionParameterContents(int dataBaseActionId) throws SQLException {
+        List<Parameter> parameters = new ArrayList();
+        Parameter parameter;
+        Content content;
+        String sql = "SELECT action_contents.id as content_id, reading_value, reading_time, score,"
+                + "     action_parameters.id as parameter_id, label, action_parameters.description as parameter_desc, "
+                + "     optional, superior_limit, inferior_limit, entity_state_id, action_parameters.initial_value, "
+                + "     data_type_id, data_types.initial_value as data_initial_value, data_types.description as data_desc "
+                + " FROM action_contents, action_parameters, data_types WHERE generated_action_id = ? "
+                + " AND action_parameter_id = action_parameters.id AND data_types.id = data_type_id "
+                + " ORDER BY generated_action_id ;";
+        stmt = this.connection.prepareStatement(sql);
+        stmt.setInt(1, dataBaseActionId);
+        ResultSet rs = stmt.executeQuery();
+        while (rs.next()) {
+            parameter = new Parameter();
+            parameter.setId(rs.getInt("parameter_id"));
+            parameter.setDescription(rs.getString("parameter_desc"));
+            parameter.setLabel(rs.getString("label"));
+            DataType type = new DataType();
+            type.setId(rs.getInt("data_type_id"));
+            type.setDescription(rs.getString("data_desc"));
+            type.setInitialValue(rs.getObject("data_initial_value"));
+            parameter.setDataType(type);
+            // trata o tipo de dado do estado
+            parameter.setSuperiorLimit(Content.parseContent(
+                    parameter.getDataType(), parameter.getSuperiorLimit()));
+            parameter.setInferiorLimit(Content.parseContent(
+                    parameter.getDataType(), parameter.getInferiorLimit()));
+            parameter.setInitialValue(Content.parseContent(
+                    parameter.getDataType(), parameter.getInitialValue()));
+            parameter.setInferiorLimit(rs.getObject("inferior_limit"));
+            parameter.setSuperiorLimit(rs.getObject("superior_limit"));
+            parameter.setInitialValue(rs.getObject("initial_value"));
+            parameter.setOptional(rs.getBoolean("optional"));
+            if (rs.getInt("entity_state_id") > 0) {
+                EntityStateDAO dao = new EntityStateDAO(connection);
+                parameter.setRelatedState(dao.getState(rs
+                        .getInt("entity_state_id")));
+            }
+            // pega o valor utilizado na ação
+            content = new Content();
+            content.setId(rs.getInt("content_id"));
+            content.setTime(new Date(Long.parseLong(rs.getString("reading_time"))));
+            content.setValue(Content.parseContent(parameter.getDataType(),
+                    rs.getObject("reading_value")));
+            content.setScore(rs.getDouble("score"));
+            parameter.setContent(content);
+
+            parameter.setPossibleContents(this.getPossibleContents(parameter));
+            parameters.add(parameter);
+        }
+        rs.close();
+        stmt.close();
+        return parameters;
     }
 }
