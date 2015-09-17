@@ -8,6 +8,7 @@ import java.util.HashMap;
 import urbosenti.core.device.model.FeedbackAnswer;
 import urbosenti.user.User;
 import java.io.Serializable;
+import urbosenti.core.device.ComponentManager;
 
 /**
  *
@@ -116,6 +117,10 @@ public class Action implements Serializable {
         return feedbackAnswer;
     }
 
+    /**
+     * Adiciona o feedback de maneira geral a ação
+     * @param feedbackAnswer 
+     */
     public void setFeedbackAnswer(FeedbackAnswer feedbackAnswer) {
         this.feedbackAnswer = feedbackAnswer;
     }
@@ -125,4 +130,13 @@ public class Action implements Serializable {
         return "Action{" + "id=" + id + ", dataBaseId=" + dataBaseId + ", name=" + name + ", targetEntityId=" + targetEntityId + ", targetComponentId=" + targetComponentId + ", parameters=" + parameters + ", actionType=" + actionType + ", synchronous=" + synchronous + '}';
     }
     
+    /**
+     * Utilizado para retornar a resposta de feedback em processos síncronos
+     * @param feedbackAnswer
+     * @param componentManager 
+     */
+    public void setSynchronousFeedbackAnswer(FeedbackAnswer feedbackAnswer,ComponentManager componentManager) {
+        this.feedbackAnswer = feedbackAnswer;
+        componentManager.getEventManager().notifyAll();
+    }
 }

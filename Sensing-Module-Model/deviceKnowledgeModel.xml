@@ -351,6 +351,18 @@
                         </possibleValues>
                     </parameter>
                 </action>
+                <action id="3"  description="Ação síncrona para retorno">
+                    <parameter id="1" optional="false" dataType="10" label="sessionEvent">
+                        <description>Evento da sessão</description>
+                        <possibleValues>
+                            <value>urbosenti.core.events.Event</value>
+                        </possibleValues>
+                    </parameter>
+                    <parameter id="2" optional="true" dataType="4" label="actionTimeout">
+                        <description>timeout para retorno do resultado da aplicação da ação em milisegundos</description>
+                        <possibleValues initialValue="500"></possibleValues>
+                    </parameter>
+                </action>
             </entity>
         </component>
         <component name="Data" class="urbosenti.core.data.DataManager"></component>

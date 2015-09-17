@@ -8,6 +8,8 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import urbosenti.adaptation.AdaptationManager;
 import urbosenti.core.data.dao.EventDAO;
 import urbosenti.core.device.ComponentManager;
@@ -52,10 +54,20 @@ public class EventManager extends ComponentManager {
      * gatilho;Modo de operação;Tratador do evento</li></ul>
      */
     public static final int ACTION_CANCEL_TEMPORAL_TRIGGER_EVENT = 2;
+    /**
+     * int ACTION_TO_SYNCHROUNOUS_RETURN = 3;
+     *
+     * <ul><li>id: 3</li>
+     * <li>Ação: Ação síncrona para retorno</li>
+     * <li>parâmetros: Evento da sessão (sessionEvent) ; timeout para retorno do
+     * resultado da aplicação da ação em ms (opcional- actionTimeout)</li></ul>
+     */
+    public static final int ACTION_TO_SYNCHROUNOUS_RETURN = 3;
     public static final int METHOD_ONLY_INTERVAL = 1;
     public static final int METHOD_ONLY_DATE = 2;
     public static final int METHOD_DATE_PLUS_REPEATED_INTERVALS = 3;
     public static final long DEFAULT_SYNCHRONOUS_EVENT_TIMEOUT = 20000;
+    public static final long DEFAULT_FEEDBACK_DEFAULT_LIMITED_TIME = 500; // 500 milisegundos
 
     //private Timer timer;
     private final List<EventTimer> eventTimerWorkers;
@@ -64,6 +76,8 @@ public class EventManager extends ComponentManager {
     private List<ApplicationHandler> applicationHandlers;
     // Fábrica responsável por criar os objetos
     private EventTimerFactory eventTimerFactory;
+    // Eventos síncronos
+    private List<SynchronousEventSession> synchronousEvents;
 
     public EventManager(DeviceManager deviceManager, AdaptationManager systemHandler) {
         this(deviceManager);
@@ -78,6 +92,7 @@ public class EventManager extends ComponentManager {
         this.applicationHandlers = new ArrayList();
         this.eventTimerWorkers = new ArrayList();
         this.eventTimerFactory = new UrboSentiEventTimerFactory();
+        this.synchronousEvents = new ArrayList();
     }
 
     @Override
@@ -116,19 +131,26 @@ public class EventManager extends ComponentManager {
      * @return Retorna uma ação, se retornal null então o tempo foi expirado.
      * Utiliza o tempo padrão de 20s para limite da resposta;
      */
-    public Action newSynchronousEvent(Event event) {
+    public Action newSynchronousEvent(Event event) throws InterruptedException {
         return this.newSynchronousEvent(event, DEFAULT_SYNCHRONOUS_EVENT_TIMEOUT);
     }
 
     /**
-     * Retorna uma ação para o evento síncrono.
+     * Retorna uma ação para o evento síncrono ou null se o tempo for expirado
      *
      * @param event
      * @param timeout
      * @return Retorna uma ação, se retornal null então o tempo foi expirado.
      */
-    public Action newSynchronousEvent(Event event, long timeout) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    public Action newSynchronousEvent(Event event, long timeout) throws InterruptedException {
+        event.setSynchronous(true);
+        SynchronousEventSession synchronousEventSession = new SynchronousEventSession(event, timeout);
+        this.synchronousEvents.add(synchronousEventSession);
+        this.newEvent(event);
+        synchronized (event) {
+            event.wait(timeout);
+        }
+        return synchronousEventSession.getReturnedAction();
     }
 
     public void setSystemHandler(AdaptationManager systemHandler) {
@@ -165,6 +187,7 @@ public class EventManager extends ComponentManager {
     @Override
     public synchronized FeedbackAnswer applyAction(Action action) {
         TriggerRequest tr;
+        Event event;
         switch (action.getId()) {
             case 1: // 1 - Adicionar um gatilho de tempo
                 // Parâmetros:
@@ -209,8 +232,46 @@ public class EventManager extends ComponentManager {
 //                if(found)System.out.println("Achou :D"); 
 //                else System.out.println("Não Achou :'(");
                 break;
+            case 3:
+                event = (Event) action.getParameters().get("sessionEvent");
+                boolean flag = false;
+                for (int i = 0; i < this.synchronousEvents.size(); i++) {
+                    // procura o event
+                    if (this.synchronousEvents.get(i).getEvent().getTime().getTime() == event.getTime().getTime()) {
+                        // se o timeout não passou: adiciona a ação e acorda o evento
+                        if ((this.synchronousEvents.get(i).getEvent().getTime().getTime() + this.synchronousEvents.get(i).getTimeout()) > System.currentTimeMillis()) {
+                            this.synchronousEvents.get(i).setReturnedAction(action);
+                            this.synchronousEvents.get(i).getEvent().notifyAll();
+                            // espera um tempo para verificar se será retornado um erro:
+                            try {
+                                if (action.getParameters().get("actionTimeout") != null) {
+                                    wait((Long) action.getParameters().get("actionTimeout"));
+                                } else {
+                                    wait(DEFAULT_FEEDBACK_DEFAULT_LIMITED_TIME);
+                                }
+                            } catch (InterruptedException ex) {
+                                Logger.getLogger(EventManager.class.getName()).log(Level.SEVERE, null, ex);
+                            }
+                            flag = true;
+                            break;
+                        } else {
+                            flag = false;
+                            break;
+                        }
+                    }
+                }
+                if (flag == false) {
+                    action.setFeedbackAnswer(new FeedbackAnswer(FeedbackAnswer.ACTION_RESULT_FAILED_TIMEOUT));
+                }
+                break;
         }
-        return new FeedbackAnswer(FeedbackAnswer.ACTION_RESULT_WAS_SUCCESSFUL);
+        // verifica se a ação existe ou se houve algum resultado durante a execução
+        if (action.getFeedbackAnswer() == null && action.getId() >= 1 && action.getId() <= 3) {
+            action.setFeedbackAnswer(new FeedbackAnswer(FeedbackAnswer.ACTION_RESULT_WAS_SUCCESSFUL));
+        } else if (action.getFeedbackAnswer() == null) {
+            action.setFeedbackAnswer(new FeedbackAnswer(FeedbackAnswer.ACTION_DOES_NOT_EXIST));
+        }
+        return action.getFeedbackAnswer();
     }
 
     /**
