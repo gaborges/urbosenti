@@ -68,9 +68,6 @@ public class InstanceDAO {
         if (state.getModelId() < 1) {
             state.setModelId(state.getId());
         }
-        System.out.println("INSERT INTO instance_states (description,user_can_change,instance_id,data_type_id,superior_limit,inferior_limit,initial_value,state_model_id) "
-                + " VALUES (" + state.getId() + ",'" + state.getDescription() + "'," + state.isUserCanChange() + "," + instance.getId()
-                + "," + state.getDataType().getId() + ",'" + state.getSuperiorLimit() + "','" + state.getInferiorLimit() + "','" + state.getInitialValue() + "'," + state.getModelId() + ");");
         // trata o tipo de dado do estado
         state.setSuperiorLimit(Content.parseContent(state.getDataType(), state.getSuperiorLimit()));
         state.setInferiorLimit(Content.parseContent(state.getDataType(), state.getInferiorLimit()));

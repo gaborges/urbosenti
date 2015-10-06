@@ -70,8 +70,10 @@ public class AgentTypeDAO {
         this.stmt.setString(2, type.getDescription());
         this.stmt.execute();
         this.stmt.close();
-        System.out.println("INSERT INTO agent_types (id, description) "
+        if (DeveloperSettings.SHOW_DAO_SQL){
+            System.out.println("INSERT INTO agent_types (id, description) "
                 + " VALUES (" + type.getId() + ",'" + type.getDescription() + "');");
+        }
     }
 
     public void insertInteraction(InteractionModel interaction) throws SQLException {
@@ -87,10 +89,12 @@ public class AgentTypeDAO {
         this.stmt.setInt(7, (interaction.getPrimaryInteraction() == null) ? -1 : interaction.getPrimaryInteraction().getId());
         this.stmt.execute();
         stmt.close();
-        System.out.println("INSERT INTO interactions (id,description,agent_type_id,communicative_act_id, interaction_type_id, direction_id, interaction_id) "
+        if (DeveloperSettings.SHOW_DAO_SQL){
+            System.out.println("INSERT INTO interactions (id,description,agent_type_id,communicative_act_id, interaction_type_id, direction_id, interaction_id) "
                 + " VALUES (" + interaction.getId() + ",'" + interaction.getDescription() + "'," + interaction.getAgentType().getId() + ","
                 + interaction.getCommunicativeAct().getId() + "," + interaction.getInteractionType().getId() + "," + interaction.getDirection().getId() + ","
                 + ((interaction.getPrimaryInteraction() == null) ? -1 : interaction.getPrimaryInteraction().getId()) + ");");
+        }
     }
 
     public void insertPossibleStateContents(State state) throws SQLException {
@@ -111,8 +115,10 @@ public class AgentTypeDAO {
                     throw new SQLException("Creating user failed, no ID obtained.");
                 }
                 statement.close();
-                System.out.println("INSERT INTO possible_agent_state_contents (id,possible_value, default_value, agent_state_id) "
+                if (DeveloperSettings.SHOW_DAO_SQL){
+                    System.out.println("INSERT INTO possible_agent_state_contents (id,possible_value, default_value, agent_state_id) "
                         + " VALUES (" + possibleContent.getId() + "," + Content.parseContent(state.getDataType(),possibleContent.getValue()) + "," + possibleContent.isIsDefault() + "," + state.getId() + ");");
+                }
             }
         }
     }
@@ -134,9 +140,11 @@ public class AgentTypeDAO {
         this.stmt.setObject(7, state.getInitialValue());
         this.stmt.execute();
         stmt.close();
-        System.out.println("INSERT INTO agent_states (id,description,agent_type_id,data_type_id,superior_limit,inferior_limit,initial_value) "
+        if (DeveloperSettings.SHOW_DAO_SQL){
+            System.out.println("INSERT INTO agent_states (id,description,agent_type_id,data_type_id,superior_limit,inferior_limit,initial_value) "
                 + " VALUES (" + state.getId() + ",'" + state.getDescription() + "'," + state.getAgentType().getId() + "," + state.getDataType().getId()
                 + ",'" + state.getSuperiorLimit() + "','" + state.getInferiorLimit() + "','" + state.getInitialValue() + "');");
+        }
     }
 
     public void insertParameters(InteractionModel interaction) throws SQLException {
@@ -167,10 +175,12 @@ public class AgentTypeDAO {
                     throw new SQLException("Creating user failed, no ID obtained.");
                 }
                 statement.close();
-                System.out.println("INSERT INTO interaction_parameters (description,optional,label,superior_limit,inferior_limit,initial_value,agent_state_id,data_type_id,interaction_id) "
+                if (DeveloperSettings.SHOW_DAO_SQL){
+                    System.out.println("INSERT INTO interaction_parameters (description,optional,label,superior_limit,inferior_limit,initial_value,agent_state_id,data_type_id,interaction_id) "
                         + " VALUES (" + parameter.getId() + ",'" + parameter.getDescription() + "','" + parameter.getLabel() + "','" + parameter.getSuperiorLimit()
                         + "','" + parameter.getInferiorLimit() + "','" + parameter.getInitialValue() + "'," + ((parameter.getRelatedState() == null) ? -1 : parameter.getRelatedState().getId())
                         + "," + parameter.getDataType().getId() + "," + interaction.getId() + ");");
+                }
             }
         }
 
@@ -194,8 +204,10 @@ public class AgentTypeDAO {
                     throw new SQLException("Creating user failed, no ID obtained.");
                 }
                 statement.close();
-                System.out.println("INSERT INTO possible_interaction_contents (id,possible_value, default_value, interaction_parameter_id) "
+                if (DeveloperSettings.SHOW_DAO_SQL){
+                    System.out.println("INSERT INTO possible_interaction_contents (id,possible_value, default_value, interaction_parameter_id) "
                         + " VALUES (" + possibleContent.getId() + "," + Content.parseContent(parameter.getDataType(),possibleContent.getValue()) + "," + possibleContent.isIsDefault() + "," + parameter.getId() + ");");
+                }
             }
         }
     }

@@ -15,6 +15,7 @@ import java.util.List;
 import urbosenti.core.device.model.Component;
 import urbosenti.core.device.model.Entity;
 import urbosenti.core.device.model.EntityType;
+import urbosenti.util.DeveloperSettings;
 
 /**
  *
@@ -45,8 +46,10 @@ public class EntityDAO {
             throw new SQLException("Creating user failed, no ID obtained.");
         }
         stmt.close();
-        System.out.println("INSERT INTO entities (id,description,entity_type_id, component_id,model_id) "
+        if (DeveloperSettings.SHOW_DAO_SQL){
+            System.out.println("INSERT INTO entities (id,description,entity_type_id, component_id,model_id) "
                 + " VALUES (" + entity.getId() + ",'" + entity.getDescription() + "'," + entity.getEntityType().getId() + "," + entity.getComponent().getId() + "," + entity.getModelId() + ");");
+        }
     }
 
     public List<Entity> getComponentEntities(Component component) throws SQLException {

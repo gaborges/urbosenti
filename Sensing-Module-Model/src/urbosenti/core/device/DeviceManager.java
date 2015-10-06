@@ -1237,7 +1237,9 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
              * *** Configurações necessárias para os componentes ****
              */
             // tratador de eventos do sistema
-            this.getAdaptationManager().start();
+            if(this.getAdaptationManager()!=null){
+                this.getAdaptationManager().start();
+            }
             // Registrar do nó de sensoriamento movel no backend server :
             // 1 - busca o servidor backend cadastrado no conhecimento inicial
             Service backendServer = this.getBackendService();
@@ -1269,7 +1271,9 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
      */
     public void stopUrboSentiServices() {
         // Para o adaptation Manager
-        this.adaptationManager.stop();
+        if(this.getAdaptationManager()!=null){
+            this.adaptationManager.stop();
+        }
         // Para  serviço de Upload
         this.communicationManager.stopAllCommunicationServices();
         // Para os listeners

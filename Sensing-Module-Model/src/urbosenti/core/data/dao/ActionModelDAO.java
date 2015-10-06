@@ -111,31 +111,6 @@ public class ActionModelDAO {
                 + " VALUES (?,?,?,?,?,?,?,?,?);";
         PreparedStatement statement;
         for (Parameter parameter : action.getParameters()) {
-            System.out
-                    .println("INSERT INTO action_parameters (id,description,optional,label,superior_limit,inferior_limit,initial_value,entity_state_id,data_type_id,event_id) "
-                            + " VALUES ("
-                            + parameter.getId()
-                            + ",'"
-                            + parameter.getDescription()
-                            + "',"
-                            + parameter.isOptional()
-                            + ",'"
-                            + parameter.getLabel()
-                            + "','"
-                            + parameter.getSuperiorLimit()
-                            + "','"
-                            + parameter.getInferiorLimit()
-                            + "','"
-                            + parameter.getInitialValue()
-                            + "',"
-                            + ((parameter.getRelatedState() == null) ? -1
-                                    : parameter.getRelatedState().getId())
-                            + ","
-                            + parameter.getDataType().getId()
-                            + ","
-                            + action.getId() + ");");
-        }
-        for (Parameter parameter : action.getParameters()) {
             statement = this.connection.prepareStatement(sql,
                     Statement.RETURN_GENERATED_KEYS);
             statement.setString(1, parameter.getDescription());

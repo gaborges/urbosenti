@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import urbosenti.core.device.model.Component;
 import urbosenti.core.device.model.Device;
+import urbosenti.util.DeveloperSettings;
 
 /**
  *
@@ -43,8 +44,10 @@ public class ComponentDAO {
             throw new SQLException("Creating user failed, no ID obtained.");
         }
         stmt.close();
-        System.out.println("INSERT INTO components (id,description,code_class,device_id) "
+        if (DeveloperSettings.SHOW_DAO_SQL){
+            System.out.println("INSERT INTO components (id,description,code_class,device_id) "
                 + " VALUES (" + component.getId() + ",'" + component.getDescription() + "','" + component.getReferedClass() + "'," + component.getDevice().getId() + ");");
+        }
     }
 
     public List<Component> getDeviceComponents(Device device) throws SQLException {

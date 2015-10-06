@@ -2104,7 +2104,7 @@ public class CommunicationManager extends ComponentManager {
         return null;
     }
 
-    public void updateInputCommunicationInterfaceConfiguration(SocketPushServiceReceiver inputInterface, HashMap<String, String> interfaceConfigurations) {
+    public void updateInputCommunicationInterfaceConfiguration(PushServiceReceiver inputInterface, HashMap<String, String> interfaceConfigurations) {
         this.newInternalEvent(EVENT_NEW_INPUT_COMMUNICATION_INTERFACE_ADDRESS, inputInterface, interfaceConfigurations);
     }
 
