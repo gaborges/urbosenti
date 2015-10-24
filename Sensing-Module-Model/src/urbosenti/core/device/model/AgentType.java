@@ -38,11 +38,11 @@ public class AgentType {
         this.description = description;
     }
 
-    public List<InteractionModel> getInteraction() {
+    public List<InteractionModel> getInteractionModels() {
         return interaction;
     }
 
-    public void setInteraction(List<InteractionModel> interaction) {
+    public void setInteractionModels(List<InteractionModel> interaction) {
         this.interaction = interaction;
     }
 
@@ -50,7 +50,7 @@ public class AgentType {
         return states;
     }
 
-    public void setStates(List<State> states) {
+    public void setStateModels(List<State> states) {
         this.states = states;
     }
 

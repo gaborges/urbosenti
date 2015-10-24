@@ -681,7 +681,7 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
             List<Instance> instances = this.dataManager.getInstanceDAO().getEntityInstances(
                     CommunicationDAO.ENTITY_ID_OF_INPUT_COMMUNICATION_INTERFACES, CommunicationDAO.COMPONENT_ID);
             // busca os estados da entidade
-            entity.setStates(this.dataManager.getEntityStateDAO().getEntityStates(entity));
+            entity.setStateModels(this.dataManager.getEntityStateDAO().getEntityStateModels(entity));
             // cria o xml
             // gerar mensagem em XML
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
@@ -780,7 +780,7 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
             // busca a entidade de registro
             entity = this.dataManager.getEntityDAO()
                     .getEntity(DeviceDAO.COMPONENT_ID, DeviceDAO.ENTITY_ID_OF_SERVICE_REGISTRATION);
-            entity.setStates(this.dataManager.getEntityStateDAO().getEntityStates(entity));
+            entity.setStateModels(this.dataManager.getEntityStateDAO().getEntityStateModels(entity));
             // salva as informações
             for (State s : entity.getStates()) {
                 Date nowDate = new Date();
@@ -840,7 +840,7 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
         Entity entity = this.dataManager.getEntityDAO()
                 .getEntity(DeviceDAO.COMPONENT_ID, DeviceDAO.ENTITY_ID_OF_SERVICE_REGISTRATION);
         // busca os estados da entidade
-        entity.setStates(this.dataManager.getEntityStateDAO().getEntityStates(entity));
+        entity.setStateModels(this.dataManager.getEntityStateDAO().getEntityStateModels(entity));
         // Verifica se todas as informações estão cadastradas, 
         // se qualquer uma delas não estiver retorna false;
         for (State s : entity.getStates()) {
@@ -885,7 +885,7 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
             Entity entity = this.dataManager.getEntityDAO().getEntity(
                     DeviceDAO.COMPONENT_ID,
                     DeviceDAO.ENTITY_ID_OF_BASIC_DEVICE_INFORMATIONS);
-            entity.setStates(this.dataManager.getEntityStateDAO().getEntityStates(entity));
+            entity.setStateModels(this.dataManager.getEntityStateDAO().getEntityStateModels(entity));
             Content content;
             Date discoveryTime = new Date();
             // verifica se os estados já foram descobertos, se já foram para o processo de descoberta

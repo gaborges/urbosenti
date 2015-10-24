@@ -10,7 +10,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.Date;
 import java.util.List;
 import javax.xml.parsers.DocumentBuilder;
@@ -21,16 +20,23 @@ import org.xml.sax.InputSource;
 import urbosenti.adaptation.AdaptationManager;
 import urbosenti.adaptation.ExecutionPlan;
 import urbosenti.core.communication.Address;
+import urbosenti.core.communication.CommunicationInterface;
 import urbosenti.core.communication.CommunicationManager;
 import urbosenti.core.communication.Message;
+import urbosenti.core.communication.PushServiceReceiver;
+import urbosenti.core.communication.ReconnectionService;
+import urbosenti.core.communication.UploadService;
 import urbosenti.core.data.DataManager;
 import urbosenti.core.device.BaseComponentManager;
 import urbosenti.core.device.model.ActionModel;
 import urbosenti.core.device.model.AgentCommunicationLanguage;
+import urbosenti.core.device.model.AgentType;
 import urbosenti.core.device.model.Component;
 import urbosenti.core.device.model.Content;
+import urbosenti.core.device.model.Device;
 import urbosenti.core.device.model.Entity;
 import urbosenti.core.device.model.EntityType;
+import urbosenti.core.device.model.EventModel;
 import urbosenti.core.device.model.FeedbackAnswer;
 import urbosenti.core.device.model.Instance;
 import urbosenti.core.device.model.InteractionModel;
@@ -39,6 +45,7 @@ import urbosenti.core.device.model.Service;
 import urbosenti.core.device.model.State;
 import urbosenti.core.events.Action;
 import urbosenti.core.events.Event;
+import urbosenti.user.User;
 
 /**
  *
@@ -48,6 +55,7 @@ public final class AdaptationDAO {
 
     public final static int COMPONENT_ID = 5;
     public static final int ENTITY_ID_OF_ADAPTATION_MANAGEMENT = 1;
+    public static final int AGENT_TYPE_BACKEND_SERVICE = 1;
     public static final int STATE_ID_OF_ADAPTATION_MANAGEMENT_INTERVAL_TO_REPORT_SYSTEM_FUNCIONS = 1;
     public static final int STATE_ID_OF_ADAPTATION_MANAGEMENT_INTERNAL_TO_DELETE_EXPIRED_MESSAGES = 2;
     public static final int STATE_ID_OF_ADAPTATION_MANAGEMENT_ALLOWED_SEND_REPORT_SYSTEM_FUNCIONS = 3;
@@ -70,11 +78,167 @@ public final class AdaptationDAO {
     private PreparedStatement stmt;
     private final DataManager dataManager;
     private List<AgentCommunicationLanguage> acls;
+    private Content content;
+    // somente os eventos
+    private List<AgentType> agentTypes;
+    // todo o esquema
+    private Device deviceModel;
+    private EventModel eventModel;
+    private InteractionModel interactionModel;
 
     public AdaptationDAO(Connection connection, DataManager dataManager) {
         this.dataManager = dataManager;
         this.connection = connection;
         this.acls = null;
+        this.deviceModel = null;
+        this.agentTypes = null;
+    }
+
+    public void loadStructureModels() throws SQLException {
+        // Modelo do dispositivo, usado para busca, principalmente
+        this.deviceModel = this.dataManager.getDeviceDAO().getDeviceModel(dataManager);
+        // Todos os tipos de agente
+        this.agentTypes = this.dataManager.getAgentTypeDAO().getAgentTypes();
+        for (AgentType agentType : this.agentTypes) {
+            agentType.setInteractionModels(dataManager.getAgentTypeDAO().getAgentInteractions(agentType));
+            agentType.setStateModels(dataManager.getAgentTypeDAO().getAgentStates(agentType));
+        }
+        // Busca todos os Acls para serem usados em memória
+        this.populateAcls();
+    }
+
+    /**
+     * Recebe um evento por parâmetro, persiste no banco de dados o valor e
+     * returna o correspendente do evento entre InteractionModel ou EventModel.
+     * Se não encontrar nenhum retorna null
+     *
+     * @param event
+     * @return
+     * @throws java.sql.SQLException
+     */
+    public Object updateWorldModel(Event event) throws SQLException, NullPointerException, NumberFormatException, Exception {
+        this.interactionModel = null;
+        this.eventModel = null;
+        /**
+         * ************** Update world model **************
+         */
+        // verifica se é uma interação ou um evento
+        // se uma interação extrai a interação dos parâmetros do evento
+        // de forma semelhante ao evento salva as informações
+        // gera uma interação que é passada para análise -- o mesmo ocorre com o evento
+        // buscar o modelo de evento
+        eventModel = this.getEventModel(event);
+        // se não encontrar o evento
+        if (eventModel == null) {
+            // gera um evento de evento desconhecido ou não existente e adiciona os dados do evento não reconecido nos parâmetros
+            throw new NullPointerException("Evento " + event.getId() + " " + event.getName() + " " + event.toString() + "não existe no banco de dados!");
+        } else {  // caso encontre
+            // adiciona o id o BD, se for necessário armazenar então usa o gerado pelo banco de dados
+            event.setDatabaseId(eventModel.getId());
+            // verificar se o modelo de evento precisa ser salvo
+            //if (eventModel.isNecessaryStore()) {
+            // salvar se sim
+            this.dataManager.getEventModelDAO().insert(event, eventModel);
+            //}
+            // verificar cada parâmetro, se relacionado a um estado 
+            for (Parameter p : eventModel.getParameters()) {
+                // se relacionado verifica se é um estado de instância
+                if (p.getRelatedState() != null) {
+                    // preenche o conteúdo
+                    if (content == null) {
+                        content = new Content(Content.parseContent(
+                                p.getRelatedState().getDataType(),
+                                event.getParameters().get(p.getLabel())),
+                                event.getTime());
+                    } else {
+                        content.setValue(Content.parseContent(
+                                p.getRelatedState().getDataType(), event.getParameters().get(p.getLabel())));
+                        content.setTime(event.getTime());
+                    }
+                    // se for estado de instância acessa o parâmetro instanceId e salva na referida instância, senão salva no estado
+                    if (p.getRelatedState().isStateInstance()) {
+                        //--- Testar se e uma instancia ou uma InstanceRepresentative, se não for, indica erro, para ficar genérico
+                        //--- colocar todos os rótulos de instância como instance
+                        // Existem 3 instâncias - User, CommunicationInterface e PushServiceReceiver
+                        // Também aceitar que o parâmetro instance tenha uma instância
+                        if (event.getComponentManager().getComponentId() == CommunicationDAO.COMPONENT_ID) {
+                            if (event.getParameters().get("interface") instanceof CommunicationInterface) {
+                                for (State instanceState : ((CommunicationInterface) event.getParameters().get("interface")).getInstance().getStates()) {
+                                    if (p.getRelatedState().getModelId() == instanceState.getModelId()) {
+                                        instanceState.setContent(content);
+                                        this.dataManager.getInstanceDAO().insertContent(instanceState);
+                                        break;
+                                    }
+                                }
+                            } else if (event.getParameters().get("interface") instanceof PushServiceReceiver) {
+                                for (State instanceState : ((PushServiceReceiver) event.getParameters().get("interface")).getInstance().getStates()) {
+                                    if (p.getRelatedState().getModelId() == instanceState.getModelId()) {
+                                        instanceState.setContent(content);
+                                        this.dataManager.getInstanceDAO().insertContent(instanceState);
+                                        break;
+                                    }
+                                }
+                            } else if (event.getParameters().get("reconnectionService") instanceof ReconnectionService) {
+                                for (State instanceState : ((ReconnectionService) event.getParameters().get("reconnectionService")).getInstance().getStates()) {
+                                    if (p.getRelatedState().getModelId() == instanceState.getModelId()) {
+                                        instanceState.setContent(content);
+                                        this.dataManager.getInstanceDAO().insertContent(instanceState);
+                                        break;
+                                    }
+                                }
+                            } else if (event.getParameters().get("uploadService") instanceof UploadService) {
+                                for (State instanceState : ((UploadService) event.getParameters().get("uploadService")).getInstance().getStates()) {
+                                    if (p.getRelatedState().getModelId() == instanceState.getModelId()) {
+                                        instanceState.setContent(content);
+                                        this.dataManager.getInstanceDAO().insertContent(instanceState);
+                                        break;
+                                    }
+                                }
+                            }
+                        } else if (event.getComponentManager().getComponentId() == UserDAO.COMPONENT_ID) {
+                            for (State instanceState : ((User) event.getParameters().get("user")).getInstance().getStates()) {
+                                if (p.getRelatedState().getModelId() == instanceState.getModelId()) {
+                                    instanceState.setContent(content);
+                                    this.dataManager.getInstanceDAO().insertContent(instanceState);
+                                    break;
+                                }
+                            }
+                        }
+                    } else {
+                        // se for salva como estado de entidade salva
+                        p.getRelatedState().setContent(content);
+                        this.dataManager.getStateDAO().insertContent(p.getRelatedState());
+                    }
+                }
+            }
+            if (Event.INTERATION_EVENT == event.getEventType()) {
+                // extract interaction
+                event = this.extractInteractionFromMessageEvent(event);
+                // get Interaction model
+                interactionModel = this.getInteractionModel(event);
+                // verificar cada parâmetro, se relacionado a um estado 
+                for (Parameter p : interactionModel.getParameters()) {
+                    // se relacionado verifica se é um estado de instância
+                    if (p.getRelatedState() != null) {
+                        // se for salva como estado de instância
+                        p.getRelatedState().setContent(
+                                new Content(Content.parseContent(
+                                                p.getRelatedState().getDataType(),
+                                                event.getParameters().get(p.getLabel())),
+                                        event.getTime()));
+
+                        this.dataManager.getAgentTypeDAO().insertContent(p.getRelatedState());
+                    }
+                }
+            }
+        }
+        if (this.interactionModel != null) {
+            return interactionModel;
+        }
+        if (this.eventModel != null) {
+            return eventModel;
+        }
+        throw new NullPointerException("Evento " + event.getId() + " " + event.getName() + " " + event.toString() + "não existe no banco de dados!");
     }
 
     public void populateAcls() throws SQLException {
@@ -110,7 +274,7 @@ public final class AdaptationDAO {
             entity.setDescription(rs.getString("entity_desc"));
             EntityType type = new EntityType(rs.getInt("entity_type_id"), rs.getString("type_desc"));
             entity.setEntityType(type);
-            entity.setStates(stateDAO.getEntityStates(entity));
+            entity.setStateModels(stateDAO.getEntityStateModels(entity));
             deviceComponent.getEntities().add(entity);
         }
         rs.close();
@@ -139,15 +303,21 @@ public final class AdaptationDAO {
         Address sender = (Address) event.getParameters().get("sender");
         Message message = (Message) event.getParameters().get("message");
         AgentCommunicationLanguage usedAgentCommunicationLanguage = null;
-        boolean aclIsUnkown = false;
+        boolean interactionExists = false;
         /**
          * **** Validações ******
          */
         // verifica se o UID da mensagem existe no sistema, se sim retorna o agente referente e o serviço
-        Service service = dataManager.getServiceDAO().getServiceByUid(message.getOrigin().getUid());
-        // se volta null o serviço não está cadastrado
+        Service service = this.getServiceByUid(message.getOrigin().getUid());
         if (service == null) {
-            throw new Exception("Service UID '" + message.getOrigin().getUid() + "' not found.");
+            service = dataManager.getServiceDAO().getServiceByUid(message.getOrigin().getUid());
+            // se volta null o serviço não está cadastrado
+            if (service == null) {
+                throw new Exception("Service UID '" + message.getOrigin().getUid() + "' not found.");
+            } else {
+                // adiciona em memória se o novo serviço estiver no banco
+                deviceModel.getServices().add(service);
+            }
         }
         // se retorna null, o serviço não possui agente para interação
         if (service.getAgent() == null) {
@@ -183,21 +353,42 @@ public final class AdaptationDAO {
             if (dataManager.getAgentCommunicationLanguageDAO()
                     .isAgentCommunicationLanguageKnown(acl, root.getElementsByTagName("acl").item(0).getTextContent())) {
                 usedAgentCommunicationLanguage = acl;
-                aclIsUnkown = true;
                 break;
             }
         }
-        if (!aclIsUnkown) {
+        if (usedAgentCommunicationLanguage == null) {
             throw new Exception("Agent Communication Language '" + root.getElementsByTagName("acl").item(0).getTextContent()
                     + "' from UID:'" + message.getOrigin().getUid()
                     + "', address: '" + message.getOrigin().getAddress() + "' is not supported.");
         }
         // <interactionId>1</interactionId>
         int interactionId = Integer.parseInt(root.getElementsByTagName("interactionId").item(0).getTextContent());
-        InteractionModel interactionModel = dataManager.getAgentTypeDAO().getInteractionModel(interactionId);
-        if (interactionModel == null) {
-            throw new Exception("Interaction model referred by the value interactionId:'" + interactionId + "' was not found.");
+        // flag = false
+        // checa em memória primeiro pelo serviço
+        for (InteractionModel interaction : service.getAgent().getAgentType().getInteractionModels()) {
+            if (interaction.getId() == interactionId) {
+                interactionExists = true;
+                break;
+            }
         }
+        if (!interactionExists) {
+            // checa em memória pelos tipos de agente
+            for (AgentType agentType : this.agentTypes) {
+                for (InteractionModel interaction : agentType.getInteractionModels()) {
+                    if (interaction.getId() == interactionId) {
+                        interactionExists = true;
+                        break;
+                    }
+                }
+            }
+        }
+        // checa no banco se não encontrou em memória
+        if (!interactionExists) {
+            if (dataManager.getAgentTypeDAO().getInteractionModel(interactionId) == null) {
+                throw new Exception("Interaction model referred by the value interactionId:'" + interactionId + "' was not found.");
+            }
+        }
+
         /**
          * *** Processar conteúdo segundo Agent Communication Language *****
          */
@@ -242,7 +433,7 @@ public final class AdaptationDAO {
 //    }
     public Action makeInteractionMessage(Action action) throws ClassCastException, NumberFormatException, SQLException, Exception {
         String finalString;
-        InteractionModel interactionModel = (InteractionModel) action.getParameters().get("interactionModel");
+        interactionModel = (InteractionModel) action.getParameters().get("interactionModel");
         /**
          * *** Extrair a mensagem *****
          */
@@ -279,8 +470,8 @@ public final class AdaptationDAO {
         Message message = new Message();
         message.setContent(finalString);
         message.setTarget((Address) action.getParameters().get("target"));
-        if(action.getParameters().get("origin")!=null){
-             message.setOrigin((Address) action.getParameters().get("origin"));
+        if (action.getParameters().get("origin") != null) {
+            message.setOrigin((Address) action.getParameters().get("origin"));
         } else {
             message.setOrigin(new Address());
             message.getOrigin().setLayer(Address.LAYER_SYSTEM);
@@ -302,22 +493,33 @@ public final class AdaptationDAO {
         return action;
     }
 
-    public void updateDecision(FeedbackAnswer response, Event event, Action actionToExecute, ExecutionPlan ep) throws SQLException,java.lang.NullPointerException {
+    public void updateDecision(FeedbackAnswer response, Event event, Action actionToExecute, ExecutionPlan ep) throws SQLException, java.lang.NullPointerException {
         // regsitra a ação
         this.dataManager.getActionModelDAO().insertAction(response, event, actionToExecute, ep);
         // se a resposta da ação foi sucesso, verifica  se algum dos parâmetros do actionModel é relacionado com algum estado
         if (response.getId() == FeedbackAnswer.ACTION_RESULT_WAS_SUCCESSFUL) {
-            Content content;
-            ActionModel actionModel = this.dataManager.getActionModelDAO().getActionModel(
+            ActionModel actionModel = this.getActionModel(
                     actionToExecute.getId(),
                     actionToExecute.getTargetEntityId(),
                     actionToExecute.getTargetComponentId());
+            if (actionModel == null) {
+                actionModel = this.dataManager.getActionModelDAO().getActionModel(
+                        actionToExecute.getId(),
+                        actionToExecute.getTargetEntityId(),
+                        actionToExecute.getTargetComponentId());
+            }
             // atualiza parâmetros
             for (Parameter p : actionModel.getParameters()) {
-                content = new Content(Content.parseContent(
-                        p.getDataType(),
-                        actionToExecute.getParameters().get(p.getLabel())),
-                        response.getTime());
+                if (content == null) {
+                    content = new Content(Content.parseContent(
+                            p.getDataType(),
+                            actionToExecute.getParameters().get(p.getLabel())),
+                            response.getTime());
+                } else {
+                    content.setValue(Content.parseContent(
+                            p.getDataType(), actionToExecute.getParameters().get(p.getLabel())));
+                    content.setTime(response.getTime());
+                }
                 //verifica  se algum dos parâmetros do actionModel é relacionado com algum estado
                 if (p.getRelatedState() != null) {
                     // verifica se é estado de instância ou de entidade
@@ -329,10 +531,19 @@ public final class AdaptationDAO {
                             instanceId = (Integer) actionToExecute.getParameters().get("instanceId");
                         }
                         // recuperar a instância
-                        Instance instance = dataManager.getInstanceDAO().getInstance(
+                        Instance instance = this.getInstance(
                                 actionToExecute.getTargetComponentId(),
                                 actionToExecute.getTargetEntityId(),
                                 instanceId);
+                        if (instance == null) {
+                            instance = dataManager.getInstanceDAO().getInstance(
+                                    actionToExecute.getTargetComponentId(),
+                                    actionToExecute.getTargetEntityId(),
+                                    instanceId);
+                            if (instance != null) {
+                                this.addInstanceInMemory(instance);
+                            }
+                        }
                         // procurar o estado para salvar o conteúdo
                         for (State s : instance.getStates()) {
                             if (s.getModelId() == p.getRelatedState().getModelId()) {
@@ -390,7 +601,7 @@ public final class AdaptationDAO {
         return null;
     }
 
-    public String getErrorReporting(Date startDate,Date endDate) throws SQLException {
+    public String getErrorReporting(Date startDate, Date endDate) throws SQLException {
         String json = "{ ";
         // buscar todas as ações de erro a partir da última data até a data atual
         List<Action> actions = dataManager.getActionModelDAO()
@@ -425,8 +636,8 @@ public final class AdaptationDAO {
                 }
                 json += " ] } " + ((actions.get(actions.size() - 1).getDataBaseId() == action.getDataBaseId()) ? "" : ", ");
             }
-            if(!feedbackErros.isEmpty()){
-                 json += ", ";
+            if (!feedbackErros.isEmpty()) {
+                json += ", ";
             }
             /*
              Para cada feedback error
@@ -440,29 +651,29 @@ public final class AdaptationDAO {
              - componente_evento,
              - parâmetros_evento,
              "feedback" : ["responseTime":560 , "actionType":0, "actionModel":1 , "actionEntity":1 , "actionComponent": 1, 
-                "actionParameters": ["param1":"value1","param2":"value2"], "eventType":0, "eventModel": 1, "eventEntity":1, 
-                "eventComponent":1, "eventTime":1439426402937 , "eventParameters" : ["param1":"value1","param2":"value2"] ] ,
+             "actionParameters": ["param1":"value1","param2":"value2"], "eventType":0, "eventModel": 1, "eventEntity":1, 
+             "eventComponent":1, "eventTime":1439426402937 , "eventParameters" : ["param1":"value1","param2":"value2"] ] ,
              "feedback" : ["responseTime":931 , "actionType":1, "interactionModel":1 , "targetServiceId":1 , 
-                "interactionParameters":["param1":"value1", "param2":"value2"], "eventType":0, "eventModel": 1, "eventEntity":1,
-                "eventComponent":1, "eventParameters" : ["param1":"value1", "param2":"value2"] , "eventTime": 1439426402937   ] 
+             "interactionParameters":["param1":"value1", "param2":"value2"], "eventType":0, "eventModel": 1, "eventEntity":1,
+             "eventComponent":1, "eventParameters" : ["param1":"value1", "param2":"value2"] , "eventTime": 1439426402937   ] 
              */
             for (Action action : feedbackErros) {
-                Event event = this.dataManager.getEventModelDAO().getEvent(action,(BaseComponentManager)this.dataManager.getDeviceManager());
+                Event event = this.dataManager.getEventModelDAO().getEvent(action, (BaseComponentManager) this.dataManager.getDeviceManager());
                 json += " {\"feedback\" : [ ";
                 // se a ação é interação
-                if(event.getEventType()==Event.INTERATION_EVENT){
+                if (event.getEventType() == Event.INTERATION_EVENT) {
                     parameters = this.dataManager.getAgentTypeDAO().getInteractionParameterContents(action);
-                    json += "\"{ responseTime\":"+(action.getFeedbackAnswer().getTime().getTime()-event.getTime().getTime())+", ";
+                    json += "\"{ responseTime\":" + (action.getFeedbackAnswer().getTime().getTime() - event.getTime().getTime()) + ", ";
                     for (Parameter parameter : parameters) {
                         json += " \"" + parameter.getLabel() + "\": \"" + parameter.getContent().getValue().toString() + "\"}"
                                 + (parameters.get(parameters.size() - 1).getId() == parameter.getId() ? "" : " ,");
                     }
                 } else {
-                    json += "\"{ responseTime\":"+(action.getFeedbackAnswer().getTime().getTime()-event.getTime().getTime())+", ";
-                    json += "\"actionType\":"+(action.getActionType())+", ";
-                    json += "\"actionModel\":"+(action.getId())+", ";
-                    json += "\"actionEntity\":"+(action.getTargetEntityId())+", ";
-                    json += "\"actionComponent\":"+(action.getTargetComponentId())+", ";
+                    json += "\"{ responseTime\":" + (action.getFeedbackAnswer().getTime().getTime() - event.getTime().getTime()) + ", ";
+                    json += "\"actionType\":" + (action.getActionType()) + ", ";
+                    json += "\"actionModel\":" + (action.getId()) + ", ";
+                    json += "\"actionEntity\":" + (action.getTargetEntityId()) + ", ";
+                    json += "\"actionComponent\":" + (action.getTargetComponentId()) + ", ";
                     json += "\"actionParameters\":[";
                     parameters = this.dataManager.getActionModelDAO().getActionParameterContents(action);
                     for (Parameter parameter : parameters) {
@@ -471,11 +682,11 @@ public final class AdaptationDAO {
 
                     }
                     json += " ] ";
-                    json += "\"eventTime\":"+(event.getTime().getTime())+", ";
-                    json += "\"eventType\":"+(event.getEventType())+", ";
-                    json += "\"eventModel\":"+(event.getId())+", ";
-                    json += "\"eventEntity\":"+(event.getEntityId())+", ";
-                    json += "\"eventComponent\":"+(event.getComponentManager().getComponentId())+", ";
+                    json += "\"eventTime\":" + (event.getTime().getTime()) + ", ";
+                    json += "\"eventType\":" + (event.getEventType()) + ", ";
+                    json += "\"eventModel\":" + (event.getId()) + ", ";
+                    json += "\"eventEntity\":" + (event.getEntityId()) + ", ";
+                    json += "\"eventComponent\":" + (event.getComponentManager().getComponentId()) + ", ";
                     json += "\"eventParameters\":[";
                     parameters = this.dataManager.getEventModelDAO().getEventParameterContents(action);
                     for (Parameter parameter : parameters) {
@@ -492,8 +703,10 @@ public final class AdaptationDAO {
     }
 
     /**
-     * Remove todas os relatos de funcionamento armazenados até a data epecificada (Ainda falta terminar)
-     * @param date 
+     * Remove todas os relatos de funcionamento armazenados até a data
+     * epecificada (Ainda falta terminar)
+     *
+     * @param date
      */
     public void removeSentReportedErrors(Date date) throws Exception {
         // fazer mais tarde.
@@ -501,4 +714,116 @@ public final class AdaptationDAO {
         //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
+    public EventModel getEventModel(Event event) {
+        return this.getEventModel(event.getId(), event.getEntityId(), event.getComponentManager().getComponentId());
+    }
+
+    public EventModel getEventModel(int eventModelId, int entityModelId, int componentId) {
+        for (Component component : this.deviceModel.getComponents()) {
+            if (component.getId() == componentId) {
+                for (Entity entity : component.getEntities()) {
+                    if (entity.getModelId() == entityModelId) {
+                        for (EventModel eventModelTemp : entity.getEventModels()) {
+                            if (eventModelTemp.getModelId() == eventModelId) {
+                                return eventModelTemp;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    public Service getServiceByUid(String serviceUid) {
+        for (Service service : this.deviceModel.getServices()) {
+            if (service.getServiceUID().equals(serviceUid)) {
+                return service;
+            }
+        }
+        return null;
+    }
+
+    public InteractionModel getInteractionModel(Event event) {
+        // se o evento já existe não precisa buscar
+        if(interactionModel.getId()==event.getId()&&event.getEventType()==Event.INTERATION_EVENT){
+            return interactionModel;
+        }
+        for (AgentType agentType : this.agentTypes) {
+            for (InteractionModel interaction : agentType.getInteractionModels()) {
+                if (interaction.getId() == event.getId()) {
+                    interactionModel = interaction;
+                    return interaction;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Retorna da memória ou do banco de dados
+     *
+     * @param interactionId
+     * @return
+     * @throws SQLException
+     */
+    public InteractionModel getInteractionModel(int interactionId) throws SQLException {
+        for (AgentType agentType : this.agentTypes) {
+// por enquanto não há filtro por tipo de agente. Existe somente um tipo de agente            
+//            if (agentType.getId() == event.getId()) {
+            for (InteractionModel im : agentType.getInteractionModels()) {
+                if (im.getId() == interactionId) {
+                    return im;
+                }
+            }
+            //          }
+        }
+        return (dataManager.getAgentTypeDAO().getInteractionModel(interactionId));
+    }
+
+    public ActionModel getActionModel(int actionModelId, int targetEntityId, int targetComponentId) {
+        for (Component component : this.deviceModel.getComponents()) {
+            if (component.getId() == targetComponentId) {
+                for (Entity entity : component.getEntities()) {
+                    if (entity.getModelId() == targetEntityId) {
+                        for (ActionModel model : entity.getActionModels()) {
+                            if (model.getModelId() == actionModelId) {
+                                return model;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    public Instance getInstance(int targetComponentId, int targetEntityId, int instanceId) {
+        for (Component component : this.deviceModel.getComponents()) {
+            if (component.getId() == targetComponentId) {
+                for (Entity entity : component.getEntities()) {
+                    if (entity.getModelId() == targetEntityId) {
+                        for (Instance model : entity.getInstanceModels()) {
+                            if (model.getModelId() == instanceId) {
+                                return model;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    private void addInstanceInMemory(Instance instance) {
+        for (Component component : this.deviceModel.getComponents()) {
+            if (component.getId() == instance.getEntity().getComponent().getId()) {
+                for (Entity entity : component.getEntities()) {
+                    if (entity.getModelId() == instance.getEntity().getModelId()) {
+                        entity.getInstanceModels().add(instance);
+                    }
+                }
+            }
+        }
+    }
 }

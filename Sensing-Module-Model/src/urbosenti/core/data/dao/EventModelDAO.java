@@ -196,7 +196,7 @@ public class EventModelDAO {
         }
     }
 
-    public List<EventModel> getEntityEvents(Entity entity) throws SQLException {
+    public List<EventModel> getEntityEventModels(Entity entity) throws SQLException {
         List<EventModel> events = new ArrayList();
         EventModel event = null;
         String sql = "SELECT events.id as event_id, model_id, events.description as event_description, synchronous, "

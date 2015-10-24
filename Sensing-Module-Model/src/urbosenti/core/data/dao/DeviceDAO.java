@@ -169,22 +169,28 @@ public final class DeviceDAO {
         return device;
     }
 
+    /**
+     * Retorna todo o modelo do dispositivo ou null
+     * @param dataManager
+     * @return
+     * @throws SQLException 
+     */
     public Device getDeviceModel(DataManager dataManager) throws SQLException {
         Device device = getDevice();
         device.setComponents(dataManager.getComponentDAO().getDeviceComponents(device));
         for (Component component : device.getComponents()) {
             component.setEntities(dataManager.getEntityDAO().getComponentEntities(component));
             for (Entity entity : component.getEntities()) {
-                entity.setActions(dataManager.getActionModelDAO().getEntityActions(entity));
-                entity.setEvents(dataManager.getEventModelDAO().getEntityEvents(entity));
-                entity.setInstaces(dataManager.getInstanceDAO().getEntityInstances(entity));
-                entity.setStates(dataManager.getEntityStateDAO().getEntityStates(entity));
+                entity.setActionModels(dataManager.getActionModelDAO().getEntityActionModels(entity));
+                entity.setEventModels(dataManager.getEventModelDAO().getEntityEventModels(entity));
+                entity.setInstaceModels(dataManager.getInstanceDAO().getEntityInstanceModels(entity));
+                entity.setStateModels(dataManager.getEntityStateDAO().getEntityStateModels(entity));
             }
         }
         device.setServices(dataManager.getServiceDAO().getDeviceServices(device));
         for (Service service : device.getServices()) {
-            service.getAgent().getAgentType().setInteraction(dataManager.getAgentTypeDAO().getAgentInteractions(service.getAgent().getAgentType()));
-            service.getAgent().getAgentType().setStates(dataManager.getAgentTypeDAO().getAgentStates(service.getAgent().getAgentType()));
+            service.getAgent().getAgentType().setInteractionModels(dataManager.getAgentTypeDAO().getAgentInteractions(service.getAgent().getAgentType()));
+            service.getAgent().getAgentType().setStateModels(dataManager.getAgentTypeDAO().getAgentStates(service.getAgent().getAgentType()));
             service.getAgent().setConversations(dataManager.getAgentTypeDAO().getAgentConversations(service.getAgent()));
         }
         return device;
@@ -212,7 +218,7 @@ public final class DeviceDAO {
             entity.setDescription(rs.getString("entity_desc"));
             EntityType type = new EntityType(rs.getInt("entity_type_id"), rs.getString("type_desc"));
             entity.setEntityType(type);
-            entity.setStates(stateDAO.getEntityStates(entity));
+            entity.setStateModels(stateDAO.getEntityStateModels(entity));
             deviceComponent.getEntities().add(entity);
         }
         rs.close();

@@ -270,7 +270,7 @@ public class ActionModelDAO {
         }
     }
 
-    List<ActionModel> getEntityActions(Entity entity) throws SQLException {
+    List<ActionModel> getEntityActionModels(Entity entity) throws SQLException {
         List<ActionModel> actions = new ArrayList();
         ActionModel action = null;
         String sql = "SELECT id, model_id, description, has_feedback "

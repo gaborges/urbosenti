@@ -164,7 +164,7 @@ public class InstanceDAO {
         }
     }
 
-    public List<Instance> getEntityInstances(Entity entity) throws SQLException {
+    public List<Instance> getEntityInstanceModels(Entity entity) throws SQLException {
         List<Instance> instances = new ArrayList();
         Instance instance = null;
         String sql = "SELECT id,  description, model_id, representative_class "

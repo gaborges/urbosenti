@@ -144,7 +144,7 @@ public class TestDataBase {
 //                        data.getEntityStateDAO().insertContent(s);
                         //}
                     }
-                    for (ActionModel action : e.getActions()) {
+                    for (ActionModel action : e.getActionModels()) {
                         System.out.println("Action: " + action.getId() + "," + action.getDescription());
                     }
                 }
@@ -154,7 +154,7 @@ public class TestDataBase {
                 for (State s : service.getAgent().getAgentType().getStates()) {
                     System.out.println("State: " + s.getId() + "," + s.getDescription() + ", content: " + s.getCurrentValue());
                 }
-                for (InteractionModel i : service.getAgent().getAgentType().getInteraction()) {
+                for (InteractionModel i : service.getAgent().getAgentType().getInteractionModels()) {
                     System.out.println("Interaction " + i.getId() + ", " + i.getDescription());
                 }
                 for (Conversation c : service.getAgent().getConversations()) {

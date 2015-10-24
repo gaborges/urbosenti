@@ -53,7 +53,7 @@ public final class EventDAO {
             entity.setDescription(rs.getString("entity_desc"));
             EntityType type = new EntityType(rs.getInt("entity_type_id"),rs.getString("type_desc"));
             entity.setEntityType(type);
-            entity.setStates(stateDAO.getEntityStates(entity));
+            entity.setStateModels(stateDAO.getEntityStateModels(entity));
             deviceComponent.getEntities().add(entity);
         }
         rs.close();

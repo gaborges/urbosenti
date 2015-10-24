@@ -89,7 +89,7 @@ public class EntityStateDAO {
         }
     }
 
-    public List<State> getEntityStates(Entity entity) throws SQLException {
+    public List<State> getEntityStateModels(Entity entity) throws SQLException {
         List<State> states = new ArrayList();
         State state = null;
         String sql = "SELECT entity_states.id as state_id, model_id, entity_states.description as state_desc, "

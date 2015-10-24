@@ -426,7 +426,7 @@ public class StoringGlobalKnowledgeModel {
                     // Adicionar as instâncias e seus estados
                     for (int z = 0; z < nListElements.getLength(); z++) {
                         eElement = (Element) nListElements.item(z);
-                        entity.getInstaces().add(new Instance(
+                        entity.getInstanceModels().add(new Instance(
                                 Integer.parseInt(eElement.getAttribute("id")),
                                 eElement.getAttribute("description"),
                                 representativeClass));
@@ -478,7 +478,7 @@ public class StoringGlobalKnowledgeModel {
                                     break;
                                 }
                                 // adiciona o estado, tanto sobrescrito como não sobrescrito
-                                entity.getInstaces().get(z).getStates().add(s);
+                                entity.getInstanceModels().get(z).getStates().add(s);
                             }
                         }
                     }
@@ -604,13 +604,13 @@ public class StoringGlobalKnowledgeModel {
                         }
                         //System.out.println("      EventModel parameter count: "+event.getParameters().size());
                         // adiciona os evento na entidade do dispositivo
-                        entity.getEvents().add(event);
+                        entity.getEventModels().add(event);
                     }
                     if (showContent) {
                         System.out.println("    Event count: " + nListElements.getLength());
                     }
                     if (showContent) {
-                        System.out.println("    Event count: " + entity.getEvents().size());
+                        System.out.println("    Event count: " + entity.getEventModels().size());
                     }
                 }
                 // Actions
@@ -706,13 +706,13 @@ public class StoringGlobalKnowledgeModel {
                                 }
                             }
                         }
-                        entity.getActions().add(action);
+                        entity.getActionModels().add(action);
                     }
                     if (showContent) {
                         System.out.println("    Action count: " + nListElements.getLength());
                     }
                     if (showContent) {
-                        System.out.println("    Action count: " + entity.getActions().size());
+                        System.out.println("    Action count: " + entity.getActionModels().size());
                     }
                 }
                 entity.setModelId(c.getEntities().size() + 1);
@@ -856,7 +856,7 @@ public class StoringGlobalKnowledgeModel {
                 // primaryInteraction - obbrigatório se typo secundária
                 if (eElement.hasAttribute("primaryInteraction")) {
                     boolean flag = true;
-                    for (InteractionModel interact : this.agentTypes.get(baseAgentType).getInteraction()) {
+                    for (InteractionModel interact : this.agentTypes.get(baseAgentType).getInteractionModels()) {
                         if (interact.getId() == Integer.parseInt(eElement.getAttribute("primaryInteraction"))) {
                             interaction.setPrimaryInteraction(interact);
                             flag = false;
@@ -962,11 +962,11 @@ public class StoringGlobalKnowledgeModel {
                     }
                 }
                 // Adiciona interação
-                this.agentTypes.get(baseAgentType).getInteraction().add(interaction);
+                this.agentTypes.get(baseAgentType).getInteractionModels().add(interaction);
             }
         }
         if (showContent) {
-            System.out.println("Interaction count: " + this.agentTypes.get(baseAgentType).getInteraction().size());
+            System.out.println("Interaction count: " + this.agentTypes.get(baseAgentType).getInteractionModels().size());
         }
         return device;
     }
@@ -1104,7 +1104,7 @@ public class StoringGlobalKnowledgeModel {
                         }
                     }
                     ///// event
-                    for (EventModel event : entity.getEvents()) {
+                    for (EventModel event : entity.getEventModels()) {
                         event.setEntity(entity);
                         this.dataManager.getEventModelDAO().insert(event);
                         // parameters
@@ -1119,7 +1119,7 @@ public class StoringGlobalKnowledgeModel {
 
                     }
                     ///// action
-                    for (ActionModel action : entity.getActions()) {
+                    for (ActionModel action : entity.getActionModels()) {
                         action.setEntity(entity);
                         this.dataManager.getActionModelDAO().insert(action);
                         // feedbackanswers
@@ -1133,7 +1133,7 @@ public class StoringGlobalKnowledgeModel {
                         }
                     }
                     ///// instance
-                    for (Instance instance : entity.getInstaces()) {
+                    for (Instance instance : entity.getInstanceModels()) {
                         instance.setEntity(entity);
                         this.dataManager.getInstanceDAO().insert(instance);
                         // states
@@ -1178,7 +1178,7 @@ public class StoringGlobalKnowledgeModel {
                     }
                 }
                 /// interaction
-                for (InteractionModel interaction : agentModel.getInteraction()) {
+                for (InteractionModel interaction : agentModel.getInteractionModels()) {
                     interaction.setAgentType(agentModel);
                     this.dataManager.getAgentTypeDAO().insertInteraction(interaction);
                     //// parameter

@@ -233,7 +233,7 @@ public class UserDAO {
     public List<User> getUsers() throws SQLException {
         List<User> users = new ArrayList();
         // busca a todas as instâncias de usuário
-        List<Instance> instances = this.dataManager.getInstanceDAO().getEntityInstances(
+        List<Instance> instances = this.dataManager.getInstanceDAO().getEntityInstanceModels(
                 this.dataManager.getEntityDAO().getEntity(COMPONENT_ID, ENTITY_ID_OF_USER_MANAGEMENT));
         // percorre toda a lista a adiciona em objetos usuários
         for(Instance instance : instances){
@@ -345,7 +345,7 @@ public class UserDAO {
             entity.setDescription(rs.getString("entity_desc"));
             EntityType type = new EntityType(rs.getInt("entity_type_id"), rs.getString("type_desc"));
             entity.setEntityType(type);
-            entity.setStates(stateDAO.getEntityStates(entity));
+            entity.setStateModels(stateDAO.getEntityStateModels(entity));
             deviceComponent.getEntities().add(entity);
         }
         rs.close();

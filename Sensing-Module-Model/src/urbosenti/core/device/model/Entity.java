@@ -10,7 +10,7 @@ public class Entity {
     private String description;
     private EntityType EntityType;
     private Component component;
-    private List<Instance> instaces;
+    private List<Instance> instances;
     private List<State> states;
     private List<EventModel> events;
     private List<ActionModel> actions;
@@ -19,7 +19,7 @@ public class Entity {
         this.id = id;
         this.description = description;
         this.EntityType = objectType;
-        this.instaces = instace;
+        this.instances = instace;
         this.states = state;
         this.events = event;
         this.actions = action;
@@ -28,7 +28,7 @@ public class Entity {
     public Entity(String description, EntityType objectType, List<Instance> instace, List<State> state, List<EventModel> event, List<ActionModel> action) {
         this.description = description;
         this.EntityType = objectType;
-        this.instaces = instace;
+        this.instances = instace;
         this.states = state;
         this.events = event;
         this.actions = action;
@@ -38,7 +38,7 @@ public class Entity {
         this.description = description;
         this.actions = new ArrayList();
         this.events = new ArrayList();
-        this.instaces = new ArrayList();
+        this.instances = new ArrayList();
         this.states = new ArrayList();
     }
     
@@ -69,35 +69,35 @@ public class Entity {
         this.EntityType = objectType;
     }
 
-    public List<Instance> getInstaces() {
-        return instaces;
+    public List<Instance> getInstanceModels() {
+        return instances;
     }
 
-    public void setInstaces(List<Instance> instace) {
-        this.instaces = instace;
+    public void setInstaceModels(List<Instance> instance) {
+        this.instances = instance;
     }
 
     public List<State> getStates() {
         return states;
     }
 
-    public void setStates(List<State> states) {
+    public void setStateModels(List<State> states) {
         this.states = states;
     }
 
-    public List<EventModel> getEvents() {
+    public List<EventModel> getEventModels() {
         return events;
     }
 
-    public void setEvents(List<EventModel> events) {
+    public void setEventModels(List<EventModel> events) {
         this.events = events;
     }
 
-    public List<ActionModel> getActions() {
+    public List<ActionModel> getActionModels() {
         return actions;
     }
 
-    public void setActions(List<ActionModel> actions) {
+    public void setActionModels(List<ActionModel> actions) {
         this.actions = actions;
     }
 
