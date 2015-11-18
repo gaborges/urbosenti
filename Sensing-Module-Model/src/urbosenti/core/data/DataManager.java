@@ -93,12 +93,14 @@ public class DataManager extends ComponentManager {
     private ServiceTypeDAO serviceTypeDAO;
     private DataDAO dataDAO;
     private MessageReportDAO reportDAO;
+    private UrboSentiDatabaseHelper databaseHelper;
 
     public DataManager(DeviceManager deviceManager) {
         super(deviceManager, DataDAO.COMPONENT_ID);
         this.supportedCommunicationInterfaces = new ArrayList<CommunicationInterface>();
         this.knowledgeRepresentation = null;
         this.supportedInputCommunicationInterfaces = new ArrayList();
+        this.databaseHelper = null;
     }
 
     @Override
@@ -106,22 +108,24 @@ public class DataManager extends ComponentManager {
         if (DeveloperSettings.SHOW_FUNCTION_DEBUG_ACTIVITY) {
             System.out.println("Activating: " + getClass());
         }
+        if(this.databaseHelper==null){
+            // Gerente do conhecimento
+            this.databaseHelper = new SQLiteJDBCDatabaseHelper(this);
+        }
         // Conecta ao banco
-        Connection connection = null;
+        Object connection = null;
         try {
-            Class.forName("org.sqlite.JDBC");
-            connection = DriverManager.getConnection("jdbc:sqlite:urbosenti.db");
+            connection = this.databaseHelper.openDatabaseConnection();
         } catch (Exception e) {
             System.err.println(e.getClass().getName() + ": " + e.getMessage());
             System.exit(0);
         }
-        System.out.println("Opened database successfully");
-        // conecta
-        // Gerente do conhecimento
-        StoringGlobalKnowledgeModel kp = new StoringGlobalKnowledgeModel(this);
+        if (DeveloperSettings.SHOW_FUNCTION_DEBUG_ACTIVITY) {
+            System.out.println("Opened database successfully");
+        }
         try {
             // Cria o banco de dados
-            kp.createDataBase(connection);
+            this.databaseHelper.createDatabase();
         } catch (SQLException ex) {
             if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
                 Logger.getLogger(DataManager.class.getName()).log(Level.SEVERE, null, ex);
@@ -189,8 +193,7 @@ public class DataManager extends ComponentManager {
             }
         }
         // Carregar dados e configurações que serão utilizados para execução em memória
-        if (this.knowledgeDataType.equals("xmlFile")) {
-            File file = (File) this.knowledgeRepresentation;
+        if (this.knowledgeDataType.equals("xmlFile")||this.knowledgeDataType.equals("xmlInputStream")) {
             try {
                 /*
                  Fazer metodos de validação depois. Eles devem testar se tem todos os atributos obrigatórios,
@@ -202,17 +205,17 @@ public class DataManager extends ComponentManager {
                     /*
                  processa o arquivo de entrada com o modelo de conhecimento e coloca em memória. Atualmente pronto.
                  */
-                kp.loadingGeneralDefinitions(file);
-                kp.loadingDevice(file);
-                kp.loadingAgentModels(file);
+                this.databaseHelper.loadingGeneralDefinitions(this.knowledgeRepresentation);
+                this.databaseHelper.loadingDevice(this.knowledgeRepresentation);
+                this.databaseHelper.loadingAgentModels(this.knowledgeRepresentation);
                 /*
                  grava no banco de dados os dados processados -- falta fazer. Primeiro fazer gerar os SQLs, depois fazer os DAO
                  OBS.: Sempre que esses métodos são executados ele verifica a versão salva dos modeloas anteriores e substitui somente
                  caso o conhecimento de entrada possuir uma versão mais recente, ou maior.
                  */
-                kp.saveGeneralDefinitions(connection);
-                kp.saveDevice(connection);
-                kp.saveAgentModels(connection);
+                this.databaseHelper.saveGeneralDefinitions();
+                this.databaseHelper.saveDevice();
+                this.databaseHelper.saveAgentModels();
             } catch (ParserConfigurationException ex) {
                 if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
                     Logger.getLogger(DeviceManager.class.getName()).log(Level.SEVERE, null, ex);
@@ -227,7 +230,7 @@ public class DataManager extends ComponentManager {
                 }
             }
         } else {
-            throw new Error("Knowledge data type specified not supported!");
+            throw new Error("Specified knowledge data type is not supported!");
         }
         // Preparar configurações inicias para execução
         // Para tanto utilizar o DataManager para acesso aos dados.
@@ -367,6 +370,10 @@ public class DataManager extends ComponentManager {
 
     public MessageReportDAO getReportDAO() {
         return reportDAO;
+    }
+
+    public void setUrboSentiDatabaseHelper(UrboSentiDatabaseHelper databaseHelper) {
+        this.databaseHelper = databaseHelper;
     }
 
 }

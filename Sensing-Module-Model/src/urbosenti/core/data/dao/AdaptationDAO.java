@@ -86,9 +86,9 @@ public final class AdaptationDAO {
     private EventModel eventModel;
     private InteractionModel interactionModel;
 
-    public AdaptationDAO(Connection connection, DataManager dataManager) {
+    public AdaptationDAO(Object context, DataManager dataManager) {
         this.dataManager = dataManager;
-        this.connection = connection;
+        this.connection = (Connection) context;
         this.acls = null;
         this.deviceModel = null;
         this.agentTypes = null;

@@ -24,9 +24,9 @@ public final class ResourcesDAO {
     private PreparedStatement stmt;
     private final DataManager dataManager;
 
-    public ResourcesDAO(Connection connection, DataManager dataManager) {
+    public ResourcesDAO(Object context, DataManager dataManager) {
         this.dataManager = dataManager;
-        this.connection = connection;
+        this.connection = (Connection)context;
     }
     
     public Component getComponentDeviceModel() throws SQLException {

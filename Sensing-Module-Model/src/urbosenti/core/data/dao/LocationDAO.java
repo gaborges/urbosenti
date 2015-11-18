@@ -24,9 +24,9 @@ public class LocationDAO {
     private PreparedStatement stmt;
     private final DataManager dataManager;
 
-    public LocationDAO(Connection connection, DataManager dataManager) {
+    public LocationDAO(Object context, DataManager dataManager) {
         this.dataManager = dataManager;
-        this.connection = connection;
+        this.connection = (Connection)context;
     }
     
     public Component getComponentDeviceModel() throws SQLException {
