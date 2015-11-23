@@ -57,8 +57,7 @@ public class CommunicativeActDAO {
         CommunicativeAct communicativeAct;
         
         Cursor cursor = this.database.rawQuery(
-        		"SELECT id,description FROM agent_communication_languages WHERE agent_communication_language_id = ?; ",
-        		new String[]{String.valueOf(acl.getId())});
+        		"SELECT id,description FROM agent_communication_languages; ", null);
 
         while (cursor.moveToNext()) {
             communicativeAct = new CommunicativeAct(

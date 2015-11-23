@@ -85,9 +85,9 @@ public class EventModelDAO {
                 values.put("description", parameter.getDescription());
                 values.put("optional", parameter.isOptional());
                 values.put("parameter_label", parameter.getLabel());
-                values.put("superior_limit", parameter.getSuperiorLimit().toString());
-                values.put("inferior_limit", parameter.getInferiorLimit().toString());
-                values.put("initial_value", parameter.getInitialValue().toString());
+                values.put("superior_limit", String.valueOf(parameter.getSuperiorLimit()));
+                values.put("inferior_limit", String.valueOf(parameter.getInferiorLimit()));
+                values.put("initial_value", String.valueOf(parameter.getInitialValue()));
                 values.put("entity_state_id", (parameter.getRelatedState() == null) ? -1 : parameter.getRelatedState().getId());
                 values.put("data_type_id", parameter.getDataType().getId());
                 values.put("event_id", event.getId());
@@ -118,7 +118,7 @@ public class EventModelDAO {
             for (PossibleContent possibleContent : parameter.getPossibleContents()) {
             	// valores
             	ContentValues values = new ContentValues();
-            	values.put("possible_value", Content.parseContent(parameter.getDataType(),possibleContent.getValue()).toString());
+            	values.put("possible_value", String.valueOf(Content.parseContent(parameter.getDataType(),possibleContent.getValue())));
             	values.put("default_value", possibleContent.isIsDefault());
             	values.put("event_parameter_id", parameter.getId());
             	// executar
@@ -175,7 +175,7 @@ public class EventModelDAO {
         //        + " VALUES (?,?,?,?);";
         
         ContentValues values = new ContentValues();
-    	values.put("reading_value", Content.parseContent(parameter.getDataType(), parameter.getContent().getValue()).toString());
+    	values.put("reading_value", String.valueOf(Content.parseContent(parameter.getDataType(), parameter.getContent().getValue())));
     	values.put("reading_time", parameter.getContent().getTime().getTime());
     	values.put("event_parameter_id", parameter.getId());
     	values.put("generated_event_id", event.getDatabaseId());

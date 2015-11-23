@@ -10,6 +10,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import android.util.Log;
 import urbosenti.core.data.dao.CommunicationDAO;
 import urbosenti.core.device.UrboSentiService;
 import urbosenti.core.device.model.Content;
@@ -33,12 +35,12 @@ public class ReconnectionService extends UrboSentiService implements Runnable, I
     private final Thread service;
     private final Instance instance;
     /**
-     * default 60 segundos Representado em milisegundos ent√£o (60 000)
+     * default 60 segundos Representado em milisegundos ent„o (60 000)
      */
     private Long reconnectionTime;
     /**
-     * Se 1 = Tenta somente em um m√©todo. Default. Se 2 = Tenta em todos os
-     * m√©todos.
+     * Se 1 = Tenta somente em um mÈtodo. Default. Se 2 = Tenta em todos os
+     * mÈtodos.
      */
     private int methodOfReconnection;
 
@@ -156,7 +158,7 @@ public class ReconnectionService extends UrboSentiService implements Runnable, I
 
     /**
      *
-     * @return Retorna a inst√¢ncia se esta foi atribu√≠da pelo construtor, sen√£o
+     * @return Retorna a inst‚ncia se esta foi atribuÌda pelo construtor, sen„o
      * retorna <b>null</b>;
      */
     @Override
@@ -169,7 +171,7 @@ public class ReconnectionService extends UrboSentiService implements Runnable, I
         if (!service.isAlive()) {
             this.service.start();
         }
-        // testa conex√µes, se uma estiver conectada adiciona true em reconnected para n√£o necessitar executar o processo
+        // testa conex„es, se uma estiver conectada adiciona true em reconnected para n„o necessitar executar o processo
         for(CommunicationInterface ci : communicationInterfaces){
             try {
                 if(ci.testConnection()){
@@ -242,7 +244,7 @@ public class ReconnectionService extends UrboSentiService implements Runnable, I
     
     /**
      * 
-     * @return retorna se alguma interface desse servi√ßo tem conex√£o
+     * @return retorna se alguma interface desse serviÁo tem conex„o
      */
     public boolean hasSomeInterfaceConnection(){
         for(CommunicationInterface ci : communicationInterfaces){

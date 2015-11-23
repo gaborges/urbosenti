@@ -37,7 +37,7 @@ public class DataTypeDAO {
         ContentValues values = new ContentValues();
         values.put(COLUMN_ID, type.getId());
         values.put(COLUMN_DESCRIPTION, type.getDescription());
-        values.put(COLUMN_INITIAL_VALUE, Content.parseContent(type,type.getInitialValue()).toString());
+        values.put(COLUMN_INITIAL_VALUE, String.valueOf(Content.parseContent(type,type.getInitialValue())));
         
         this.database.insertOrThrow(TABLE_NAME, null, values);
         

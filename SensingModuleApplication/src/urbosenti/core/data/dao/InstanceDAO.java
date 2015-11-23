@@ -41,8 +41,9 @@ public class InstanceDAO {
     }
 
     public void insert(Instance instance) throws SQLException {
-        String sql = "INSERT INTO instances (description,representative_class,entity_id,model_id) "
-                + " VALUES (?,?,?,?);";
+        //String sql = "INSERT INTO instances (description,representative_class,entity_id,model_id) "
+        //        + " VALUES (?,?,?,?);";
+        
         instance.setModelId(instance.getId());
         ContentValues values = new ContentValues();
         values.put("description", instance.getDescription());
@@ -52,7 +53,7 @@ public class InstanceDAO {
         	values.put("model_id", instance.getId());
         }
 
-        instance.setId((int)(long)this.database.insertOrThrow("events", null, values));
+        instance.setId((int)(long)this.database.insertOrThrow("instances", null, values));
         
         if (DeveloperSettings.SHOW_DAO_SQL) {
         	Log.d("SQL_DEBUG","INSERT INTO instances (id,description,representative_class, entity_id, model_id) "
@@ -75,10 +76,10 @@ public class InstanceDAO {
         values.put("user_can_change", state.isUserCanChange());
         values.put("instance_id", instance.getId());
         values.put("data_type_id", state.getDataType().getId());
-        values.put("superior_limit", state.getSuperiorLimit().toString());
-        values.put("inferior_limit", state.getInferiorLimit().toString());
-        values.put("initial_value", state.getInitialValue().toString());
-        values.put("state_model_id", state.getId());
+        values.put("superior_limit", String.valueOf(state.getSuperiorLimit()));
+        values.put("inferior_limit", String.valueOf(state.getInferiorLimit()));
+        values.put("initial_value", String.valueOf(state.getInitialValue()));
+        values.put("state_model_id", state.getModelId());
         
         state.setId((int)(long)this.database.insertOrThrow("instance_states", null, values));
         
@@ -96,7 +97,7 @@ public class InstanceDAO {
         if (state.getPossibleContents() != null) {
             for (PossibleContent possibleContent : state.getPossibleContents()) {
             	ContentValues values = new ContentValues();
-            	values.put("possible_value", (String) Content.parseContent(state.getDataType(),possibleContent.getValue()));
+            	values.put("possible_value", String.valueOf(Content.parseContent(state.getDataType(),possibleContent.getValue())));
             	values.put("default_value", possibleContent.isIsDefault());
             	values.put("instance_state_id", state.getId());
             	
@@ -133,7 +134,7 @@ public class InstanceDAO {
         //        + " VALUES (?,?,?);";
         
         ContentValues values = new ContentValues();
-        values.put("reading_value", Content.parseContent(state.getDataType(), state.getContent().getValue()).toString());
+        values.put("reading_value", String.valueOf(Content.parseContent(state.getDataType(), state.getContent().getValue())));
         values.put("reading_time", (state.getContent().getTime() == null) ? System.currentTimeMillis() : state.getContent().getTime().getTime());
         values.put("instance_state_id", state.getId());
         
@@ -152,7 +153,7 @@ public class InstanceDAO {
         Instance instance = null;
         String sql = "SELECT id,  description, model_id, representative_class "
                 + " FROM instances "
-                + " WHERE entity_id = ? ;";
+                + " WHERE model_id = ? ;";
         
         Cursor cursor = this.database.rawQuery(sql,	new String[]{String.valueOf(entity.getId())});
 
@@ -173,12 +174,11 @@ public class InstanceDAO {
         List<State> states = new ArrayList();
         State state = null;
         String sql = "SELECT instance_states.id as state_id, instance_states.description as state_desc, state_model_id, "
-                + "user_can_change, superior_limit, inferior_limit, \n"
-                + "instance_states.initial_value, data_type_id, data_types.initial_value as data_initial_value, "
-                + "data_types.description as data_desc\n"
-                + "FROM instance_states, data_types\n "
-                + "WHERE instance_id = ? and data_types.id = data_type_id ORDER BY state_model_id;";
-
+                + " user_can_change, superior_limit, inferior_limit, \n"
+                + " instance_states.initial_value, data_type_id, data_types.initial_value as data_initial_value, "
+                + " data_types.description as data_desc\n"
+                + " FROM instance_states, data_types\n "
+                + " WHERE instance_id = ? and data_types.id = data_type_id ORDER BY state_model_id;";
         Cursor cursor = this.database.rawQuery(sql,	new String[]{String.valueOf(instance.getId())});
         
         while (cursor.moveToNext()) {
@@ -189,7 +189,7 @@ public class InstanceDAO {
             DataType type = new DataType();
             type.setId(cursor.getInt(cursor.getColumnIndex("data_type_id")));
             type.setDescription(cursor.getString(cursor.getColumnIndex("data_desc")));
-            type.setInitialValue(Content.parseContent(state.getDataType(),cursor.getString(cursor.getColumnIndex("data_initial_value"))));
+            type.setInitialValue(Content.parseContent(type,cursor.getString(cursor.getColumnIndex("data_initial_value"))));
             state.setDataType(type);
             state.setInferiorLimit(Content.parseContent(type,cursor.getString(cursor.getColumnIndex("inferior_limit"))));
             state.setSuperiorLimit(Content.parseContent(type,cursor.getString(cursor.getColumnIndex("superior_limit"))));
@@ -250,7 +250,7 @@ public class InstanceDAO {
             instance.getEntity().setComponent(
                     new Component(cursor.getInt(cursor.getColumnIndex("component_id")), 
                     		cursor.getString(cursor.getColumnIndex("comp_desc")), 
-                    		cursor.getString(cursor.getColumnIndex("code_class'"))));
+                    		cursor.getString(cursor.getColumnIndex("code_class"))));
             instance.setStates(this.getInstanceStates(instance));
         }
         return instance;
@@ -258,10 +258,10 @@ public class InstanceDAO {
 
     public Instance getInstance(int modelId, int entityModelId, int componentId) throws SQLException {
         Instance instance = null;
-        String sql = "SELECT instances.description as instance_desc, representative_class, entity_id, entities.description as entity_desc, instances.model_id,\n"
-                + " entity_type_id, entity_types.description as type_desc, component_id, components.description as comp_desc, code_class, instances.id as instance_id\n"
-                + " FROM instances, entities,entity_types, components \n"
-                + " WHERE instances.model_id = ? AND entities.model_id = ? AND entities.id = entity_id AND entity_types.id = entity_type_id AND components.id = component_id AND component_id = ?"
+        String sql = "SELECT instances.description as instance_desc, representative_class, entity_id, entities.description as entity_desc, instances.model_id, "
+                + " entity_type_id, entity_types.description as type_desc, component_id, components.description as comp_desc, code_class, instances.id as instance_id "
+                + " FROM instances, entities,entity_types, components "
+                + " WHERE instances.model_id = ? AND entities.model_id = ? AND entities.id = entity_id AND entity_types.id = entity_type_id AND components.id = component_id AND component_id = ? "
                 + " ORDER BY instances.model_id;";
         
         Cursor cursor = this.database.rawQuery(sql,	new String[]{
@@ -285,7 +285,8 @@ public class InstanceDAO {
             instance.getEntity().setComponent(
                     new Component(cursor.getInt(cursor.getColumnIndex("component_id")), 
                     		cursor.getString(cursor.getColumnIndex("comp_desc")), 
-                    		cursor.getString(cursor.getColumnIndex("code_class'"))));
+                    		cursor.getString(cursor.getColumnIndex("code_class"))
+                    	));
             instance.setStates(this.getInstanceStates(instance));
         }
         return instance;
@@ -338,7 +339,7 @@ public class InstanceDAO {
             instance.getEntity().setComponent(
                     new Component(cursor.getInt(cursor.getColumnIndex("component_id")), 
                     		cursor.getString(cursor.getColumnIndex("comp_desc")), 
-                    		cursor.getString(cursor.getColumnIndex("code_class'"))));
+                    		cursor.getString(cursor.getColumnIndex("code_class"))));
             instance.setStates(this.getInstanceStates(instance));
         }
         return instance;
@@ -373,7 +374,7 @@ public class InstanceDAO {
             DataType type = new DataType();
             type.setId(cursor.getInt(cursor.getColumnIndex("data_type_id")));
             type.setDescription(cursor.getString(cursor.getColumnIndex("data_desc")));
-            type.setInitialValue(Content.parseContent(state.getDataType(),cursor.getString(cursor.getColumnIndex("data_initial_value"))));
+            type.setInitialValue(Content.parseContent(type,cursor.getString(cursor.getColumnIndex("data_initial_value"))));
             state.setDataType(type);
             state.setInferiorLimit(Content.parseContent(type,cursor.getString(cursor.getColumnIndex("inferior_limit"))));
             state.setSuperiorLimit(Content.parseContent(type,cursor.getString(cursor.getColumnIndex("superior_limit"))));
@@ -432,7 +433,7 @@ public class InstanceDAO {
             instance.getEntity().setComponent(
                     new Component(cursor.getInt(cursor.getColumnIndex("component_id")), 
                     		cursor.getString(cursor.getColumnIndex("comp_desc")), 
-                    		cursor.getString(cursor.getColumnIndex("code_class'"))));
+                    		cursor.getString(cursor.getColumnIndex("code_class"))));
             instance.setStates(this.getUserInstanceStates(instance, userInstance));
             instances.add(instance);
         }
@@ -527,7 +528,7 @@ public class InstanceDAO {
             instance.getEntity().setComponent(
                     new Component(cursor.getInt(cursor.getColumnIndex("component_id")), 
                     		cursor.getString(cursor.getColumnIndex("comp_desc")), 
-                    		cursor.getString(cursor.getColumnIndex("code_class'"))));
+                    		cursor.getString(cursor.getColumnIndex("code_class"))));
             instance.setStates(this.getInstanceStates(instance));
             instances.add(instance);
         }

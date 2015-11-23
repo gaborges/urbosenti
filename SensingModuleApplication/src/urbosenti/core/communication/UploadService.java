@@ -11,6 +11,8 @@ import java.util.logging.Logger;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.TransformerException;
+
+import android.util.Log;
 import urbosenti.core.data.dao.CommunicationDAO;
 import urbosenti.core.device.UrboSentiService;
 import urbosenti.core.device.model.Content;
@@ -27,15 +29,15 @@ import urbosenti.user.User;
 public class UploadService extends UrboSentiService implements Runnable, InstanceRepresentative {
 
     public Service service;
-    private boolean running; // indica se o servidor est√° rodando ou n√£o
+    private boolean running; // indica se o servidor est· rodando ou n„o
     private final Thread uploadServiceThread;
     private final CommunicationManager communicationManager;
     private int countPriorityMessage;
     private int countNormalMessage;
     private final Instance instance;
     private Long uploadInterval; // Intervalo de upload
-    private Double uploadRate; // Taxa de upload atribu√≠da din√¢micamente. Inicialmente 1;
-    private int limitOfReportsSentByUploadInterval; // Limite do envio de relatos por intervalo, padr√£o 20 (Posso fazer experimentos)
+    private Double uploadRate; // Taxa de upload atribuÌda din„micamente. Inicialmente 1;
+    private int limitOfReportsSentByUploadInterval; // Limite do envio de relatos por intervalo, padr„o 20 (Posso fazer experimentos)
     private boolean allowedToPerformUpload;
     private boolean subscribedMaximumUploadRate;
 
@@ -50,9 +52,10 @@ public class UploadService extends UrboSentiService implements Runnable, Instanc
             } else if (s.getModelId() == CommunicationDAO.STATE_ID_OF_UPLOAD_PERIODIC_REPORTS_FOR_UPLOAD_RATE) {
                 uploadRate = (Double) Content.parseContent(s.getDataType(), s.getCurrentValue());
             } else if (s.getModelId() == CommunicationDAO.STATE_ID_OF_UPLOAD_PERIODIC_REPORTS_ABOUT_IS_EXECUTING) {
-                // n√£o precisa usar - estado n√£o √© interessante
+                // n„o precisa usar - estado n„o È interessante
             } else if (s.getModelId() == CommunicationDAO.STATE_ID_OF_UPLOAD_PERIODIC_REPORTS_ALLOWED_TO_PERFORM_UPLOAD) {
                 allowedToPerformUpload = (Boolean) Content.parseContent(s.getDataType(), s.getCurrentValue());
+                allowedToPerformUpload = true;
             } else if (s.getModelId() == CommunicationDAO.STATE_ID_OF_UPLOAD_PERIODIC_REPORTS_ABOUT_AMOUNT_OF_MESSAGES_UPLOADED_BY_INTERVAL) {
                 limitOfReportsSentByUploadInterval = (Integer) Content.parseContent(s.getDataType(), s.getCurrentValue());
             } else if (s.getModelId() == CommunicationDAO.STATE_ID_OF_UPLOAD_PERIODIC_REPORTS_SUBSCRIBED_MAXIMUM_UPLOAD_RATE) {
@@ -62,7 +65,7 @@ public class UploadService extends UrboSentiService implements Runnable, Instanc
     }
 
     /**
-     * Inicia o servi√ßo de upload
+     * Inicia o serviÁo de upload
      */
     @Override
     public void start() {
@@ -76,7 +79,7 @@ public class UploadService extends UrboSentiService implements Runnable, Instanc
     }
 
     /**
-     * Para o servi√ßo de upload
+     * Para o serviÁo de upload
      */
     @Override
     public synchronized void stop() {
@@ -85,8 +88,8 @@ public class UploadService extends UrboSentiService implements Runnable, Instanc
     }
 
     /**
-     * M√©todo utilizado para upload de relatos para um √∫nico servidor. Depois
-     * fazer um para uploads m√∫ltiplos adicionando 2 m√©todos.
+     * MÈtodo utilizado para upload de relatos para um √∫nico servidor. Depois
+     * fazer um para uploads m√∫ltiplos adicionando 2 mÈtodos.
      * <ul><li>public static UploadService createUploadService(Agent Server)
      * throws InterruptException; </li>
      * <li>public synchronized addUploadService(UploadService up);</li>
@@ -127,9 +130,9 @@ public class UploadService extends UrboSentiService implements Runnable, Instanc
             message.setOrigin(new Address());
             message.getOrigin().setLayer(Address.LAYER_APPLICATION);
         }
-        // adiciona o application UID para o servi√ßo
+        // adiciona o application UID para o serviÁo
         message.getOrigin().setUid(service.getApplicationUID());
-        // cria o MessageWrapper que ser√° utilizado para criar o envelope
+        // cria o MessageWrapper que ser· utilizado para criar o envelope
         MessageWrapper messageWrapper = new MessageWrapper(message);
         // Adiciona o servidor visado
         messageWrapper.getMessage().setTarget(new Address());
@@ -138,8 +141,8 @@ public class UploadService extends UrboSentiService implements Runnable, Instanc
         messageWrapper.getMessage().getTarget().setUid(service.getServiceUID());
         // adiciona o assunto da mensagem
         messageWrapper.getMessage().setSubject(Message.SUBJECT_UPLOAD_REPORT);
-        // adiciona o encapsulamente espec√≠fico para relatos
-        // verifica se o m√≥dulo de usu√°rio est√° habilitado, se tiver ID do usu√°rio monitorado √© enviado
+        // adiciona o encapsulamente especÌfico para relatos
+        // verifica se o mÛdulo de usu·rio est· habilitado, se tiver ID do usu·rio monitorado È enviado
         if (communicationManager.getDeviceManager().getUserManager() != null) {
             User user;
             String contentReport = "<report>";
@@ -171,17 +174,17 @@ public class UploadService extends UrboSentiService implements Runnable, Instanc
 
     /**
      * @param messageWrapper Adiciona um novo relato para ser feito o upload. Se
-     * pol√≠tica 3 e o relato n√£o foi aprovado ainda ele √© adicionado na fila de
-     * espera e um evento avisando a aplica√ß√£o que o relato est√° esperando sua
-     * aprova√ß√£o.
+     * polÌtica 3 e o relato n„o foi aprovado ainda ele È adicionado na fila de
+     * espera e um evento avisando a aplicaÁ„o que o relato est· esperando sua
+     * aprovaÁ„o.
      */
     private synchronized void addReport(MessageWrapper messageWrapper) throws SQLException {
-        // Verifica pol√≠tica de upload de relatos
-        // se 3 gera adiciona na fila para aprova√ß√£o da aplica√ß√£o e utiliza pol√≠tica de armazenamento
+        // Verifica polÌtica de upload de relatos
+        // se 3 gera adiciona na fila para aprovaÁ„o da aplicaÁ„o e utiliza polÌtica de armazenamento
         if (communicationManager.getUploadMessagingPolicy() == 3 && !messageWrapper.isChecked()) {
             //this.messagesNotChecked.add(messageWrapper);
             messageWrapper.setUnChecked();
-            communicationManager.storagePolice(messageWrapper, this.service); // depois vejo se uso ou n√£o
+            communicationManager.storagePolice(messageWrapper, this.service); // depois vejo se uso ou n„o
             communicationManager.newInternalEvent(CommunicationManager.EVENT_REPORT_AWAITING_APPROVAL, messageWrapper.getMessage());
         } else {
             // mensagem pode ser enviada
@@ -194,7 +197,7 @@ public class UploadService extends UrboSentiService implements Runnable, Instanc
     /**
      * @return retorna a primeira MessageWrapper da fila <b>normal</b> contendo
      * um relato com prioridade <b>normal</b>. Esse relato continua da fila.
-     * OBS.: SOmente utilizado pelo m√©todo de upload din√¢mico, pois tem um loop
+     * OBS.: SOmente utilizado pelo mÈtodo de upload din„mico, pois tem um loop
      * infinito dentro.
      * @throws InterruptedException
      * @throws java.sql.SQLException
@@ -214,9 +217,9 @@ public class UploadService extends UrboSentiService implements Runnable, Instanc
     }
 
     /**
-     * @return retorna a primeira MessageWrapper da fila <b>priorit√°ria</b>
-     * contendo um relato com prioridade <b>priorit√°ria</b>. Esse relato
-     * continua da fila. OBS.: SOmente utilizado pelo m√©todo de upload din√¢mico,
+     * @return retorna a primeira MessageWrapper da fila <b>priorit·ria</b>
+     * contendo um relato com prioridade <b>priorit·ria</b>. Esse relato
+     * continua da fila. OBS.: SOmente utilizado pelo mÈtodo de upload din„mico,
      * pois tem um loop infinito dentro.
      * @throws InterruptedException
      * @throws java.sql.SQLException
@@ -237,9 +240,9 @@ public class UploadService extends UrboSentiService implements Runnable, Instanc
 
     /**
      * @return retorna a primeira MessageWrapper de uma das duas filas
-     * <b>priorit√°ria</b> ou <b>normal</b> conforme o escalonamento din√¢mico
-     * pr√©-configurado no m√©todo OnCreate. Esse relato escolhido n√£o √© remvido
-     * da fila. OBS.: SOmente utilizado pelo m√©todo de upload din√¢mico, pois tem
+     * <b>priorit·ria</b> ou <b>normal</b> conforme o escalonamento din„mico
+     * prÈ-configurado no mÈtodo OnCreate. Esse relato escolhido n„o È remvido
+     * da fila. OBS.: SOmente utilizado pelo mÈtodo de upload din„mico, pois tem
      * um loop infinito dentro.
      * @throws InterruptedException
      * @throws java.sql.SQLException
@@ -248,9 +251,9 @@ public class UploadService extends UrboSentiService implements Runnable, Instanc
         MessageWrapper mwp, mwn;
         while (true) {
             /*
-             * Fazer um escalonamento din√¢mico entre prioridades;
-             * // Se a outra fila est√° vazia faz a atual e zera os contadores
-             // obedece os dois limites priorizando os priorit√°rios
+             * Fazer um escalonamento din„mico entre prioridades;
+             * // Se a outra fila est· vazia faz a atual e zera os contadores
+             // obedece os dois limites priorizando os priorit·rios
              */
 
             // Pega primeiras mensagens
@@ -258,13 +261,13 @@ public class UploadService extends UrboSentiService implements Runnable, Instanc
                     .getOldestCheckedNotSent(Message.PREFERENTIAL_PRIORITY, this.service);
             mwn = communicationManager.getDeviceManager().getDataManager().getReportDAO()
                     .getOldestCheckedNotSent(Message.NORMAL_PRIORITY, this.service);
-            // Se ambas est√£o vazias, zera as contagens e espera
+            // Se ambas est„o vazias, zera as contagens e espera
             if (mwn == null && mwp == null) {
                 countNormalMessage = 0;
                 countPriorityMessage = 0;
                 wait();
             }
-            // Se houver mensagens priorit√°rias pega elas at√© o limite
+            // Se houver mensagens priorit·rias pega elas atÈ o limite
             if (mwp != null && countPriorityMessage < communicationManager.getLimitPriorityMessage()) {
                 if (countNormalMessage == 0) {
                     countPriorityMessage = 0;
@@ -273,8 +276,8 @@ public class UploadService extends UrboSentiService implements Runnable, Instanc
                 }
                 return mwp;
             }
-            // se houver mensagens normais depois de atingido o limite das priorit√°rias ent√£o pega as mensagens normais at√© atingir seu limite.
-            // Atingido o limite normal a contagem √© zerada de ambas as filas √© zerada
+            // se houver mensagens normais depois de atingido o limite das priorit·rias ent„o pega as mensagens normais atÈ atingir seu limite.
+            // Atingido o limite normal a contagem È zerada de ambas as filas È zerada
             if (mwn != null && countNormalMessage < communicationManager.getLimitNormalMessage()) {
                 if (countPriorityMessage == 0) {
                     countNormalMessage = 0;
@@ -287,20 +290,20 @@ public class UploadService extends UrboSentiService implements Runnable, Instanc
     }
 
     /**
-     * Fun√ß√£o referente a pol√≠tica de dados m√≥veis. Somente estrat√©gias 1 e 2
-     * funcionam, as demais necessitam de implementa√ß√£o
+     * FunÁ„o referente a polÌtica de dados mÛveis. Somente estratÈgias 1 e 2
+     * funcionam, as demais necessitam de implementaÁ„o
      *
      * @return
      * @throws InterruptedException
      */
     protected MessageWrapper getReportByMobileDataPolicyCriteria() throws InterruptedException, SQLException {
-        // Pol√≠tica de dados m√≥veis, se a interface usa dados m√≥veis
+        // PolÌtica de dados mÛveis, se a interface usa dados mÛveis
         MessageWrapper mw = null;
         switch (communicationManager.getMobileDataPolicy()) {
-            case 1: // Sem mobilidade. Configura√ß√£o default. Nenhuma a√ß√£o.
+            case 1: // Sem mobilidade. ConfiguraÁ„o default. Nenhuma aÁ„o.
                 mw = this.getReport();
                 break;
-            case 2: // Fazer o uso sempre que poss√≠vel. Nenhuma a√ß√£o adicional.
+            case 2: // Fazer o uso sempre que possÌvel. Nenhuma aÁ„o adicional.
                 mw = this.getReport();
                 break;
             case 3: // Somente fazer uso com mensagens de alta prioridade.
@@ -330,11 +333,11 @@ public class UploadService extends UrboSentiService implements Runnable, Instanc
             message.setOrigin(new Address());
             message.getOrigin().setLayer(Address.LAYER_APPLICATION);
         }
-        // adiciona o application UID para o servi√ßo
+        // adiciona o application UID para o serviÁo
         message.getOrigin().setUid(service.getApplicationUID());
-        // cria o MessageWrapper que ser√° utilizado para criar o envelope
+        // cria o MessageWrapper que ser· utilizado para criar o envelope
         MessageWrapper messageWrapper = new MessageWrapper(message);
-        // Adiciona o servidor visado, se ele n√£o foi setado
+        // Adiciona o servidor visado, se ele n„o foi setado
         if (messageWrapper.getMessage().getTarget() == null) {
             messageWrapper.getMessage().setTarget(new Address());
             messageWrapper.getMessage().getTarget().setAddress(service.getAddress());

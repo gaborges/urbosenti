@@ -59,8 +59,8 @@ public class EntityStateDAO {
         values.put(COLUMN_ENTITY_ID, state.getEntity().getId());
         values.put(COLUMN_DATA_TYPE, state.getDataType().getId());
         values.put(COLUMN_SUPERIOR_LIMIT, String.valueOf(state.getSuperiorLimit()));
-        values.put(COLUMN_INFERIOR_LIMIT, String.valueOf(state.getInferiorLimit().toString()));
-        values.put(COLUMN_INITIAL_VALUE, String.valueOf(state.getInitialValue().toString()));
+        values.put(COLUMN_INFERIOR_LIMIT, String.valueOf(state.getInferiorLimit()));
+        values.put(COLUMN_INITIAL_VALUE, String.valueOf(state.getInitialValue()));
         values.put(COLUMN_MODEL_ID, state.getId());
         
         state.setId((int)(long)this.database.insertOrThrow(TABLE_NAME, null, values));
@@ -77,7 +77,7 @@ public class EntityStateDAO {
         //        + " VALUES (?,?,?);";
         ContentValues values = new ContentValues();        	
         for (PossibleContent possibleContent : state.getPossibleContents()) {
-            values.put("possible_value", possibleContent.getValue().toString());
+            values.put("possible_value", String.valueOf(possibleContent.getValue()));
             values.put("default_value", possibleContent.isIsDefault());
             values.put("entity_state_id", state.getId());
             
@@ -103,13 +103,14 @@ public class EntityStateDAO {
         Cursor cursor = this.database.rawQuery(sql,	new String[]{String.valueOf(entity.getId())});
         
         while (cursor.moveToNext()) {
+        	state = new State();
         	state.setId(cursor.getInt(cursor.getColumnIndex("state_id")));
             state.setModelId(cursor.getInt(cursor.getColumnIndex("model_id")));
             state.setDescription(cursor.getString(cursor.getColumnIndex("state_desc")));
             DataType type = new DataType();
             type.setId(cursor.getInt(cursor.getColumnIndex("data_type_id")));
             type.setDescription(cursor.getString(cursor.getColumnIndex("data_desc")));
-            type.setInitialValue(Content.parseContent(state.getDataType(),cursor.getString(cursor.getColumnIndex("data_initial_value"))));
+            type.setInitialValue(Content.parseContent(type,cursor.getString(cursor.getColumnIndex("data_initial_value"))));
             state.setDataType(type);
             state.setInferiorLimit(Content.parseContent(type,cursor.getString(cursor.getColumnIndex("inferior_limit"))));
             state.setSuperiorLimit(Content.parseContent(type,cursor.getString(cursor.getColumnIndex("superior_limit"))));
@@ -148,7 +149,7 @@ public class EntityStateDAO {
             DataType type = new DataType();
             type.setId(cursor.getInt(cursor.getColumnIndex("data_type_id")));
             type.setDescription(cursor.getString(cursor.getColumnIndex("data_desc")));
-            type.setInitialValue(Content.parseContent(state.getDataType(),cursor.getString(cursor.getColumnIndex("data_initial_value"))));
+            type.setInitialValue(Content.parseContent(type,cursor.getString(cursor.getColumnIndex("data_initial_value"))));
             state.setDataType(type);
             state.setInferiorLimit(Content.parseContent(type,cursor.getString(cursor.getColumnIndex("inferior_limit"))));
             state.setSuperiorLimit(Content.parseContent(type,cursor.getString(cursor.getColumnIndex("superior_limit"))));
@@ -187,7 +188,7 @@ public class EntityStateDAO {
             DataType type = new DataType();
             type.setId(cursor.getInt(cursor.getColumnIndex("data_type_id")));
             type.setDescription(cursor.getString(cursor.getColumnIndex("data_desc")));
-            type.setInitialValue(Content.parseContent(state.getDataType(),cursor.getString(cursor.getColumnIndex("data_initial_value"))));
+            type.setInitialValue(Content.parseContent(type,cursor.getString(cursor.getColumnIndex("data_initial_value"))));
             state.setDataType(type);
             state.setInferiorLimit(Content.parseContent(type,cursor.getString(cursor.getColumnIndex("inferior_limit"))));
             state.setSuperiorLimit(Content.parseContent(type,cursor.getString(cursor.getColumnIndex("superior_limit"))));
@@ -251,9 +252,9 @@ public class EntityStateDAO {
         //String sql = "INSERT INTO entity_state_contents (reading_value,reading_time,monitored_user_instance_id,entity_state_id) "
         //        + " VALUES (?,?,?,?);";
         ContentValues values = new ContentValues();
-        values.put("reading_value", Content.parseContent(state.getDataType(), state.getContent().getValue()).toString());
+        values.put("reading_value", String.valueOf(Content.parseContent(state.getDataType(), state.getContent().getValue())));
         values.put("reading_time", (state.getContent().getTime() == null) ? System.currentTimeMillis() : state.getContent().getTime().getTime());
-        values.put("agent_state_id", state.getId());
+        values.put("entity_state_id", state.getId());
         if (state.getContent().getMonitoredInstance() != null) {
         	values.put("monitored_user_instance_id", state.getContent().getMonitoredInstance().getId());
         }
@@ -288,7 +289,7 @@ public class EntityStateDAO {
             DataType type = new DataType();
             type.setId(cursor.getInt(cursor.getColumnIndex("data_type_id")));
             type.setDescription(cursor.getString(cursor.getColumnIndex("data_desc")));
-            type.setInitialValue(Content.parseContent(state.getDataType(),cursor.getString(cursor.getColumnIndex("data_initial_value"))));
+            type.setInitialValue(Content.parseContent(type,cursor.getString(cursor.getColumnIndex("data_initial_value"))));
             state.setDataType(type);
             state.setInferiorLimit(Content.parseContent(type,cursor.getString(cursor.getColumnIndex("inferior_limit"))));
             state.setSuperiorLimit(Content.parseContent(type,cursor.getString(cursor.getColumnIndex("superior_limit"))));
@@ -330,7 +331,7 @@ public class EntityStateDAO {
             DataType type = new DataType();
             type.setId(cursor.getInt(cursor.getColumnIndex("data_type_id")));
             type.setDescription(cursor.getString(cursor.getColumnIndex("data_desc")));
-            type.setInitialValue(Content.parseContent(state.getDataType(),cursor.getString(cursor.getColumnIndex("data_initial_value"))));
+            type.setInitialValue(Content.parseContent(type,cursor.getString(cursor.getColumnIndex("data_initial_value"))));
             state.setDataType(type);
             state.setInferiorLimit(Content.parseContent(type,cursor.getString(cursor.getColumnIndex("inferior_limit"))));
             state.setSuperiorLimit(Content.parseContent(type,cursor.getString(cursor.getColumnIndex("superior_limit"))));
@@ -380,7 +381,7 @@ public class EntityStateDAO {
             DataType type = new DataType();
             type.setId(cursor.getInt(cursor.getColumnIndex("data_type_id")));
             type.setDescription(cursor.getString(cursor.getColumnIndex("data_desc")));
-            type.setInitialValue(Content.parseContent(state.getDataType(),cursor.getString(cursor.getColumnIndex("data_initial_value"))));
+            type.setInitialValue(Content.parseContent(type,cursor.getString(cursor.getColumnIndex("data_initial_value"))));
             state.setDataType(type);
             state.setInferiorLimit(Content.parseContent(type,cursor.getString(cursor.getColumnIndex("inferior_limit"))));
             state.setSuperiorLimit(Content.parseContent(type,cursor.getString(cursor.getColumnIndex("superior_limit"))));

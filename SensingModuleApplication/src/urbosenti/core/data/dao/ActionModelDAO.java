@@ -112,9 +112,9 @@ public class ActionModelDAO {
             values.put("description", parameter.getDescription());
             values.put("optional", parameter.isOptional());
             values.put("label", parameter.getLabel());
-            values.put("superior_limit", parameter.getSuperiorLimit().toString());
-            values.put("inferior_limit", parameter.getInferiorLimit().toString());
-            values.put("initial_value", parameter.getInitialValue().toString());
+            values.put("superior_limit", String.valueOf(parameter.getSuperiorLimit()));
+            values.put("inferior_limit",  String.valueOf(parameter.getInferiorLimit()));
+            values.put("initial_value",  String.valueOf(parameter.getInitialValue()));
             values.put("entity_state_id", (parameter.getRelatedState() == null) ? -1 : parameter.getRelatedState().getId());
             values.put("data_type_id", parameter.getDataType().getId());
             values.put("action_id", action.getId());
@@ -163,7 +163,7 @@ public class ActionModelDAO {
             for (PossibleContent possibleContent : parameter
                     .getPossibleContents()) {
             	ContentValues values = new ContentValues();
-                values.put("possible_value", Content.parseContent(parameter.getDataType(), possibleContent.getValue()).toString());
+                values.put("possible_value", String.valueOf(Content.parseContent(parameter.getDataType(), possibleContent.getValue())));
                 values.put("default_value", possibleContent.isIsDefault());
                 values.put("action_parameter_id", parameter.getId());
                 
@@ -211,7 +211,7 @@ public class ActionModelDAO {
         //        + " VALUES (?,?,?,?,?);";
         
         ContentValues values = new ContentValues();
-    	values.put("reading_value", Content.parseContent(parameter.getDataType(), parameter.getContent().getValue()).toString());
+    	values.put("reading_value",  String.valueOf(Content.parseContent(parameter.getDataType(), parameter.getContent().getValue())));
     	values.put("reading_time", parameter.getContent().getTime().getTime());
     	values.put("action_parameter_id", parameter.getId());
     	values.put("generated_action_id", action.getDataBaseId());

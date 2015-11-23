@@ -138,7 +138,7 @@ public class AgentTypeDAO {
         values.put("data_type_id", state.getDataType().getId());
         values.put("superior_limit", String.valueOf(state.getSuperiorLimit()));
         values.put("inferior_limit", String.valueOf(state.getInferiorLimit()));
-        values.put("initial_value", String.valueOf(state.getInitialValue().toString()));
+        values.put("initial_value", String.valueOf(state.getInitialValue()));
         
         this.database.insertOrThrow("agent_states", null, values);
         
@@ -164,9 +164,9 @@ public class AgentTypeDAO {
                 values.put("description", parameter.getDescription());
                 values.put("optional", parameter.isOptional());
                 values.put("label", parameter.getLabel());
-                values.put("superior_limit", parameter.getSuperiorLimit().toString());
-                values.put("inferior_limit", parameter.getInferiorLimit().toString());
-                values.put("initial_value", parameter.getInitialValue().toString());
+                values.put("superior_limit", String.valueOf(parameter.getSuperiorLimit()));
+                values.put("inferior_limit", String.valueOf(parameter.getInferiorLimit()));
+                values.put("initial_value", String.valueOf(parameter.getInitialValue()));
                 values.put("agent_state_id", (parameter.getRelatedState() == null) ? -1 : parameter.getRelatedState().getId());
                 values.put("data_type_id", parameter.getDataType().getId());
                 values.put("interaction_id", interaction.getId());
@@ -191,7 +191,7 @@ public class AgentTypeDAO {
             for (PossibleContent possibleContent : parameter.getPossibleContents()) {
             	// valores
             	ContentValues values = new ContentValues();
-            	values.put("possible_value", Content.parseContent(parameter.getDataType(),possibleContent.getValue()).toString());
+            	values.put("possible_value", String.valueOf(Content.parseContent(parameter.getDataType(),possibleContent.getValue())));
             	values.put("default_value", possibleContent.isIsDefault());
             	values.put("interaction_parameter_id", parameter.getId());
             	// executar
@@ -228,7 +228,7 @@ public class AgentTypeDAO {
         //        + " VALUES (?,?,?);";
         // values
         ContentValues values = new ContentValues();
-        values.put("reading_value", Content.parseContent(state.getDataType(), state.getContent().getValue()).toString());
+        values.put("reading_value", String.valueOf(Content.parseContent(state.getDataType(), state.getContent().getValue())));
         values.put("reading_time", state.getContent().getTime().getTime());
         values.put("agent_state_id", state.getId());
         // insere e retorna o ID
@@ -268,7 +268,7 @@ public class AgentTypeDAO {
         //String sql = "INSERT INTO interaction_contents (reading_value,reading_time,interaction_parameter_id,message_id) "
          //       + " VALUES (?,?,?,?);";
         ContentValues values = new ContentValues();
-    	values.put("reading_value", Content.parseContent(parameter.getDataType(), parameter.getContent().getValue()).toString());
+    	values.put("reading_value", String.valueOf(Content.parseContent(parameter.getDataType(), parameter.getContent().getValue())));
     	values.put("reading_time", parameter.getContent().getTime().getTime());
     	values.put("interaction_parameter_id", parameter.getId());
     	values.put("message_id", parameter.getContent().getMessage().getId());

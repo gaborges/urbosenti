@@ -1,8 +1,4 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
-package urbosenti.core.communication.interfaces;
+package br.ufrgs.urbosenti.android;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -15,47 +11,49 @@ import java.net.UnknownHostException;
 import java.util.Date;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import urbosenti.core.communication.CommunicationInterface;
 import urbosenti.core.communication.CommunicationManager;
 import urbosenti.core.communication.MessageWrapper;
+import urbosenti.core.communication.interfaces.WiredCommunicationInterface;
 
-/**
- *
- * @author Guilherme
- */
-public class WiredCommunicationInterface extends CommunicationInterface {
+public class AndroidGeneralCommunicationInterface extends CommunicationInterface {
 
-    public WiredCommunicationInterface() {
+    private Context context;
+
+	public AndroidGeneralCommunicationInterface(Context context) {
         super();
         setId(1);
         setName("Wired Interface");
         setUsesMobileData(false);
         setStatus(CommunicationInterface.STATUS_UNAVAILABLE);
+        this.context = context;
     }
 
     @Override
     public boolean testConnection() throws IOException, UnsupportedOperationException {
-        try {
-            // URL do destino escolhido
-            URL url = new URL("http://www.google.com");
+        // URL do destino escolhido
+        //URL url = new URL("http://www.google.com");
 
-            // abre a conex„o
-            HttpURLConnection urlConnect = (HttpURLConnection) url.openConnection();
+        // abre a conex„o
+        //HttpURLConnection urlConnect = (HttpURLConnection) url.openConnection();
 
-               // tenta buscar conte√∫do da URL
-            // se n„o tiver conex„o, essa linha ir√° falhar
-            urlConnect.connect();
-            urlConnect.disconnect();
-               //Object objData = urlConnect.getContent();
-
-        } catch (UnknownHostException ex) {
-            Logger.getLogger(WiredCommunicationInterface.class.getName()).log(Level.SEVERE, null, ex);
-            return false;
-        } catch (IOException ex) {
-            Logger.getLogger(WiredCommunicationInterface.class.getName()).log(Level.SEVERE, null, ex);
-            return false;
-        }
-        return true;
+           // tenta buscar conte√∫do da URL
+        // se n„o tiver conex„o, essa linha ir√° falhar
+        //urlConnect.connect();
+        //urlConnect.disconnect();
+        ConnectivityManager connMgr = (ConnectivityManager) 
+                this.context.getSystemService(Context.CONNECTIVITY_SERVICE);
+            NetworkInfo networkInfo = connMgr.getActiveNetworkInfo();
+            if (networkInfo != null && networkInfo.isConnected()) {
+                return true;
+            } else {
+                return false;
+            }
+           //Object objData = urlConnect.getContent();
     }
 
     @Override

@@ -5,6 +5,7 @@
  */
 package urbosenti.core.data.dao;
 
+import java.lang.reflect.Array;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Date;
@@ -13,6 +14,7 @@ import java.util.List;
 import android.content.ContentValues;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.util.Log;
 import urbosenti.core.communication.Address;
 import urbosenti.core.communication.Message;
 import urbosenti.core.communication.MessageWrapper;
@@ -384,9 +386,9 @@ public class MessageReportDAO {
                     + " WHERE sent = ? AND checked = ? ORDER BY id LIMIT 1 ; ";
             args = new String[2];
         }
-        args[0] = String.valueOf(sent);
-        args[1] = String.valueOf(checked);
-
+        args[0] = (sent) ? "1" : "0";
+        args[1] = (checked) ? "1" : "0";
+        
         Cursor cursor = this.database.rawQuery(sql, args);
         
         if (cursor.moveToNext()) {

@@ -90,7 +90,7 @@ public abstract class UrboSentiDatabaseHelper {
         this.device.setComponents(new ArrayList());
         this.device.setServices(new ArrayList());
         this.communicativeActs = new ArrayList();
-        this.showContent = true;
+        this.showContent = false;
         this.isSaved = false;
         this.dbFactory = DocumentBuilderFactory.newInstance();
         this.dBuilder = null;
@@ -110,7 +110,6 @@ public abstract class UrboSentiDatabaseHelper {
     	if(this.dBuilder == null){
     		dBuilder = dbFactory.newDocumentBuilder();
     	}
-        Log.d("DEBUG", "FILE on GENERAL: "+file);
         if(doc == null){
 	        if(file instanceof File){
 	        	doc = dBuilder.parse((File)file);
@@ -333,7 +332,6 @@ public abstract class UrboSentiDatabaseHelper {
     	if(this.dBuilder == null){
     		dBuilder = dbFactory.newDocumentBuilder();
     	}
-        Log.d("DEBUG", "FILE on DEVICE: "+file);
         if(doc == null){
 	        if(file instanceof File){
 	        	doc = dBuilder.parse((File)file);
@@ -765,7 +763,6 @@ public abstract class UrboSentiDatabaseHelper {
     	if(this.dBuilder == null){
     		dBuilder = dbFactory.newDocumentBuilder();
     	}
-        Log.d("DEBUG", "FILE on AGENT: "+file);
         if(doc == null){
 	        if(file instanceof File){
 	        	doc = dBuilder.parse((File)file);

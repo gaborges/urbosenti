@@ -27,6 +27,8 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
+
+import android.util.Log;
 import urbosenti.adaptation.AdaptationManager;
 import urbosenti.concerns.ConcernManager;
 import urbosenti.context.ContextManager;
@@ -268,7 +270,7 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
         if (DeveloperSettings.SHOW_FUNCTION_DEBUG_ACTIVITY) {
             System.out.println("Activating: " + getClass());
         }
-        // instancia um estado para ser usado na ativaçaõ dos módulos sobdemanda
+        // instancia um estado para ser usado na ativação dos módulos sobdemanda
         State entityState;
         // Conteúdo usado para habilitar os componentes da urbosenti
         Content content = new Content();
@@ -728,28 +730,31 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
                 inputCommunicationInterface = doc.createElement("inputCommunicationInterface");
                 inputCommunicationInterface.setAttribute("type", instance.getDescription());
                 for (State state : instance.getStates()) {
-                    if (state.getModelId() == CommunicationDAO.STATE_ID_OF_INPUT_COMMUNICATION_INTERFACE_CONFIGURATIONS) {
-                        if (!state.getCurrentValue().equals("unknown") && !state.getCurrentValue().equals("null")) {
-                            // Retorna a representação em String de um HashMap
-                            String savedExtras = (String) state.getCurrentValue();
-                            //System.out.println("dbExtra; "+savedExtras);
-                            savedExtras = savedExtras.replace("{", "");
-                            savedExtras = savedExtras.replace("}", "");
-                            // System.out.println("dbExtra; "+savedExtras);
-                            String[] pairs = savedExtras.split(",");
-                            // Adiciona no elemento
-                            for (String pair : pairs) {
-                                //System.out.println("pair: "+pair);
-                                String[] keyValue = pair.split("=");
-                                //System.out.println("key-l "+keyValue.length);
-                                extra = doc.createElement("extra");
-                                //System.out.println(keyValue[0].trim()+" -> "+keyValue[1].trim());
-                                extra.setAttribute("name", keyValue[0].trim()); // Key
-                                extra.setTextContent(keyValue[1].trim()); // Value
-                                inputCommunicationInterface.appendChild(extra);
-                            }
-                        }
-                    }
+                	if(state.getCurrentValue() != null){
+	                    if (state.getModelId() == CommunicationDAO.STATE_ID_OF_INPUT_COMMUNICATION_INTERFACE_CONFIGURATIONS) {
+	                        //Log.d("DEBUG","Instance state value: "+ state.getContent().getValue());
+	                    	if (!state.getCurrentValue().equals("unknown") && !state.getCurrentValue().equals("null")) {
+	                            // Retorna a representação em String de um HashMap
+	                            String savedExtras = (String) state.getCurrentValue();
+	                            //System.out.println("dbExtra; "+savedExtras);
+	                            savedExtras = savedExtras.replace("{", "");
+	                            savedExtras = savedExtras.replace("}", "");
+	                            // System.out.println("dbExtra; "+savedExtras);
+	                            String[] pairs = savedExtras.split(",");
+	                            // Adiciona no elemento
+	                            for (String pair : pairs) {
+	                                //System.out.println("pair: "+pair);
+	                                String[] keyValue = pair.split("=");
+	                                //System.out.println("key-l "+keyValue.length);
+	                                extra = doc.createElement("extra");
+	                                //System.out.println(keyValue[0].trim()+" -> "+keyValue[1].trim());
+	                                extra.setAttribute("name", keyValue[0].trim()); // Key
+	                                extra.setTextContent(keyValue[1].trim()); // Value
+	                                inputCommunicationInterface.appendChild(extra);
+	                            }
+	                        }
+	                    }
+                	}
                 }
                 root.appendChild(inputCommunicationInterface);
             }
@@ -1018,7 +1023,7 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
         // Verifica interfaces disponíveis
         for (CommunicationInterface ci : this.dataManager.getCommunicationDAO().getAvailableInterfaces()) {
             Content content = new Content();
-            content.setTime(new Date());
+            content.setTime(new Date()); 
             content.setValue(true);
             // verifica se o ID de cada uma dessas instâncias existe, se existe relaciona as duas senão cria uma nova instância.
             Instance instance = this.dataManager.getInstanceDAO().getInstance(

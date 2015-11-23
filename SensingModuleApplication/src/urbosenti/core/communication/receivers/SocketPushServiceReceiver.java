@@ -8,8 +8,11 @@ package urbosenti.core.communication.receivers;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.NetworkInterface;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
+import java.util.Enumeration;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import urbosenti.core.communication.CommunicationManager;
@@ -86,8 +89,23 @@ public class SocketPushServiceReceiver extends PushServiceReceiver {
     @Override
     public void addressDiscovery() throws IOException {
         this.serverSocket = new ServerSocket(port);
-        this.getInterfaceConfigurations().put("ipv4Address",InetAddress.getLocalHost().getHostAddress());
+        this.getInterfaceConfigurations().put("ipv4Address",getLocalIpAddress());
         this.getInterfaceConfigurations().put("port", String.valueOf(serverSocket.getLocalPort()));
+    }
+    
+    public String getLocalIpAddress() throws SocketException {
+        for (Enumeration<NetworkInterface> en = NetworkInterface
+                .getNetworkInterfaces(); en.hasMoreElements();) {
+            NetworkInterface intf = en.nextElement();
+            for (Enumeration<InetAddress> enumIpAddr = intf
+                    .getInetAddresses(); enumIpAddr.hasMoreElements();) {
+                InetAddress inetAddress = enumIpAddr.nextElement();
+                if (!inetAddress.isLoopbackAddress()) {
+                    return inetAddress.getHostAddress().toString();
+                }
+            }
+        }
+        return "";
     }
 
 }
