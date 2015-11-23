@@ -89,7 +89,7 @@ public class Content {
     }
 
     public static Object parseContent(DataType dataType, Object value) {
-        if (value == null) {
+        if (value == null || value.equals("null")) {
             return null;
         }
         switch (dataType.getId()) {

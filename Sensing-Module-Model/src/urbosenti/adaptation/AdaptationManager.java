@@ -253,18 +253,15 @@ public class AdaptationManager extends ComponentManager implements Runnable, Sys
             this.isAllowedReportingFunctionsToUploadService = true;
             this.limitIntervalToUploadService = 5000L;
             this.limitIntervalToUploadReconnectionService = 5000L;
-            if (super.getDeviceManager().getDataManager().getEntityStateDAO()
+            Object object = super.getDeviceManager().getDataManager().getEntityStateDAO()
                     .getEntityState(AdaptationDAO.COMPONENT_ID,
                             AdaptationDAO.ENTITY_ID_OF_ADAPTATION_MANAGEMENT,
                             AdaptationDAO.STATE_ID_OF_ADAPTATION_MANAGEMENT_LAST_REPORTED_DATE)
-                    .getCurrentValue().equals("null")) {
+                    .getCurrentValue();
+            if (object==null || object.equals("null")) {
                 this.lastReportedDate = new Date(0L);
             } else {
-                this.lastReportedDate = (Date) super.getDeviceManager().getDataManager().getEntityStateDAO()
-                        .getEntityState(AdaptationDAO.COMPONENT_ID,
-                                AdaptationDAO.ENTITY_ID_OF_ADAPTATION_MANAGEMENT,
-                                AdaptationDAO.STATE_ID_OF_ADAPTATION_MANAGEMENT_LAST_REPORTED_DATE)
-                        .getCurrentValue();
+                this.lastReportedDate = (Date) object;
             }
             // colocar dinâmico depois
 //            this.intervalAmongModuleStateReports = Long.parseLong(super.getDeviceManager().getDataManager().getEntityStateDAO()

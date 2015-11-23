@@ -728,25 +728,27 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
                 inputCommunicationInterface = doc.createElement("inputCommunicationInterface");
                 inputCommunicationInterface.setAttribute("type", instance.getDescription());
                 for (State state : instance.getStates()) {
-                    if (state.getModelId() == CommunicationDAO.STATE_ID_OF_INPUT_COMMUNICATION_INTERFACE_CONFIGURATIONS) {
-                        if (!state.getCurrentValue().equals("unknown") && !state.getCurrentValue().equals("null")) {
-                            // Retorna a representação em String de um HashMap
-                            String savedExtras = (String) state.getCurrentValue();
-                            //System.out.println("dbExtra; "+savedExtras);
-                            savedExtras = savedExtras.replace("{", "");
-                            savedExtras = savedExtras.replace("}", "");
-                            // System.out.println("dbExtra; "+savedExtras);
-                            String[] pairs = savedExtras.split(",");
-                            // Adiciona no elemento
-                            for (String pair : pairs) {
-                                //System.out.println("pair: "+pair);
-                                String[] keyValue = pair.split("=");
-                                //System.out.println("key-l "+keyValue.length);
-                                extra = doc.createElement("extra");
-                                //System.out.println(keyValue[0].trim()+" -> "+keyValue[1].trim());
-                                extra.setAttribute("name", keyValue[0].trim()); // Key
-                                extra.setTextContent(keyValue[1].trim()); // Value
-                                inputCommunicationInterface.appendChild(extra);
+                    if(state.getCurrentValue() != null){
+                        if (state.getModelId() == CommunicationDAO.STATE_ID_OF_INPUT_COMMUNICATION_INTERFACE_CONFIGURATIONS) {
+                            if (!state.getCurrentValue().equals("unknown") && !state.getCurrentValue().equals("null")) {
+                                // Retorna a representação em String de um HashMap
+                                String savedExtras = (String) state.getCurrentValue();
+                                //System.out.println("dbExtra; "+savedExtras);
+                                savedExtras = savedExtras.replace("{", "");
+                                savedExtras = savedExtras.replace("}", "");
+                                // System.out.println("dbExtra; "+savedExtras);
+                                String[] pairs = savedExtras.split(",");
+                                // Adiciona no elemento
+                                for (String pair : pairs) {
+                                    //System.out.println("pair: "+pair);
+                                    String[] keyValue = pair.split("=");
+                                    //System.out.println("key-l "+keyValue.length);
+                                    extra = doc.createElement("extra");
+                                    //System.out.println(keyValue[0].trim()+" -> "+keyValue[1].trim());
+                                    extra.setAttribute("name", keyValue[0].trim()); // Key
+                                    extra.setTextContent(keyValue[1].trim()); // Value
+                                    inputCommunicationInterface.appendChild(extra);
+                                }
                             }
                         }
                     }

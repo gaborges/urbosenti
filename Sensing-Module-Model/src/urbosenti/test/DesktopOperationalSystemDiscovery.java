@@ -6,7 +6,6 @@
 package urbosenti.test;
 
 import java.io.File;
-import java.text.NumberFormat;
 import java.util.HashMap;
 import urbosenti.core.device.OperatingSystemDiscovery;
 
