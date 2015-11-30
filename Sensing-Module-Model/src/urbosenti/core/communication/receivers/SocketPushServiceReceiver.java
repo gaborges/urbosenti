@@ -33,6 +33,13 @@ public class SocketPushServiceReceiver extends PushServiceReceiver {
 
     @Override
     public void stop() {
+        try {
+            if(this.serverSocket.isBound()){
+                this.serverSocket.close();
+            }
+        } catch (IOException ex) {
+            Logger.getLogger(SocketPushServiceReceiver.class.getName()).log(Level.SEVERE, null, ex);
+        }
         super.stop(); //To change body of generated methods, choose Tools | Templates.
     }
 

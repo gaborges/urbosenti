@@ -547,4 +547,11 @@ public class SQLiteJDBCDatabaseHelper extends UrboSentiDatabaseHelper{
         return this.connection;
     }
     
+    @Override
+    public void closeDatabaseConnection() throws SQLException {
+            if(!this.connection.isClosed()){
+                    this.connection.close();
+            }
+    }
+    
 }
