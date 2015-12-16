@@ -169,6 +169,42 @@ public class StaticPlanningModel extends AbstractPlanningModel {
                 // comentei para teste
                 actions.add(action);
                 break;
+            case 23: // action: fazer serviço de reconexão auxiliar dormir
+                action = new Action();
+                action.setId(CommunicationManager.ACTION_INFORM_RECONNECTION_TO_RECONNECTION_SERVICE);
+                action.setParameters(values);
+                action.setTargetEntityId(CommunicationDAO.ENTITY_ID_OF_RECONNECTION);
+                action.setTargetComponentId(CommunicationDAO.COMPONENT_ID);
+                // comentei para teste
+                actions.add(action);
+                break;
+            case 24: // action: setar interface como atual
+                action = new Action();
+                action.setId(CommunicationManager.ACTION_COMMUNICATION_INTERFACE_SET_CURRENT_INTERFACE);
+                action.setParameters(values);
+                action.setTargetEntityId(CommunicationDAO.ENTITY_ID_OF_OUTPUT_COMMUNICATION_INTERFACES);
+                action.setTargetComponentId(CommunicationDAO.COMPONENT_ID);
+                // comentei para teste
+                actions.add(action);
+                break;
+            case 25: // action: Remove restrições de uso de interface anteriores do serviço de reconexão auxiliar
+                action = new Action();
+                action.setId(CommunicationManager.ACTION_REMOVE_INTERFACE_RESTRICTIONS_OF_RECONNECTION_SERVICE);
+                action.setParameters(values);
+                action.setTargetEntityId(CommunicationDAO.ENTITY_ID_OF_RECONNECTION);
+                action.setTargetComponentId(CommunicationDAO.COMPONENT_ID);
+                // comentei para teste
+                actions.add(action);
+                break;
+            case 26: // action: Adiciona uma restrição de teste de reconexão em interface ao serviço de reconexão.
+                action = new Action();
+                action.setId(CommunicationManager.ACTION_INFORM_INTERFACE_RESTRICTION_TO_RECONNECTION_SERVICE);
+                action.setParameters(values);
+                action.setTargetEntityId(CommunicationDAO.ENTITY_ID_OF_RECONNECTION);
+                action.setTargetComponentId(CommunicationDAO.COMPONENT_ID);
+                // comentei para teste
+                actions.add(action);
+                break;
             default:
                 // evento de erro. Diagnóstico não conhecido
                 break;

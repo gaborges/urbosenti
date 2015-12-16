@@ -45,6 +45,7 @@ import urbosenti.core.device.model.Service;
 import urbosenti.core.device.model.ServiceType;
 import urbosenti.core.device.model.State;
 import urbosenti.core.device.model.TargetOrigin;
+import urbosenti.util.DeveloperSettings;
 
 /**
  *
@@ -53,40 +54,46 @@ import urbosenti.core.device.model.TargetOrigin;
 public abstract class UrboSentiDatabaseHelper {
 
     
-    private final List<AgentType> agentTypes;
-    private final List<ServiceType> serviceTypes;
-    private final List<EntityType> entityTypes;
-    private final List<DataType> dataTypes;
-    private final List<Implementation> implementationTypes;
-    private final List<AgentCommunicationLanguage> agentCommunicationLanguages;
-    private final List<CommunicativeAct> communicativeActs;
-    private final List<InteractionType> interactionTypes;
-    private final List<Direction> interactionDirections;
-    private final List<TargetOrigin> targetsOrigins;
-    private final List<AddressAgentType> agentAddressTypes;
-    private final Device device;
+    private List<AgentType> agentTypes;
+    private List<ServiceType> serviceTypes;
+    private List<EntityType> entityTypes;
+    private List<DataType> dataTypes;
+    private List<Implementation> implementationTypes;
+    private List<AgentCommunicationLanguage> agentCommunicationLanguages;
+    private List<CommunicativeAct> communicativeActs;
+    private List<InteractionType> interactionTypes;
+    private List<Direction> interactionDirections;
+    private List<TargetOrigin> targetsOrigins;
+    private List<AddressAgentType> agentAddressTypes;
+    private Device device;
     private final boolean showContent;
     private DataManager dataManager;
     private boolean isSaved;
+    DocumentBuilderFactory dbFactory;
+    DocumentBuilder dBuilder;
+    Document doc;
     
     private UrboSentiDatabaseHelper() {
-        this.agentTypes = new ArrayList();
-        this.serviceTypes = new ArrayList();
-        this.entityTypes = new ArrayList();
-        this.dataTypes = new ArrayList();
-        this.implementationTypes = new ArrayList();
-        this.agentCommunicationLanguages = new ArrayList();
-        this.interactionTypes = new ArrayList();
-        this.interactionDirections = new ArrayList();
-        this.targetsOrigins = new ArrayList();
-        this.agentAddressTypes = new ArrayList();
+        this.agentTypes = new ArrayList<AgentType>();
+        this.serviceTypes = new ArrayList<ServiceType>();
+        this.entityTypes = new ArrayList<EntityType>();
+        this.dataTypes = new ArrayList<DataType>();
+        this.implementationTypes = new ArrayList<Implementation>();
+        this.agentCommunicationLanguages = new ArrayList<AgentCommunicationLanguage>();
+        this.interactionTypes = new ArrayList<InteractionType>();
+        this.interactionDirections = new ArrayList<Direction>();
+        this.targetsOrigins = new ArrayList<TargetOrigin>();
+        this.agentAddressTypes = new ArrayList<AddressAgentType>();
         this.device = new Device();
         this.device.setId(1);
-        this.device.setComponents(new ArrayList());
-        this.device.setServices(new ArrayList());
-        this.communicativeActs = new ArrayList();
-        this.showContent = false;
+        this.device.setComponents(new ArrayList<Component>());
+        this.device.setServices(new ArrayList<Service>());
+        this.communicativeActs = new ArrayList<CommunicativeAct>();
+        this.showContent = DeveloperSettings.SHOW_LOGS_DATABASE_CREATION;
         this.isSaved = false;
+        this.dbFactory = DocumentBuilderFactory.newInstance();
+        this.dBuilder = null;
+        this.doc = null;
     }   
     
     public UrboSentiDatabaseHelper(DataManager dataManager) {
@@ -96,19 +103,21 @@ public abstract class UrboSentiDatabaseHelper {
     
     public abstract Object openDatabaseConnection() throws ClassNotFoundException,SQLException;
     public abstract void createDatabase() throws SQLException;
-    public abstract void dropDatabase() throws SQLException;
+    public abstract void dropDatabase() throws SQLException; 
     public abstract void closeDatabaseConnection() throws SQLException;
     
     public Device loadingGeneralDefinitions(Object file) throws ParserConfigurationException, IOException, SAXException {
-        DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-        DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-        Document doc;
-        if(file instanceof File){
-        	doc = dBuilder.parse((File)file);
-        } else if (file instanceof InputStream){
-        	doc = dBuilder.parse((InputStream)file);
-        } else {
-        	throw new ParserConfigurationException("Unknown input Class type: "+file.getClass());
+    	if(this.dBuilder == null){
+    		dBuilder = dbFactory.newDocumentBuilder();
+    	}
+        if(doc == null){
+	        if(file instanceof File){
+	        	doc = dBuilder.parse((File)file);
+	        } else if (file instanceof InputStream){
+	        	doc = dBuilder.parse((InputStream)file);
+	        } else {
+	        	throw new ParserConfigurationException("Unknown input Class type: "+file.getClass());
+	        }
         }
         NodeList nList, nList2;
         Element eElement, eElement2;
@@ -320,15 +329,17 @@ public abstract class UrboSentiDatabaseHelper {
     }
 
     public Device loadingDevice(Object file) throws ParserConfigurationException, IOException, SAXException {
-        DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-        DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-        Document doc;
-        if(file instanceof File){
-        	doc = dBuilder.parse((File)file);
-        } else if (file instanceof InputStream){
-        	doc = dBuilder.parse((InputStream)file);
-        } else {
-        	throw new ParserConfigurationException("Unknown input Class type: "+file.getClass());
+    	if(this.dBuilder == null){
+    		dBuilder = dbFactory.newDocumentBuilder();
+    	}
+        if(doc == null){
+	        if(file instanceof File){
+	        	doc = dBuilder.parse((File)file);
+	        } else if (file instanceof InputStream){
+	        	doc = dBuilder.parse((InputStream)file);
+	        } else {
+	        	throw new ParserConfigurationException("Unknown input Class type: "+file.getClass());
+	        }
         }
         //optional, but recommended
         //read this - http://stackoverflow.com/questions/13786607/normalization-in-dom-parsing-with-java-how-does-it-work
@@ -473,7 +484,7 @@ public abstract class UrboSentiDatabaseHelper {
                                         }
                                         if (eSubElement.getElementsByTagName("value").getLength() > 0) {
                                             // Se há conteúdos os de s são removidos e acidionados novos
-                                            s.setPossibleContent(new ArrayList());
+                                            s.setPossibleContent(new ArrayList<PossibleContent>());
                                             for (int n = 0; n < eSubElement.getElementsByTagName("value").getLength(); n++) {
                                                 eSubElement = (Element) nListSubElements.item(z);
                                                 PossibleContent pc = new PossibleContent(
@@ -749,15 +760,17 @@ public abstract class UrboSentiDatabaseHelper {
     }
 
     public Device loadingAgentModels(Object file) throws ParserConfigurationException, IOException, SAXException {
-        DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-        DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-        Document doc;
-        if(file instanceof File){
-        	doc = dBuilder.parse((File)file);
-        } else if (file instanceof InputStream){
-        	doc = dBuilder.parse((InputStream)file);
-        } else {
-        	throw new ParserConfigurationException("Unknown input Class type: "+file.getClass());
+    	if(this.dBuilder == null){
+    		dBuilder = dbFactory.newDocumentBuilder();
+    	}
+        if(doc == null){
+	        if(file instanceof File){
+	        	doc = dBuilder.parse((File)file);
+	        } else if (file instanceof InputStream){
+	        	doc = dBuilder.parse((InputStream)file);
+	        } else {
+	        	throw new ParserConfigurationException("Unknown input Class type: "+file.getClass());
+	        }
         }
         //optional, but recommended
         //read this - http://stackoverflow.com/questions/13786607/normalization-in-dom-parsing-with-java-how-does-it-work
@@ -767,7 +780,7 @@ public abstract class UrboSentiDatabaseHelper {
         Element eAgentModel, eElement, eSubElement;
         AgentCommunicationLanguage baseAgentCommunicationLanguage;
         int baseAgentType = 0;
-
+        
         nListAgentModel = doc.getDocumentElement().getElementsByTagName("agentModel");
         for (int i = 0; i < nListAgentModel.getLength(); i++) {
             eAgentModel = (Element) nListAgentModel.item(i);
@@ -1203,5 +1216,21 @@ public abstract class UrboSentiDatabaseHelper {
             }
         }
     }
+
+	public void cleanTemporaryData() {
+	    doc = null;	
+	    agentTypes = null;
+	    serviceTypes = null;
+	    entityTypes = null;
+	    dataTypes = null;
+	    implementationTypes = null;
+	    agentCommunicationLanguages = null;
+	    communicativeActs = null;
+	    interactionTypes = null;
+	    interactionDirections = null;
+	    targetsOrigins = null;
+	    agentAddressTypes = null;
+	    device = null;
+	}
 
 }

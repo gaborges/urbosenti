@@ -32,6 +32,7 @@ public class ReconnectionService extends UrboSentiService implements Runnable, I
     private final Object monitor;
     private final Thread service;
     private final Instance instance;
+    private ArrayList<Integer> interfaceRestrictions;
     /**
      * default 60 segundos Representado em milisegundos então (60 000)
      */
@@ -80,7 +81,8 @@ public class ReconnectionService extends UrboSentiService implements Runnable, I
                     }
                 }
             }
-        }
+        }        
+        interfaceRestrictions = new ArrayList<Integer>(5);
     }
 
     public synchronized void setReconnectionTime(Long reconnectionTime) {
@@ -171,15 +173,18 @@ public class ReconnectionService extends UrboSentiService implements Runnable, I
         }
         // testa conexões, se uma estiver conectada adiciona true em reconnected para não necessitar executar o processo
         for(CommunicationInterface ci : communicationInterfaces){
-            try {
-                if(ci.testConnection()){
-                    this.reconnected = true;
-                    break;
+            // if is not a restricted interface then test the connection
+            if(!getInterfaceRestrictions().contains(ci.getId())){
+                try {
+                    if(ci.testConnection()){
+                        this.reconnected = true;
+                        break;
+                    }
+                } catch (IOException ex) {
+                    Logger.getLogger(ReconnectionService.class.getName()).log(Level.SEVERE, null, ex);
+                } catch (UnsupportedOperationException ex) {
+                    Logger.getLogger(ReconnectionService.class.getName()).log(Level.SEVERE, null, ex);
                 }
-            } catch (IOException ex) {
-                Logger.getLogger(ReconnectionService.class.getName()).log(Level.SEVERE, null, ex);
-            } catch (UnsupportedOperationException ex) {
-                Logger.getLogger(ReconnectionService.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
     }
@@ -214,19 +219,22 @@ public class ReconnectionService extends UrboSentiService implements Runnable, I
 
         @Override
         public void run() {
-            try {
-                if (communicationInterface.testConnection()) {
-                    communicationManager.notifyReconnection(communicationInterface,reconnectionService);
-                    synchronized (monitor) {
-                        reconnected = true;
+            // if is not a restricted interface then test the connection
+            if(!getInterfaceRestrictions().contains(communicationInterface.getId())){
+                try {
+                    if (communicationInterface.testConnection()) {
+                        communicationManager.notifyReconnection(communicationInterface,reconnectionService);
+                        synchronized (monitor) {
+                            reconnected = true;
+                        }
+                    } else {
+                        communicationManager.notifyReconnectionNotSucceed(communicationInterface,reconnectionService);
                     }
-                } else {
+                } catch (IOException ex) {
+                    communicationManager.notifyReconnectionNotSucceed(communicationInterface,reconnectionService);
+                } catch (UnsupportedOperationException ex) {
                     communicationManager.notifyReconnectionNotSucceed(communicationInterface,reconnectionService);
                 }
-            } catch (IOException ex) {
-                communicationManager.notifyReconnectionNotSucceed(communicationInterface,reconnectionService);
-            } catch (UnsupportedOperationException ex) {
-                communicationManager.notifyReconnectionNotSucceed(communicationInterface,reconnectionService);
             }
         }
     }
@@ -238,6 +246,15 @@ public class ReconnectionService extends UrboSentiService implements Runnable, I
 
     public int getMethodOfReconnection() {
         return methodOfReconnection;
+    }
+        
+    public synchronized void setReconneted(boolean reconnected){
+    	this.reconnected = true;	
+    	notifyAll();
+    }
+    
+    public synchronized boolean isReconneted(){
+    	return this.reconnected;	
     }
     
     /**
@@ -251,5 +268,19 @@ public class ReconnectionService extends UrboSentiService implements Runnable, I
             }
         }
         return false;
+    }
+    
+    public synchronized void addInterfaceRestriction(Integer interfaceId){
+    	if(!this.interfaceRestrictions.contains(interfaceId)){
+    		this.interfaceRestrictions.add(interfaceId);
+    	}
+    }
+    
+    public synchronized void removeInterfaceRestrictions(){
+    	this.interfaceRestrictions.clear();
+    }
+    
+    public synchronized ArrayList<Integer> getInterfaceRestrictions(){
+    	return this.interfaceRestrictions;
     }
 }

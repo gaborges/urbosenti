@@ -41,7 +41,8 @@ public abstract class AbstractDiagnosisModel {
          que a análise anterior não teve diagnóstico e não precisa que uma nova 
          instância de diagnóstico seja feita */
         if (diagnosis.getChanges().size() > 0) {
-            this.diagnosis = new Diagnosis();
+            this.getDiagnosis().getChanges().clear();
+            //this.diagnosis = new Diagnosis();
         }
         // Tipo de evento interação, análise de interação
         if (event.getEventType() == Event.INTERATION_EVENT) {

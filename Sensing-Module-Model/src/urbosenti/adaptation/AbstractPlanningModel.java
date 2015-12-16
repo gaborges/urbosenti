@@ -28,7 +28,8 @@ public abstract class AbstractPlanningModel {
     public Plan planning(Diagnosis diagnosis, AbstractDiagnosisModel diagnosisModel) {
         // cria um novo plano se o antigo continha um plano elaborado
         if (this.plan.getExecutionPlans().size() > 0) {
-            this.plan = new Plan();
+            this.plan.getExecutionPlans().clear();
+            //this.plan = new Plan();
         }
         // se for vazio o plano é retornado vazio
         if (diagnosis.getChanges().isEmpty()) {

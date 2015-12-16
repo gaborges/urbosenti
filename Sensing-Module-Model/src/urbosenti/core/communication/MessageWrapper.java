@@ -4,9 +4,12 @@
  */
 package urbosenti.core.communication;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.io.StringWriter;
 import java.util.Date;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -189,6 +192,13 @@ public class MessageWrapper implements Serializable  {
             serializer.transform(new DOMSource(doc), new StreamResult(stw));
 
             this.envelopedMessage = stw.getBuffer().toString();
+            
+            stw.flush();
+            try {
+                stw.close();
+            } catch (IOException ex) {
+                Logger.getLogger(MessageWrapper.class.getName()).log(Level.SEVERE, null, ex);
+            }
         } else {
             this.envelopedMessage = message.getContent();
         }
@@ -226,6 +236,10 @@ public class MessageWrapper implements Serializable  {
     @Override
     public String toString() {
         return "MessageWrapper{" + "id=" + id + ", timeout=" + timeout + ", createdTime=" + createdTime + ", sentTime=" + sentTime + ", checked=" + checked + '}';
+    }
+    
+    public void cleanEnvelopedMessage(){
+    	this.envelopedMessage = "";
     }
     
 }

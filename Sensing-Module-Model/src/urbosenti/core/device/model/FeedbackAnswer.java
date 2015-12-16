@@ -26,11 +26,13 @@ public class FeedbackAnswer {
     private int id;
     private String description;
     private Date time;
+    private static FeedbackAnswer feedbackAnswer;
 
     public FeedbackAnswer(int id, String description) {
         this.id = id;
         this.description = description;
         this.time = new Date();
+        FeedbackAnswer.feedbackAnswer = null;
     }
     
     public FeedbackAnswer(int id) {
@@ -63,6 +65,21 @@ public class FeedbackAnswer {
 
     public void setTime(Date time) {
         this.time = time;
+    }
+    
+    public static FeedbackAnswer makeFeedbackAnswer(int id, String description){
+    	if(feedbackAnswer == null){
+            feedbackAnswer = new FeedbackAnswer(id, description);
+    	} else {
+    		feedbackAnswer.setId(id);
+    		feedbackAnswer.setDescription(description);
+    		feedbackAnswer.getTime().setTime(System.currentTimeMillis());
+    	}
+		return feedbackAnswer;
+    }
+    
+    public static FeedbackAnswer makeFeedbackAnswer(int id){
+        return FeedbackAnswer.makeFeedbackAnswer(id,"");
     }
     
 }

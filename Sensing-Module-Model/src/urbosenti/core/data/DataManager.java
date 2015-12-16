@@ -8,8 +8,6 @@ import java.io.File;
 import urbosenti.core.data.dao.CommunicationDAO;
 import urbosenti.core.data.dao.UserDAO;
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -216,6 +214,10 @@ public class DataManager extends ComponentManager {
                 this.databaseHelper.saveGeneralDefinitions();
                 this.databaseHelper.saveDevice();
                 this.databaseHelper.saveAgentModels();
+                /* Limpa dados temporários */
+                this.databaseHelper.cleanTemporaryData();
+                /* limpa o arquivo */
+                this.knowledgeRepresentation = null;
             } catch (ParserConfigurationException ex) {
                 if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
                     Logger.getLogger(DeviceManager.class.getName()).log(Level.SEVERE, null, ex);

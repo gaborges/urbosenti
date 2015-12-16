@@ -7,9 +7,13 @@ package urbosenti.core.communication.receivers;
 
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.net.Inet4Address;
 import java.net.InetAddress;
+import java.net.NetworkInterface;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
+import java.util.Enumeration;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import urbosenti.core.communication.CommunicationManager;
@@ -73,6 +77,9 @@ public class SocketPushServiceReceiver extends PushServiceReceiver {
 //                    + "</message>";
 //            super.communicationManager.newPushMessage("http://exemplo:8084/TestServer/webresources/test/return", message);
             while (this.getStatus() == STATUS_LISTENING) {
+            	if(this.serverSocket == null){
+                    this.serverSocket = new ServerSocket(port);
+            	}
                 if(!serverSocket.isBound()){
                     serverSocket = new ServerSocket(port);
                     this.getInterfaceConfigurations().put("ipv4Address",InetAddress.getLocalHost().getHostAddress());
@@ -81,9 +88,9 @@ public class SocketPushServiceReceiver extends PushServiceReceiver {
                 Socket accept = this.serverSocket.accept();
                 DataInputStream dataInputStream = new DataInputStream(accept.getInputStream());
                 message = dataInputStream.readUTF();
+                super.communicationManager.newPushMessage(accept.getInetAddress().getHostAddress(), message);
                 dataInputStream.close();
                 accept.close();
-                super.communicationManager.newPushMessage(accept.getInetAddress().getHostAddress(), message);
             }
         } catch (IOException ex) {
             Logger.getLogger(SocketPushServiceReceiver.class.getName()).log(Level.SEVERE, null, ex);
@@ -93,8 +100,23 @@ public class SocketPushServiceReceiver extends PushServiceReceiver {
     @Override
     public void addressDiscovery() throws IOException {
         this.serverSocket = new ServerSocket(port);
-        this.getInterfaceConfigurations().put("ipv4Address",InetAddress.getLocalHost().getHostAddress());
+        this.getInterfaceConfigurations().put("ipv4Address",getLocalIpAddress());
         this.getInterfaceConfigurations().put("port", String.valueOf(serverSocket.getLocalPort()));
+    }
+    
+    public String getLocalIpAddress() throws SocketException {
+        for (Enumeration<NetworkInterface> en = NetworkInterface
+                .getNetworkInterfaces(); en.hasMoreElements();) {
+            NetworkInterface intf = en.nextElement();
+            for (Enumeration<InetAddress> enumIpAddr = intf
+                    .getInetAddresses(); enumIpAddr.hasMoreElements();) {
+                InetAddress inetAddress = enumIpAddr.nextElement();
+                if (!inetAddress.isLoopbackAddress() && inetAddress instanceof Inet4Address) {
+                    return inetAddress.getHostAddress();
+                }
+            }
+        }
+        return "";
     }
 
 }

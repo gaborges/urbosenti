@@ -30,7 +30,6 @@ import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
-import urbosenti.core.communication.receivers.SocketPushServiceReceiver;
 import urbosenti.core.data.dao.CommunicationDAO;
 import urbosenti.core.device.model.Agent;
 import urbosenti.core.device.ComponentManager;
@@ -418,6 +417,33 @@ public class CommunicationManager extends ComponentManager {
      *
      */
     public static final int ACTION_UPDATE_UPLOAD_SERVICE_SUBSCRIBED_MAXIMUM_UPLOAD_RATE = 26;
+    /**
+     * int ACTION_INFORM_RECONNECTION_TO_RECONNECTION_SERVICE = 27;
+     *
+     * <ul><li>id: 27</li>
+     * <li>ação: Informar reconexão ao serviço de reconexão</li>
+     * <li>parâmetros: Id do serviço de reconexão (instanceId)</li></ul>
+     *
+     */
+    public static final int ACTION_INFORM_RECONNECTION_TO_RECONNECTION_SERVICE = 27;
+    /**
+     * int ACTION_ADD_INTERFACE_RESTRICTION_TO_RECONNECTION_SERVICE = 28;
+     *
+     * <ul><li>id: 28</li>
+     * <li>ação: Adiciona uma restrição de teste de reconexão em interface ao serviço de reconexão.</li>
+     * <li>parâmetros: Id do serviço de reconexão (instanceId); Id da interface (interface)</li></ul>
+     *
+     */
+    public static final int ACTION_INFORM_INTERFACE_RESTRICTION_TO_RECONNECTION_SERVICE = 28;
+    /**
+     * int ACTION_REMOVE_INTERFACE_RESTRICTIONS_OF_RECONNECTION_SERVICE = 29;
+     *
+     * <ul><li>id: 29</li>
+     * <li>ação: Remove restrições de teste de interface do serviço de reconexão</li>
+     * <li>parâmetros: Id do serviço de reconexão (instanceId);</li></ul>
+     *
+     */
+    public static final int ACTION_REMOVE_INTERFACE_RESTRICTIONS_OF_RECONNECTION_SERVICE = 29;
     private int limitPriorityMessage;
     private int limitNormalMessage;
 //    private List<MessageWrapper> messagesNotChecked;
@@ -484,6 +510,7 @@ public class CommunicationManager extends ComponentManager {
     private boolean completelyDisconnected;
     private Integer quantityLimit;
     private Integer timeLimit;
+    private static Address defaultPersonalAddress;
 
     public CommunicationManager(DeviceManager deviceManager) {
         super(deviceManager, CommunicationDAO.COMPONENT_ID);
@@ -496,6 +523,7 @@ public class CommunicationManager extends ComponentManager {
         this.backendUploadService = null;
         this.quantityLimit = Integer.MAX_VALUE;
         this.timeLimit = Integer.MAX_VALUE;
+        defaultPersonalAddress = null;
     }
 
     // if do not setted then when the method onCreate was activated it creates automatically
@@ -594,6 +622,9 @@ public class CommunicationManager extends ComponentManager {
      * <li>05 - Alterar intervalo de reconexão - interval ; instaceId</li>
      * <li>06 - Alterar método - method - 1 ou 2 ; instaceId</li>
      * <li>07 - Alterar política - policy - 1 ou 2</li>
+     * <li>27 - Informar reconexão - instaceId</li>
+     * <li>28 - Adiciona restrição de interface - instaceId;interface</li>
+     * <li>29 - Remove restrições de interface - instanceId</li>
      * </ul>
      * <p>
      * <b>Entidade Alvo</b>: Função de Otimização de Upload de Relatos</p>
@@ -672,7 +703,7 @@ public class CommunicationManager extends ComponentManager {
                         Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
                     }
                     // retorno erro
-                    answer = new FeedbackAnswer(FeedbackAnswer.ACTION_RESULT_FAILED, ex.toString());
+                    answer = FeedbackAnswer.makeFeedbackAnswer(FeedbackAnswer.ACTION_RESULT_FAILED, ex.toString());
                 }
                 break;
             case 2: // Alterar limite de relatos armazenados
@@ -881,17 +912,17 @@ public class CommunicationManager extends ComponentManager {
                     if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
                         Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
                     }
-                    answer = new FeedbackAnswer(FeedbackAnswer.ACTION_RESULT_FAILED_TIMEOUT, ex.toString());
+                    answer = FeedbackAnswer.makeFeedbackAnswer(FeedbackAnswer.ACTION_RESULT_FAILED_TIMEOUT, ex.toString());
                 } catch (ConnectException ex) {
                     if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
                         Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
                     }
-                    answer = new FeedbackAnswer(FeedbackAnswer.ACTION_RESULT_FAILED, ex.toString());
+                    answer = FeedbackAnswer.makeFeedbackAnswer(FeedbackAnswer.ACTION_RESULT_FAILED, ex.toString());
                 } catch (IOException ex) {
                     if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
                         Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
                     }
-                    answer = new FeedbackAnswer(FeedbackAnswer.ACTION_RESULT_FAILED, ex.toString());
+                    answer = FeedbackAnswer.makeFeedbackAnswer(FeedbackAnswer.ACTION_RESULT_FAILED, ex.toString());
                 }
                 break;
             case 23: // 23 - Enviar mensagem assíncrona - target,message
@@ -908,13 +939,13 @@ public class CommunicationManager extends ComponentManager {
                         }
                     }
                     if (!found) {
-                        answer = new FeedbackAnswer(FeedbackAnswer.ACTION_RESULT_FAILED, "Upload Service UID:" + message.getTarget().getUid() + " was not found!");
+                        answer = FeedbackAnswer.makeFeedbackAnswer(FeedbackAnswer.ACTION_RESULT_FAILED, "Upload Service UID:" + message.getTarget().getUid() + " was not found!");
                     }
                 } catch (SQLException ex) {
                     if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
                         Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
                     }
-                    answer = new FeedbackAnswer(FeedbackAnswer.ACTION_RESULT_FAILED, ex.toString());
+                    answer = FeedbackAnswer.makeFeedbackAnswer(FeedbackAnswer.ACTION_RESULT_FAILED, ex.toString());
                 }
                 break;
             case 24: // apagar mensagens expiradas
@@ -924,7 +955,7 @@ public class CommunicationManager extends ComponentManager {
                     if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
                         Logger.getLogger(CommunicationManager.class.getName()).log(Level.SEVERE, null, ex);
                     }
-                    answer = new FeedbackAnswer(FeedbackAnswer.ACTION_RESULT_FAILED, ex.toString());
+                    answer = FeedbackAnswer.makeFeedbackAnswer(FeedbackAnswer.ACTION_RESULT_FAILED, ex.toString());
                 }
                 break;
             case 25: // Permitir realizar upload
@@ -945,12 +976,39 @@ public class CommunicationManager extends ComponentManager {
                     }
                 }
                 break;
+            case ACTION_INFORM_RECONNECTION_TO_RECONNECTION_SERVICE: // ação 27: Informar reconexão ao serviço de reconexão
+            	instanceId = (Integer) action.getParameters().get("instanceId");
+            	for (ReconnectionService rs : reconnectionServices) {
+                    if (rs.getInstance().getModelId() == instanceId) {
+                    	rs.setReconneted(true);
+                        break;
+                    }
+                }
+                break;
+            case ACTION_INFORM_INTERFACE_RESTRICTION_TO_RECONNECTION_SERVICE: // ação 28: Adiciona uma restrição de teste de reconexão em interface ao serviço de reconexão.
+            	instanceId = (Integer) action.getParameters().get("instanceId");
+            	for (ReconnectionService rs : reconnectionServices) {
+                    if (rs.getInstance().getModelId() == instanceId) {
+                    	rs.addInterfaceRestriction((Integer) action.getParameters().get("interface"));
+                        break;
+                    }
+                }
+                break;
+            case ACTION_REMOVE_INTERFACE_RESTRICTIONS_OF_RECONNECTION_SERVICE: // ação 29: Remove restrições de teste de interface do serviço de reconexão
+            	instanceId = (Integer) action.getParameters().get("instanceId");
+            	for (ReconnectionService rs : reconnectionServices) {
+                    if (rs.getInstance().getModelId() == instanceId) {
+                    	rs.removeInterfaceRestrictions();
+                        break;
+                    }
+                }
+                break;
         }
         // verifica se a ação existe ou se houve algum resultado durante a execução
-        if (answer == null && action.getId() >= 1 && action.getId() <= 26) {
-            answer = new FeedbackAnswer(FeedbackAnswer.ACTION_RESULT_WAS_SUCCESSFUL);
+        if (answer == null && action.getId() >= 1 && action.getId() <= 29) {
+            answer = FeedbackAnswer.makeFeedbackAnswer(FeedbackAnswer.ACTION_RESULT_WAS_SUCCESSFUL);
         } else if (answer == null) {
-            answer = new FeedbackAnswer(FeedbackAnswer.ACTION_DOES_NOT_EXIST);
+            answer = FeedbackAnswer.makeFeedbackAnswer(FeedbackAnswer.ACTION_DOES_NOT_EXIST);
         }
         return answer;
     }
@@ -972,9 +1030,7 @@ public class CommunicationManager extends ComponentManager {
          * Se quem está enviando não foi explicitado, então, por padrão, são preenxidos os dados do envio da aplicação.
          */
         if (message.getOrigin() == null) {
-            message.setOrigin(new Address());
-            message.getOrigin().setLayer(Address.LAYER_APPLICATION);
-            message.getOrigin().setUid(getDeviceManager().getBackendService().getApplicationUID());
+            message.setOrigin(this.getDefaultPersonalAddress());
         }
         MessageWrapper messageWrapper = new MessageWrapper(message);
         try {
@@ -1049,9 +1105,7 @@ public class CommunicationManager extends ComponentManager {
          * Se quem está enviando não foi explicitado, então, por padrão, são preenxidos os dados do envio da aplicação.
          */
         if (message.getOrigin() == null) {
-            message.setOrigin(new Address());
-            message.getOrigin().setLayer(Address.LAYER_APPLICATION);
-            message.getOrigin().setUid(getDeviceManager().getBackendService().getApplicationUID());
+            message.setOrigin(this.getDefaultPersonalAddress());
         }
         // Adiciona na mensagem que ele requer resposta
         message.setRequireResponse(true);
@@ -1130,9 +1184,7 @@ public class CommunicationManager extends ComponentManager {
          * Se quem está enviando não foi explicitado, então, por padrão, são preenxidos os dados do envio da aplicação.
          */
         if (message.getOrigin() == null) {
-            message.setOrigin(new Address());
-            message.getOrigin().setLayer(Address.LAYER_APPLICATION);
-            message.getOrigin().setUid(getDeviceManager().getBackendService().getApplicationUID());
+            message.setOrigin(this.getDefaultPersonalAddress());
         }
         MessageWrapper messageWrapper = new MessageWrapper(message);
         messageWrapper.setTimeout(timeout);
@@ -1981,7 +2033,9 @@ public class CommunicationManager extends ComponentManager {
                     // Evento: Mensagem Entregue
                     this.newInternalEvent(EVENT_MESSAGE_DELIVERED, mw, mw.getMessage().getTarget(), currentCommunicationInterface, uploadService.getInstance().getModelId());
                     // Política de Armazenamento
-                    this.storagePolice(mw, server);
+                    this.storagePolice(mw, server);                    
+                    // limpar mensagem construída
+                    mw.cleanEnvelopedMessage();
                     // confirmação do funcionamento sem erros
                     ci.setStatus(CommunicationInterface.STATUS_CONNECTED);
                     // this.newInternalEvent(EVENT_SERVICE_FUNCTIONS_END, CommunicationDAO.UPLOAD_MESSAGING_POLICY, uploadServer);
@@ -2175,6 +2229,15 @@ public class CommunicationManager extends ComponentManager {
 
     public List<CommunicationInterface> getCommunicationInterfaces() {
         return communicationInterfaces;
+    }
+    
+    public Address getDefaultPersonalAddress() {
+    	if(defaultPersonalAddress==null){
+            defaultPersonalAddress = new Address();
+            defaultPersonalAddress.setLayer(Address.LAYER_APPLICATION);
+            defaultPersonalAddress.setUid(getDeviceManager().getBackendService().getApplicationUID());
+    	}
+		return defaultPersonalAddress;
     }
 
 }

@@ -216,4 +216,11 @@ public abstract class Event implements Serializable  {
         this.time = new Date();
     }
     
+    public static void clearEvent(Event event) {
+        if (event.getParameters() != null) {
+            event.getParameters().clear();
+        }
+        event = null;
+    }
+    
 }

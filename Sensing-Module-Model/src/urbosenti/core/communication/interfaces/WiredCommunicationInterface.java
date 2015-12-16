@@ -9,10 +9,10 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
+import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.net.UnknownHostException;
-import java.util.Date;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import urbosenti.core.communication.CommunicationInterface;
@@ -97,76 +97,94 @@ public class WiredCommunicationInterface extends CommunicationInterface {
     @Override
     public Object sendMessageWithResponse(CommunicationManager communicationManager, MessageWrapper messageWrapper) throws SocketTimeoutException, IOException {
         String result = "";
-        URL url = new URL(messageWrapper.getMessage().getTarget().getAddress());
-        //URL url = new URL("http://143.54.12.47:8084/TestServer/webresources/test/return");
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-        conn.setDoOutput(true);
-        conn.setRequestMethod("POST");
-        //conn.setRequestProperty("Accept", "application/json");
-        //conn.setRequestProperty("Content-Type", "text/plain");
-        conn.setRequestProperty("Content-Type", messageWrapper.getMessage().getContentType());
-        // Se possuí timeout customizado o utiliza
-        if (messageWrapper.getTimeout() > 0) {
-            conn.setReadTimeout(messageWrapper.getTimeout());
+        // se não contem http, então é por socket direto
+    	if(!messageWrapper.getMessage().getTarget().getAddress().contains("http://")){
+    		// formato 143.54.12.47:8084
+    		String splited[] = messageWrapper.getMessage().getTarget().getAddress().split(":");
+    		if(splited.length <2){
+                    throw new IOException("Failed : Address '"+messageWrapper.getMessage().getTarget().getAddress()+"' has a unknown format for socket connections, please use the format 'ip:port'.");
+    		}
+    		Socket socket = new Socket(splited[0],Integer.parseInt(splited[1]));
+    		socket.getOutputStream().write(messageWrapper.getEnvelopedMessage().getBytes());
+    		socket.getOutputStream().flush();
+    		socket.getOutputStream().close();
+    		socket.close();
+    	} else {
+            URL url = new URL(messageWrapper.getMessage().getTarget().getAddress());
+            //URL url = new URL("http://143.54.12.47:8084/TestServer/webresources/test/return");
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setDoOutput(true);
+            conn.setRequestMethod("POST");
+            //conn.setRequestProperty("Accept", "application/json");
+            //conn.setRequestProperty("Content-Type", "text/plain");
+            conn.setRequestProperty("Content-Type", messageWrapper.getMessage().getContentType());
+            // Se possuí timeout customizado o utiliza
+            if (messageWrapper.getTimeout() > 0) {
+                conn.setReadTimeout(messageWrapper.getTimeout());
+            }
+
+            conn.connect();
+            OutputStream os = conn.getOutputStream();
+            os.write(messageWrapper.getEnvelopedMessage().getBytes());
+            os.flush();
+
+            // HttpURLConnection.HTTP_NOT_FOUND --- Posso usar para um evento de endereço não existe
+            if (conn.getResponseCode() != HttpURLConnection.HTTP_OK) {
+                throw new IOException("Failed : HTTP error code : "
+                        + conn.getResponseCode());
+            }
+
+            BufferedReader br = new BufferedReader(new InputStreamReader(
+                    (conn.getInputStream())));
+
+            String output;
+            while ((output = br.readLine()) != null) {
+                result += output;
+            }
+            br.close();
+            conn.disconnect();
         }
-        Date iniTime = new Date();
-
-        conn.connect();
-        OutputStream os = conn.getOutputStream();
-        os.write(messageWrapper.getEnvelopedMessage().getBytes());
-        os.flush();
-
-        // HttpURLConnection.HTTP_NOT_FOUND --- Posso usar para um evento de endereço não existe
-        if (conn.getResponseCode() != HttpURLConnection.HTTP_OK) {
-            throw new RuntimeException("Failed : HTTP error code : "
-                    + conn.getResponseCode());
-        }
-
-        BufferedReader br = new BufferedReader(new InputStreamReader(
-                (conn.getInputStream())));
-
-        String output;
-        while ((output = br.readLine()) != null) {
-            result += output;
-        }
-
-        conn.disconnect();
-        // Adicionar métricas de avaliação **************************************8
-        super.updateEvaluationMetrics(messageWrapper, iniTime, new Date());
-        // Adicionar métricas de avaliação **************************************8
         return result;
     }
 
     @Override
     public boolean sendMessage(CommunicationManager communicationManager, MessageWrapper messageWrapper) throws SocketTimeoutException, IOException {
-        String result = "";
-        URL url = new URL(messageWrapper.getTargetAddress());
-        //URL url = new URL("http://143.54.12.47:8084/TestServer/webresources/test");
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-        // Se possuí timeout customizado o utiliza
-        if (messageWrapper.getTimeout() > 0) {
-            conn.setReadTimeout(messageWrapper.getTimeout());
-        }
-        Date iniTime = new Date();
+        // se não contem http, então é por socket direto
+    	if(!messageWrapper.getMessage().getTarget().getAddress().contains("http://")){
+    		// formato 143.54.12.47:8084
+    		String splited[] = messageWrapper.getMessage().getTarget().getAddress().split(":");
+    		if(splited.length <2){
+    			throw new IOException("Failed : Address '"+messageWrapper.getMessage().getTarget().getAddress()+"' has a unknown format for socket connections, please use the format 'ip:port'.");
+    		}
+    		Socket socket = new Socket(splited[0],Integer.parseInt(splited[1]));
+    		socket.getOutputStream().write(messageWrapper.getEnvelopedMessage().getBytes());
+    		socket.getOutputStream().flush();
+    		socket.getOutputStream().close();
+    		socket.close();
+    	} else {
+            URL url = new URL(messageWrapper.getTargetAddress());
+            //URL url = new URL("http://143.54.12.47:8084/TestServer/webresources/test");
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            // Se possuí timeout customizado o utiliza
+            if (messageWrapper.getTimeout() > 0) {
+                conn.setReadTimeout(messageWrapper.getTimeout());
+            }
+            conn.setDoOutput(true);
+            conn.setRequestMethod("POST");
+            //conn.setRequestProperty("Accept", "application/json");
+            //conn.setRequestProperty("Content-Type", "text/plain");
+            conn.setRequestProperty("Content-Type", messageWrapper.getMessage().getContentType());
+            conn.connect();
+            OutputStream os = conn.getOutputStream();
+            os.write(messageWrapper.getEnvelopedMessage().getBytes());
+            os.flush();
 
-        conn.setDoOutput(true);
-        conn.setRequestMethod("POST");
-        //conn.setRequestProperty("Accept", "application/json");
-        //conn.setRequestProperty("Content-Type", "text/plain");
-        conn.setRequestProperty("Content-Type", messageWrapper.getMessage().getContentType());
-        conn.connect();
-        OutputStream os = conn.getOutputStream();
-        os.write(messageWrapper.getEnvelopedMessage().getBytes());
-        os.flush();
-
-        if (conn.getResponseCode() != HttpURLConnection.HTTP_OK && conn.getResponseCode() != HttpURLConnection.HTTP_NO_CONTENT) {
-            throw new RuntimeException("Failed : HTTP error code : "
-                    + conn.getResponseCode());
+            if (conn.getResponseCode() != HttpURLConnection.HTTP_OK && conn.getResponseCode() != HttpURLConnection.HTTP_NO_CONTENT) {
+                throw new IOException("Failed : HTTP error code : "
+                        + conn.getResponseCode());
+            }
+            conn.disconnect();
         }
-        conn.disconnect();
-        // Adicionar métricas de avaliação **************************************8
-        super.updateEvaluationMetrics(messageWrapper, iniTime, new Date());
-        // Adicionar métricas de avaliação **************************************8
         return true;
     }
 

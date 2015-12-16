@@ -494,9 +494,9 @@ public final class DeviceManager extends ComponentManager implements BaseCompone
         }
         // verifica se a ação existe ou se houve algum resultado durante a execução
         if (answer == null && action.getId() >= 1 && action.getId() <= 3) {
-            answer = new FeedbackAnswer(FeedbackAnswer.ACTION_RESULT_WAS_SUCCESSFUL);
+            answer = FeedbackAnswer.makeFeedbackAnswer(FeedbackAnswer.ACTION_RESULT_WAS_SUCCESSFUL);
         } else if (answer == null) {
-            answer = new FeedbackAnswer(FeedbackAnswer.ACTION_DOES_NOT_EXIST);
+            answer = FeedbackAnswer.makeFeedbackAnswer(FeedbackAnswer.ACTION_DOES_NOT_EXIST);
         }
         return answer;
     }

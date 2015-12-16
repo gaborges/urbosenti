@@ -1054,7 +1054,9 @@ public class AdaptationManager extends ComponentManager implements Runnable, Sys
                             }
                         }
                     }
-                }
+                }                                
+                /* processo de limpesa */
+                Event.clearEvent(event);
             } catch (SQLException ex) {
                 if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
                     Logger.getLogger(AdaptationManager.class.getName()).log(Level.SEVERE, null, ex);
@@ -1198,7 +1200,9 @@ public class AdaptationManager extends ComponentManager implements Runnable, Sys
                             }
                         }
                     }
-                }
+                }                
+                /* processo de limpesa */
+                Event.clearEvent(event);
             } catch (SQLException ex) {
                 if (DeveloperSettings.SHOW_EXCEPTION_ERRORS) {
                     Logger.getLogger(AdaptationManager.class.getName()).log(Level.SEVERE, null, ex);

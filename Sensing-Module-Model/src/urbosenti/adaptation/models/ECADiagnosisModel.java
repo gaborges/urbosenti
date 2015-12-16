@@ -190,6 +190,61 @@ public class ECADiagnosisModel extends AbstractDiagnosisModel {
                     diagnosis.addChange(new Change(4, values));
                 }
             }
+            if(event.getId() == CommunicationManager.EVENT_DISCONNECTION){
+                if(this.getDeviceManager().getCommunicationManager().getReconnectionServices().size() > 1){
+                    if(!this.getDeviceManager().getCommunicationManager().getReconnectionServices().get(1).isReconneted()){
+                        // Adicionar ação, fazer serviço de reconexão auxiliar dormir
+                        values = new HashMap<String, Object>();
+                        values.put("instanceId", this.getDeviceManager().getCommunicationManager().getReconnectionServices().get(1).getInstance().getModelId());
+                        diagnosis.addChange(new Change(23, values));
+                    }
+                }
+            }
+            if(event.getId() == CommunicationManager.EVENT_INTERFACE_DISCONNECTION){
+                if(this.getDeviceManager().getCommunicationManager().getReconnectionServices().size() > 1)
+                        if(this.getDeviceManager().getCommunicationManager().getCurrentCommunicationInterface().getId() >
+                                ((CommunicationInterface)event.getParameters().get("interface")).getId()){
+                    // Remove restrições de uso de interface anteriores do serviço de reconexão auxiliar
+                    values = new HashMap<String, Object>();
+                    values.put("instanceId", this.getDeviceManager().getCommunicationManager().getCurrentCommunicationInterface().getInstance().getModelId());
+                    diagnosis.addChange(new Change(25, values));
+                    // restringe interface reconectada do serviço de reconexão auxiliar;
+                    values = new HashMap<String, Object>();
+                    values.put("instanceId", this.getDeviceManager().getCommunicationManager().getCurrentCommunicationInterface().getInstance().getModelId());
+                    values.put("interface", ((CommunicationInterface)event.getParameters().get("interface")).getId());
+                    diagnosis.addChange(new Change(26, values));
+                    // Acorda o serviço de reconexão auxiliar.
+                    values = new HashMap<String, Object>();
+                    values.put("componentId", CommunicationDAO.COMPONENT_ID);
+                    values.put("entityId", this.getDeviceManager().getCommunicationManager().getCurrentCommunicationInterface().getInstance().getEntity().getId());
+                    values.put("instanceId", this.getDeviceManager().getCommunicationManager().getCurrentCommunicationInterface().getInstance().getModelId());
+                    diagnosis.addChange(new Change(8, values));
+                }
+            }
+            if(event.getId() == CommunicationManager.EVENT_CONNECTION_RESTORED){
+                if(this.getDeviceManager().getCommunicationManager().getCurrentCommunicationInterface().getId() <
+                        ((CommunicationInterface)event.getParameters().get("interface")).getId()){
+                    // Interface reconectada torna-se a atual;
+                    values = new HashMap<String, Object>();
+                    values.put("interface", ((CommunicationInterface)event.getParameters().get("interface")).getId());
+                    diagnosis.addChange(new Change(24, values));
+                                // Acorda serviços de upload.
+                    values = new HashMap<String, Object>();
+                    values.put("componentId", CommunicationDAO.COMPONENT_ID);
+                    values.put("entityId", this.getDeviceManager().getCommunicationManager().getCurrentCommunicationInterface().getInstance().getEntity().getId());
+                    values.put("instanceId", this.getDeviceManager().getCommunicationManager().getCurrentCommunicationInterface().getInstance().getModelId());
+                    diagnosis.addChange(new Change(8, values));
+                }
+                if(this.getDeviceManager().getCommunicationManager().getReconnectionServices().size() > 1){
+                    // Se serviço de reconexão geral ainda ativo
+                    if(!this.getDeviceManager().getCommunicationManager().getReconnectionServices().get(0).isReconneted()){
+                        //Faz serviço de reconexão geral dormir;
+                        values = new HashMap<String, Object>();
+                        values.put("instanceId", this.getDeviceManager().getCommunicationManager().getReconnectionServices().get(1).getInstance().getModelId());
+                        diagnosis.addChange(new Change(23, values));
+                   }
+                }
+            }
         } else if (event.getComponentManager().getComponentId() == DeviceManager.EVENTS_COMPONENT_ID) {
             if (event.getId() == EventManager.EVENT_TIME_TRIGGER_ACHIEVED) {
                 // apenas adiciona na fila: "event"

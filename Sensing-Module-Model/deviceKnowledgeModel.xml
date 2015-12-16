@@ -427,7 +427,8 @@
                     <parameter id="1" optional="false" dataType="3" label="policy" state="4">
                         <description>Nova política</description>
                     </parameter>
-                </action>
+                </action>                
+                <action id="24" description="Apagar mensagens expiradas"></action>
             </entity>
             <entity type="3" description="Serviço de Reconexão" >
                 <!-- instances -->
@@ -510,6 +511,24 @@
                 <action id="7"  description="Alterar política">
                     <parameter id="1" optional="false" dataType="3" label="policy" state="3">
                         <description>Nova política</description>
+                    </parameter>
+                </action>
+                <action id="27"  description="Informar reconexão a serviço de reconexão">
+                    <parameter id="1" optional="false" dataType="3" label="instanceId">
+                        <description>Id do serviço</description>
+                    </parameter>
+                </action>
+                <action id="28"  description="Adiciona restrição de interface ao serviço de reconexão">
+                    <parameter id="1" optional="false" dataType="3" label="instanceId">
+                        <description>Id do serviço</description>
+                    </parameter>
+                    <parameter id="2" optional="false" dataType="3" label="interface">
+                        <description>Id da interface</description>
+                    </parameter>
+                </action>
+                <action id="29"  description="Remove restrições de interface ao serviço de reconexão">
+                    <parameter id="1" optional="false" dataType="3" label="instanceId">
+                        <description>Id do serviço</description>
                     </parameter>
                 </action>
             </entity>
